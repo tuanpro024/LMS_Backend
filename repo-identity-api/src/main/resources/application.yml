@@ -23,8 +23,8 @@ server:
 
 security:
   jwt:
-    public-key-path: file:../secrets/jwt-public.pem
-    private-key-path: file:../secrets/jwt-private.pem
+    public-key-path: file:secrets/jwt-public.pem
+    private-key-path: file:secrets/jwt-private.pem
     issuer: repo-identity
     access-ttl: PT5M
     refresh-ttl: P7D

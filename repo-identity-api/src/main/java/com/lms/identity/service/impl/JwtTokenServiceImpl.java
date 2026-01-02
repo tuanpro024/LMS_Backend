@@ -9,6 +9,7 @@ import com.lms.common.security.JwtUtils;
 import com.lms.identity.service.JwtTokenService;
 import com.lms.identity.service.RefreshTokenService;
 import com.lms.identity.dto.response.AuthResponse;
+import com.lms.identity.dto.response.UserResponse;
 import com.lms.identity.entity.User;
 import com.lms.identity.entity.UserStatus;
 import com.lms.identity.repository.UserRepository;
@@ -38,7 +39,8 @@ public class JwtTokenServiceImpl implements JwtTokenService {
     public AuthResponse issueTokens(User user) {
         Set<String> roles = extractRoleNames(user);
         String userId = user.getId();
-        String access = JwtUtils.generateAccessToken(userId, user.getEmail(), roles, user.isEmailVerified(), accessTtl, issuer, jwtPrivateKey);
+        String access = JwtUtils.generateAccessToken(userId, user.getEmail(), roles, user.isEmailVerified(), accessTtl,
+                issuer, jwtPrivateKey);
         String refresh = JwtUtils.generateRefreshToken(userId, refreshTtl, issuer, jwtPrivateKey, null);
         refreshTokenService.store(refresh, userId, null, refreshTtl);
         return AuthResponse.builder()
@@ -46,6 +48,7 @@ public class JwtTokenServiceImpl implements JwtTokenService {
                 .refreshToken(refresh)
                 .expiresInSeconds(accessTtl.toSeconds())
                 .emailVerified(user.isEmailVerified())
+                .user(convertToUserResponse(user))
                 .build();
     }
 
@@ -67,7 +70,8 @@ public class JwtTokenServiceImpl implements JwtTokenService {
             throw new ApiException(ErrorCode.E233, "Email not verified");
         }
         Set<String> roles = extractRoleNames(user);
-        String access = JwtUtils.generateAccessToken(userId, user.getEmail(), roles, user.isEmailVerified(), accessTtl, issuer, jwtPrivateKey);
+        String access = JwtUtils.generateAccessToken(userId, user.getEmail(), roles, user.isEmailVerified(), accessTtl,
+                issuer, jwtPrivateKey);
         String rotated = JwtUtils.generateRefreshToken(userId, refreshTtl, issuer, jwtPrivateKey, payload.jti());
 
         refreshTokenService.revokeById(payload.jti());
@@ -78,10 +82,24 @@ public class JwtTokenServiceImpl implements JwtTokenService {
                 .refreshToken(rotated)
                 .expiresInSeconds(accessTtl.toSeconds())
                 .emailVerified(user.isEmailVerified())
+                .user(convertToUserResponse(user))
                 .build();
     }
 
     private Set<String> extractRoleNames(User user) {
         return user.getRoles().stream().map(role -> role.getName().name()).collect(Collectors.toSet());
+    }
+
+    private UserResponse convertToUserResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .phoneNumber(user.getPhoneNumber())
+                .avatarUrl(user.getAvatarUrl())
+                .address(user.getAddress())
+                .roles(extractRoleNames(user))
+                .status(user.getStatus())
+                .build();
     }
 }

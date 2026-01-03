@@ -11,7 +11,10 @@ import java.util.Optional;
 public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
-    
+
+    Optional<User> findByGoogleId(String googleId);
+    boolean existsByGoogleId(String googleId);
+
     @Query("{ 'email': { $regex: ?0, $options: 'i' }, 'status': ?1, 'deleted': false }")
     List<User> findByEmailContainingIgnoreCaseAndStatus(String emailContains, UserStatus status);
     

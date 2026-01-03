@@ -56,5 +56,5 @@ eureka:
 
 google:
   oauth:
-    client-id: ${GOOGLE_CLIENT_ID:469580312924-htqo2ul0k5ch38d6ot64csnii2cabr7q.apps.googleusercontent.com}
+    client-id: ${GOOGLE_CLIENT_ID:374015301382-7c753s91lnhu2a2kv1nn3lc682p7rj2p.apps.googleusercontent.com}
     client-secret: ${GOOGLE_CLIENT_SECRET:REDACTED_GOOGLE_SECRET}

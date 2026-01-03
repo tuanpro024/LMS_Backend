@@ -53,3 +53,8 @@ eureka:
     prefer-ip-address: true
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
+
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID:469580312924-htqo2ul0k5ch38d6ot64csnii2cabr7q.apps.googleusercontent.com}
+    client-secret: ${GOOGLE_CLIENT_SECRET:REDACTED_GOOGLE_SECRET}

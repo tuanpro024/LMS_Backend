@@ -41,8 +41,8 @@ mvnw.cmd
 build/
 
 # Secrets and sensitive files
-**/secrets/
-!secrets/.gitkeep
+# **/secrets/
+# !secrets/.gitkeep
 
 # Environment files
 *.env

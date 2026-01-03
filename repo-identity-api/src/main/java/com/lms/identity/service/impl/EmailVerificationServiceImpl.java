@@ -1,6 +1,7 @@
 package com.lms.identity.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.lms.common.exception.ApiException;
@@ -9,6 +10,7 @@ import com.lms.identity.entity.EmailVerificationToken;
 import com.lms.identity.entity.User;
 import com.lms.identity.repository.EmailVerificationTokenRepository;
 import com.lms.identity.repository.UserRepository;
+import com.lms.identity.service.EmailService;
 import com.lms.identity.service.EmailVerificationService;
 
 import java.time.Duration;
@@ -21,6 +23,10 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     private final EmailVerificationTokenRepository tokenRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     private static final Duration VERIFY_TTL = Duration.ofHours(1);
 
@@ -40,7 +46,13 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
                 .ttlSeconds(ttlSeconds)
                 .build();
         tokenRepository.save(token);
-        return tokenValue; // TODO: send email
+
+        // Send email with verification link
+        String verificationLink = frontendUrl + "/verify-email?token=" + tokenValue;
+        String userName = user.getFullName() != null ? user.getFullName() : user.getEmail();
+        emailService.sendVerificationEmail(user.getEmail(), userName, verificationLink);
+
+        return tokenValue;
     }
 
     @Transactional

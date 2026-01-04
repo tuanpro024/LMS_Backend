@@ -17,6 +17,22 @@ spring:
 #      password: redis_password
   kafka:
     bootstrap-servers: localhost:9092
+  # Email Configuration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME:REDACTED_EMAIL_ADDRESS}
+    password: ${EMAIL_PASSWORD:ewqi xxhp guko qznj}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 server:
   port: 8081
@@ -53,3 +69,16 @@ eureka:
     prefer-ip-address: true
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
+
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID:374015301382-7c753s91lnhu2a2kv1nn3lc682p7rj2p.apps.googleusercontent.com}
+    client-secret: ${GOOGLE_CLIENT_SECRET:REDACTED_GOOGLE_SECRET}
+
+# Application Configuration
+app:
+  email:
+    from: ${EMAIL_FROM:noreply@lms.com}
+    from-name: ${EMAIL_FROM_NAME:LMS System}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}

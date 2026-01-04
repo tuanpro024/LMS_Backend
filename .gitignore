@@ -40,10 +40,9 @@ mvnw.cmd
 .gradle/
 build/
 
-# De nghi ae k ignore thu muc secrets 
-# # Secrets and sensitive files
-# **/secrets/
-# !secrets/.gitkeep
+# Secrets and sensitive files
+**/secrets/
+!secrets/.gitkeep
 
 # Environment files
 *.env

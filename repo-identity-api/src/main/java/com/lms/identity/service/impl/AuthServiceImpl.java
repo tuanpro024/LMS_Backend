@@ -5,10 +5,7 @@ import com.lms.common.exception.ErrorCode;
 import com.lms.identity.dto.response.AuthResponse;
 import com.lms.identity.dto.request.LoginRequest;
 import com.lms.identity.dto.request.SignupRequest;
-import com.lms.identity.entity.Role;
-import com.lms.identity.entity.RoleName;
-import com.lms.identity.entity.User;
-import com.lms.identity.entity.UserStatus;
+import com.lms.identity.entity.*;
 import com.lms.identity.repository.RoleRepository;
 import com.lms.identity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +41,7 @@ public class AuthServiceImpl implements AuthService {
                 .phoneNumber(request.getPhoneNumber())
                 .avatarUrl(request.getAvatarUrl())
                 .address(request.getAddress())
+                .authProvider(AuthProvider.LOCAL)
                 .status(UserStatus.ACTIVE)
                 .emailVerified(false)
                 .build();
@@ -60,6 +58,10 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E238));
         if (user.getStatus() == UserStatus.BLOCKED) {
             throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+        if (user.getAuthProvider() == AuthProvider.GOOGLE) {
+            throw new ApiException(ErrorCode.BAD_REQUEST,
+                    "This account is registered with Google. Please login using Google.");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new ApiException(ErrorCode.E239);

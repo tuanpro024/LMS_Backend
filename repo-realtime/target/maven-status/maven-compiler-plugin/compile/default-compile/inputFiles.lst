@@ -1,6 +1,6 @@
-E:\BE_LMS\repo-realtime\src\main\java\com\lms\realtime\config\SecurityConfig.java
-E:\BE_LMS\repo-realtime\src\main\java\com\lms\realtime\config\WebSocketConfig.java
-E:\BE_LMS\repo-realtime\src\main\java\com\lms\realtime\listener\NotificationKafkaToWsListener.java
-E:\BE_LMS\repo-realtime\src\main\java\com\lms\realtime\RepoRealtimeApplication.java
-E:\BE_LMS\repo-realtime\src\main\java\com\lms\realtime\security\JwtHandshakeInterceptor.java
-E:\BE_LMS\repo-realtime\src\main\java\com\lms\realtime\security\WsAuthChannelInterceptor.java
+D:\DOANSP26\BACKEND\LMS_Backend\repo-realtime\src\main\java\com\lms\realtime\config\SecurityConfig.java
+D:\DOANSP26\BACKEND\LMS_Backend\repo-realtime\src\main\java\com\lms\realtime\config\WebSocketConfig.java
+D:\DOANSP26\BACKEND\LMS_Backend\repo-realtime\src\main\java\com\lms\realtime\listener\NotificationKafkaToWsListener.java
+D:\DOANSP26\BACKEND\LMS_Backend\repo-realtime\src\main\java\com\lms\realtime\RepoRealtimeApplication.java
+D:\DOANSP26\BACKEND\LMS_Backend\repo-realtime\src\main\java\com\lms\realtime\security\JwtHandshakeInterceptor.java
+D:\DOANSP26\BACKEND\LMS_Backend\repo-realtime\src\main\java\com\lms\realtime\security\WsAuthChannelInterceptor.java

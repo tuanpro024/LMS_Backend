@@ -1,5 +1,6 @@
 package com.lms.common.jpa;
 
+import jakarta.persistence.Column;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -14,6 +15,7 @@ import java.time.Instant;
 public abstract class BaseEntity {
 
     @Id
+    @Column(length = 26, nullable = false, updatable = false, columnDefinition = "nvarchar(26)")
     private String id;
 
     @CreatedDate

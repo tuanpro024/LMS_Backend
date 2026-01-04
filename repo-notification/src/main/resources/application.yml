@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: repo-notification
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=LMS_NotificationDB;encrypt=true;trustServerCertificate=true
+    username: sa
+    password: 123
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.SQLServerDialect
+        format_sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+#      password: redis_password
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: latest
+
+server:
+  port: 8083
+
+security:
+  jwt:
+    public-key-path: file:secrets/jwt-public.pem
+    issuer: repo-identity-api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    org.springframework.security: INFO
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}
+
+notification:
+  kafka:
+    topic: notification.events
+    group: notification-service
+

@@ -40,9 +40,6 @@ mvnw.cmd
 .gradle/
 build/
 
-# Secrets and sensitive files
-**/secrets/
-!secrets/.gitkeep
 
 # Environment files
 *.env

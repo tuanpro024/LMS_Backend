@@ -1,0 +1,155 @@
+package com.lms.flashcard.service.impl;
+
+import com.lms.common.exception.ApiException;
+import com.lms.common.exception.ErrorCode;
+import com.lms.flashcard.dto.request.CreateFolderRequest;
+import com.lms.flashcard.dto.response.FolderResponse;
+import com.lms.flashcard.entity.Folder;
+import com.lms.flashcard.entity.StudySet;
+import com.lms.flashcard.mapper.FolderMapper;
+import com.lms.flashcard.repository.FolderRepository;
+import com.lms.flashcard.repository.StudySetRepository;
+import com.lms.flashcard.service.FolderService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class FolderServiceImpl implements FolderService {
+
+    private final FolderRepository folderRepository;
+    private final StudySetRepository studySetRepository;
+    private final FolderMapper folderMapper;
+
+    @Override
+    public FolderResponse createFolder(CreateFolderRequest request, String userId) {
+        log.info("Creating folder for user: {}", userId);
+
+        Folder folder = folderMapper.toEntity(request);
+        folder.setUserId(userId);
+
+        // Set parent folder if provided
+        if (request.getParentFolderId() != null) {
+            Folder parentFolder = folderRepository.findById(request.getParentFolderId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Parent folder not found"));
+
+            // Check if user owns the parent folder
+            if (!parentFolder.getUserId().equals(userId)) {
+                throw new ApiException(ErrorCode.E240, "No permission to add subfolder to this folder");
+            }
+
+            folder.setParentFolder(parentFolder);
+        }
+
+        Folder saved = folderRepository.save(folder);
+        return folderMapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FolderResponse getFolderById(String id, String currentUserId) {
+        Folder folder = folderRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        // Check access permission
+        if (folder.isPrivate() && !folder.getUserId().equals(currentUserId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to view this folder");
+        }
+
+        return folderMapper.toResponse(folder);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getAllPublicFolders() {
+        List<Folder> folders = folderRepository.findByIsPrivateFalse();
+        return folderMapper.toResponseList(folders);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getFoldersByUserId(String userId, String currentUserId) {
+        List<Folder> folders;
+
+        if (userId.equals(currentUserId)) {
+            // User can see all their own folders
+            folders = folderRepository.findByUserId(userId);
+        } else {
+            // Others can only see public folders
+            folders = folderRepository.findByUserId(userId).stream()
+                    .filter(f -> !f.isPrivate())
+                    .toList();
+        }
+
+        return folderMapper.toResponseList(folders);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getRootFoldersByUserId(String userId) {
+        List<Folder> folders = folderRepository.findByUserIdAndParentFolderIsNull(userId);
+        return folderMapper.toResponseList(folders);
+    }
+
+    @Override
+    public FolderResponse addStudySetToFolder(String folderId, String studySetId, String userId) {
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        // Check ownership
+        if (!folder.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to modify this folder");
+        }
+
+        StudySet studySet = studySetRepository.findById(studySetId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Study set not found"));
+
+        // Check if user has access to the study set
+        if (studySet.isPrivate() && !studySet.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to add this study set");
+        }
+
+        folder.addStudySet(studySet);
+        Folder updated = folderRepository.save(folder);
+
+        return folderMapper.toResponse(updated);
+    }
+
+    @Override
+    public FolderResponse removeStudySetFromFolder(String folderId, String studySetId, String userId) {
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        // Check ownership
+        if (!folder.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to modify this folder");
+        }
+
+        StudySet studySet = studySetRepository.findById(studySetId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Study set not found"));
+
+        folder.removeStudySet(studySet);
+        Folder updated = folderRepository.save(folder);
+
+        return folderMapper.toResponse(updated);
+    }
+
+    @Override
+    public void deleteFolder(String id, String userId) {
+        Folder folder = folderRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        // Check ownership
+        if (!folder.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to delete this folder");
+        }
+
+        folderRepository.delete(folder);
+    }
+}

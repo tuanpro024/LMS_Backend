@@ -62,6 +62,12 @@ spring:
             - Path=${config.api-prefix}/notification/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: flashcard
+          uri: lb://REPO-FLASHCARD
+          predicates:
+            - Path=${config.api-prefix}/flashcard/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
   main:
     web-application-type: reactive
 

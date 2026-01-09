@@ -18,7 +18,7 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class MongoDataInitializer implements CommandLineRunner {
+public class DataInitializer implements CommandLineRunner {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
@@ -77,4 +77,3 @@ public class MongoDataInitializer implements CommandLineRunner {
         }
     }
 }
-

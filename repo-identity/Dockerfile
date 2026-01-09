@@ -11,12 +11,12 @@ RUN mvn -f repo-common-parent/pom.xml clean install -DskipTests
 RUN mvn -f repo-common-framework/pom.xml clean install -DskipTests
 
 # Copy and build identity-api
-COPY repo-identity-api ./repo-identity-api
-RUN mvn -f repo-identity-api/pom.xml clean package -DskipTests
+COPY repo-identity ./repo-identity
+RUN mvn -f repo-identity/pom.xml clean package -DskipTests
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/repo-identity-api/target/repo-identity-api-*.jar app.jar
+COPY --from=build /app/repo-identity/target/repo-identity-*.jar app.jar
 EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "app.jar"]

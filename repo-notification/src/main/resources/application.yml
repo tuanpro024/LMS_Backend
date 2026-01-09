@@ -31,7 +31,7 @@ server:
 security:
   jwt:
     public-key-path: file:secrets/jwt-public.pem
-    issuer: repo-identity-api
+    issuer: repo-identity
 
 management:
   endpoints:

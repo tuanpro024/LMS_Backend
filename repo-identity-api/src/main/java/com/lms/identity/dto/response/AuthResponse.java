@@ -10,4 +10,5 @@ public class AuthResponse {
     private final String refreshToken;
     private final long expiresInSeconds;
     private final boolean emailVerified;
+    private final UserResponse user;
 }

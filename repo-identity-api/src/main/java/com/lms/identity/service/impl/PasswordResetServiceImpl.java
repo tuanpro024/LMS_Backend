@@ -1,6 +1,7 @@
 package com.lms.identity.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +11,7 @@ import com.lms.identity.entity.PasswordResetToken;
 import com.lms.identity.entity.User;
 import com.lms.identity.repository.PasswordResetTokenRepository;
 import com.lms.identity.repository.UserRepository;
+import com.lms.identity.service.EmailService;
 import com.lms.identity.service.PasswordResetService;
 
 import java.time.Duration;
@@ -23,6 +25,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     private static final Duration RESET_TTL = Duration.ofMinutes(15);
 
@@ -45,7 +51,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 .ttlSeconds(ttlSeconds)
                 .build();
         tokenRepository.save(token);
-        // TODO: send email with token; for now return token for testing
+
+        // Send password reset email
+        String resetLink = frontendUrl + "/reset-password?token=" + tokenValue;
+        String userName = user.getFullName() != null ? user.getFullName() : user.getEmail();
+        emailService.sendPasswordResetEmail(user.getEmail(), userName, resetLink);
+
         return tokenValue;
     }
 

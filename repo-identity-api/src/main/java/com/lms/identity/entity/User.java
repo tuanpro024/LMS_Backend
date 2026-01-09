@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.lms.common.jpa.BaseEntity;
+import org.springframework.data.mongodb.core.index.IndexOptions;
+
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,6 +25,12 @@ public class User extends BaseEntity {
 
     @Indexed(unique = true)
     private String email;
+
+    @Indexed(unique = true, sparse = true)
+    private String googleId;
+
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
 
     private String password;
 

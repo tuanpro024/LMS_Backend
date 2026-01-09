@@ -1,14 +1,10 @@
 package com.lms.identity.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.identity.dto.request.*;
 import com.lms.identity.dto.response.AuthResponse;
-import com.lms.identity.dto.request.LoginRequest;
-import com.lms.identity.dto.request.RefreshTokenRequest;
-import com.lms.identity.dto.request.SignupRequest;
-import com.lms.identity.dto.request.ForgotPasswordRequest;
-import com.lms.identity.dto.request.ResetPasswordRequest;
-import com.lms.identity.dto.request.VerifyEmailRequest;
 import com.lms.identity.service.AuthService;
+import com.lms.identity.service.GoogleOAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleOAuthService googleOAuthService;
 
     @PostMapping("/signup")
     public ApiResponse<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
@@ -33,6 +30,11 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok(authService.login(request));
+    }
+
+    @PostMapping("/google")
+    public ApiResponse<AuthResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        return ApiResponse.ok(googleOAuthService.authenticateWithGoogle(request.getIdToken()));
     }
 
     @PostMapping("/refresh")

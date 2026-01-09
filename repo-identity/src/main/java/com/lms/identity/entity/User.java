@@ -1,16 +1,12 @@
 package com.lms.identity.entity;
 
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DBRef;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.lms.common.jpa.BaseEntity;
-import org.springframework.data.mongodb.core.index.IndexOptions;
-
 
 import java.util.HashSet;
 import java.util.Set;
@@ -20,15 +16,21 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Document(collection = "users")
+@Entity
+@Table(name = "users", indexes = {
+        @Index(name = "idx_email", columnList = "email"),
+        @Index(name = "idx_google_id", columnList = "googleId")
+})
 public class User extends BaseEntity {
 
-    @Indexed(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @Indexed(unique = true, sparse = true)
+    @Column(unique = true, nullable = true)
     private String googleId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     @Builder.Default
     private AuthProvider authProvider = AuthProvider.LOCAL;
 
@@ -42,11 +44,13 @@ public class User extends BaseEntity {
 
     private String address;
 
+    @Enumerated(EnumType.STRING)
     private UserStatus status;
 
     private boolean emailVerified;
 
-    @DBRef
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
 }

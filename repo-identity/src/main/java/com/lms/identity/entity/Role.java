@@ -1,7 +1,6 @@
 package com.lms.identity.entity;
 
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,9 +13,11 @@ import com.lms.common.jpa.BaseEntity;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Document(collection = "roles")
+@Entity
+@Table(name = "roles")
 public class Role extends BaseEntity {
 
-    @Indexed(unique = true)
+    @Enumerated(EnumType.STRING)
+    @Column(unique = true, nullable = false)
     private RoleName name;
 }

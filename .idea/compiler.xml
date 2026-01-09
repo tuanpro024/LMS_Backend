@@ -8,7 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
       </profile>
-      <profile name="Annotation profile for repo-notification" enabled="true">
+      <profile name="Annotation profile for repo-identity-api" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -22,9 +22,9 @@
         <module name="repo-realtime" />
         <module name="repo-common-framework" />
         <module name="repo-api-gateway" />
-        <module name="repo-identity-api" />
         <module name="repo-eureka" />
         <module name="repo-notification" />
+        <module name="repo-identity" />
       </profile>
     </annotationProcessing>
   </component>
@@ -34,7 +34,7 @@
       <module name="repo-common-framework" options="-parameters" />
       <module name="repo-eureka" options="-parameters" />
       <module name="repo-flashcard" options="-parameters" />
-      <module name="repo-identity-api" options="-parameters" />
+      <module name="repo-identity" options="-parameters" />
       <module name="repo-notification" options="-parameters" />
       <module name="repo-realtime" options="-parameters" />
     </option>

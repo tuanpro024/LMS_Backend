@@ -17,7 +17,6 @@ public class SignupRequest {
     @Size(min = 8, max = 100, message = "Input Parameter Error. Invalid data length. (password)")
     private String password;
 
-    @NotBlank(message = "Required parameter is missing value. (fullName)")
     @Size(max = 120, message = "Input Parameter Error. Invalid data length. (fullName)")
     private String fullName;
 

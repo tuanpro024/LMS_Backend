@@ -24,9 +24,17 @@ public class Card extends BaseEntity {
 
     private String imageUrl;
 
+    @Column(columnDefinition = "TEXT")
+    private String pinyin;
+
+    @Column(columnDefinition = "TEXT")
+    private String pronunciation;
+
+    @Column(columnDefinition = "TEXT")
+    private String exampleSentence;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "study_set_id", nullable = false)
     private StudySet studySet;
-
 
 }

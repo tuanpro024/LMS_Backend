@@ -13,6 +13,8 @@ public interface FolderService {
 
     List<FolderResponse> getAllPublicFolders();
 
+    List<FolderResponse> getAccessibleFolders(String currentUserId);
+
     List<FolderResponse> getFoldersByUserId(String userId, String currentUserId);
 
     List<FolderResponse> getRootFoldersByUserId(String userId);

@@ -79,7 +79,7 @@ services:
   identity-api:
     build:
       context: .
-      dockerfile: repo-identity-api/Dockerfile
+      dockerfile: repo-identity/Dockerfile
     container_name: lms-identity
     ports:
       - "8081:8081"
@@ -151,7 +151,7 @@ services:
       - MYSQL_DATABASE=lms_flashcard_db
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./repo-identity-api/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./repo-identity/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - lms-network
     healthcheck:

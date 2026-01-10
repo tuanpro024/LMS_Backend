@@ -74,6 +74,22 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<FolderResponse> getAccessibleFolders(String currentUserId) {
+        if (currentUserId == null) {
+            // Not authenticated - only return public folders
+            return getAllPublicFolders();
+        }
+
+        // Authenticated - return public folders + user's private folders
+        List<Folder> folders = folderRepository.findAll().stream()
+                .filter(f -> !f.isPrivate() || f.getUserId().equals(currentUserId))
+                .toList();
+
+        return folderMapper.toResponseList(folders);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<FolderResponse> getFoldersByUserId(String userId, String currentUserId) {
         List<Folder> folders;
 

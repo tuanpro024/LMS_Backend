@@ -99,4 +99,37 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Unexpected error sending email", e);
         }
     }
+
+    @Async
+    @Override
+    public void sendOtpEmail(String toEmail, String userName, String otp) {
+        try {
+            log.info("Sending OTP email to: {}", toEmail);
+
+            Context context = new Context();
+            context.setVariable("userName", userName);
+            context.setVariable("otp", otp);
+            context.setVariable("frontendUrl", frontendUrl);
+
+            String htmlContent = templateEngine.process("otp-verification-email", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(emailFrom, emailFromName);
+            helper.setTo(toEmail);
+            helper.setSubject("Mã Xác Thực OTP - LMS");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+
+            log.info("OTP email sent successfully to: {}", toEmail);
+        } catch (MessagingException e) {
+            log.error("Failed to send OTP email to: {}", toEmail, e);
+            throw new RuntimeException("Could not send OTP email", e);
+        } catch (Exception e) {
+            log.error("Unexpected error sending OTP email to: {}", toEmail, e);
+            throw new RuntimeException("Unexpected error sending OTP email", e);
+        }
+    }
 }

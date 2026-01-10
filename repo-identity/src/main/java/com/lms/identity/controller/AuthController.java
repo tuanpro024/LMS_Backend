@@ -78,4 +78,17 @@ public class AuthController {
     public ApiResponse<AuthResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
         return ApiResponse.ok(authService.verifyEmail(request.getToken()));
     }
+
+    // Mobile Signup with OTP
+    @PostMapping("/mobile/signup")
+    public ApiResponse<com.lms.identity.dto.response.OtpVerificationResponse> mobileSignup(
+            @Valid @RequestBody MobileSignupRequest request) {
+        return ApiResponse.ok(authService.mobileSignup(request));
+    }
+
+    @PostMapping("/mobile/verify-otp")
+    public ApiResponse<AuthResponse> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequest request) {
+        return ApiResponse.ok(authService.verifyOtp(request));
+    }
 }

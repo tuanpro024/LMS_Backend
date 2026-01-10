@@ -1,19 +1,4 @@
 services:
-  mongodb:
-    image: mongo:6.0
-    container_name: lms-mongodb
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - lms-network
-    healthcheck:
-      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7.0-alpine
     container_name: lms-redis
@@ -94,12 +79,14 @@ services:
   identity-api:
     build:
       context: .
-      dockerfile: repo-identity-api/Dockerfile
+      dockerfile: repo-identity/Dockerfile
     container_name: lms-identity
     ports:
       - "8081:8081"
     environment:
-      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/lms_identity_db
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_identity_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
@@ -110,7 +97,7 @@ services:
     depends_on:
       setup-keys:
         condition: service_completed_successfully
-      mongodb:
+      mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -164,6 +151,7 @@ services:
       - MYSQL_DATABASE=lms_flashcard_db
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./repo-identity/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
       - lms-network
     healthcheck:
@@ -202,6 +190,5 @@ networks:
     driver: bridge
 
 volumes:
-  mongodb_data:
   mysql_data:
 

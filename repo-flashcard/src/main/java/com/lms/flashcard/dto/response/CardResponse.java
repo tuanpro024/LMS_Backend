@@ -18,6 +18,9 @@ public class CardResponse {
     private String definition;
     private int cardIndex;
     private String imageUrl;
+    private String pinyin;
+    private String pronunciation;
+    private String exampleSentence;
     private Instant createdAt;
     private Instant updatedAt;
 }

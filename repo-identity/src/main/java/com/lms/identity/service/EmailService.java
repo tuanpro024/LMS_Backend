@@ -18,4 +18,13 @@ public interface EmailService {
      * @param resetLink Link reset password
      */
     void sendPasswordResetEmail(String toEmail, String userName, String resetLink);
+
+    /**
+     * Gửi email chứa OTP cho mobile signup
+     * 
+     * @param toEmail  Email người nhận
+     * @param userName Tên người dùng
+     * @param otp      6-digit OTP code
+     */
+    void sendOtpEmail(String toEmail, String userName, String otp);
 }

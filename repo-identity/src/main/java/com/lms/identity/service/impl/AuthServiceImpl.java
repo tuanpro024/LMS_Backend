@@ -25,6 +25,7 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenService refreshTokenService;
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
+    private final OtpService otpService;
 
     @Transactional
     @Override
@@ -107,6 +108,51 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse verifyEmail(String token) {
         User user = emailVerificationService.verify(token);
+        return jwtTokenService.issueTokens(user);
+    }
+
+    @Transactional
+    @Override
+    public com.lms.identity.dto.response.OtpVerificationResponse mobileSignup(
+            com.lms.identity.dto.request.MobileSignupRequest request) {
+        // Check if email already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new ApiException(ErrorCode.E255, "Email already in use");
+        }
+
+        // Get user role
+        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
+                .orElseThrow(() -> new ApiException(ErrorCode.E221, "Role not found data: ROLE_USER"));
+
+        // Create user with emailVerified = false
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .phoneNumber(request.getPhoneNumber())
+                .avatarUrl(request.getAvatarUrl())
+                .address(request.getAddress())
+                .authProvider(AuthProvider.LOCAL)
+                .status(UserStatus.ACTIVE)
+                .emailVerified(false)
+                .build();
+        user.getRoles().add(userRole);
+        User saved = userRepository.save(user);
+
+        // Generate and send OTP
+        otpService.generateAndSendOtp(saved);
+
+        return com.lms.identity.dto.response.OtpVerificationResponse.builder()
+                .message("OTP has been sent to your email.")
+                .email(saved.getEmail())
+                .expiresInSeconds(300L) // 5 minutes
+                .build();
+    }
+
+    @Transactional
+    @Override
+    public AuthResponse verifyOtp(com.lms.identity.dto.request.VerifyOtpRequest request) {
+        User user = otpService.verifyOtp(request.getEmail(), request.getOtp());
         return jwtTokenService.issueTokens(user);
     }
 }

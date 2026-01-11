@@ -2,23 +2,29 @@ spring:
   application:
     name: repo-notification
   datasource:
-    url: jdbc:sqlserver://localhost:1433;databaseName=LMS_NotificationDB;encrypt=true;trustServerCertificate=true
+    url: jdbc:mysql://localhost:3306/lms_notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: sa
     password: 123
-    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.SQLServerDialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+        use_sql_comments: true
+    open-in-view: false
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
   data:
     redis:
       host: localhost
       port: 6379
-#      password: redis_password
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -31,7 +37,6 @@ server:
 security:
   jwt:
     public-key-path: file:secrets/jwt-public.pem
-    issuer: repo-identity
 
 management:
   endpoints:
@@ -46,6 +51,7 @@ management:
 logging:
   level:
     org.springframework.security: INFO
+    org.hibernate.SQL: DEBUG
 
 eureka:
   client:

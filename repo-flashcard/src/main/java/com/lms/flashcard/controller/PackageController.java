@@ -5,7 +5,7 @@ import com.lms.common.security.AuthPrincipal;
 import com.lms.flashcard.dto.request.CreatePackageRequest;
 import com.lms.flashcard.dto.request.UpdatePackageRequest;
 import com.lms.flashcard.dto.response.PackageResponse;
-import com.lms.flashcard.entity.PackageType;
+import com.lms.flashcard.entity.TypeName;
 import com.lms.flashcard.service.PackageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -22,6 +23,12 @@ import java.util.List;
 public class PackageController {
 
     private final PackageService packageService;
+
+    @GetMapping("/types")
+    public ResponseEntity<ApiResponse<List<TypeName>>> getPackageTypes() {
+        List<TypeName> types = Arrays.asList(TypeName.values());
+        return ResponseEntity.ok(ApiResponse.ok(types));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
@@ -51,7 +58,7 @@ public class PackageController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getPackages(
             @RequestParam(required = false) String subjectCode,
-            @RequestParam(required = false) PackageType type,
+            @RequestParam(required = false) TypeName type,
             Authentication authentication) {
 
         String userId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal

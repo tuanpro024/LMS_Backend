@@ -12,6 +12,4 @@ public interface FolderRepository extends JpaRepository<Folder, String> {
     List<Folder> findByUserId(String userId);
 
     List<Folder> findByIsPrivateFalse();
-
-    List<Folder> findByUserIdAndParentFolderIsNull(String userId);
 }

@@ -7,10 +7,12 @@ import com.lms.flashcard.dto.request.UpdatePackageRequest;
 import com.lms.flashcard.dto.response.PackageResponse;
 import com.lms.flashcard.entity.Folder;
 import com.lms.flashcard.entity.Package;
-import com.lms.flashcard.entity.PackageType;
+import com.lms.flashcard.entity.Type;
+import com.lms.flashcard.entity.TypeName;
 import com.lms.flashcard.mapper.PackageMapper;
 import com.lms.flashcard.repository.FolderRepository;
 import com.lms.flashcard.repository.PackageRepository;
+import com.lms.flashcard.repository.TypeRepository;
 import com.lms.flashcard.service.PackageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,13 +30,19 @@ public class PackageServiceImpl implements PackageService {
     private final PackageRepository packageRepository;
     private final FolderRepository folderRepository;
     private final PackageMapper packageMapper;
+    private final TypeRepository typeRepository;
 
     @Override
     public PackageResponse createPackage(CreatePackageRequest request, String userId) {
         log.info("Creating package for user: {} with subject code: {}", userId, request.getSubjectCode());
 
+        // Fetch Type entity from TypeRepository
+        Type type = typeRepository.findByName(request.getType())
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Type not found: " + request.getType()));
+
         Package packageEntity = packageMapper.toEntity(request);
         packageEntity.setUserId(userId);
+        packageEntity.setType(type);
 
         Package saved = packageRepository.save(packageEntity);
         return packageMapper.toResponse(saved);
@@ -81,8 +89,12 @@ public class PackageServiceImpl implements PackageService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PackageResponse> getPackagesByType(PackageType type, String currentUserId) {
+    public List<PackageResponse> getPackagesByType(TypeName typeName, String currentUserId) {
         List<Package> packages;
+
+        // Fetch Type entity from TypeRepository
+        Type type = typeRepository.findByName(typeName)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Type not found: " + typeName));
 
         if (currentUserId != null) {
             packages = packageRepository.findByTypeAndUserId(type, currentUserId);
@@ -114,7 +126,9 @@ public class PackageServiceImpl implements PackageService {
             packageEntity.setSlot(request.getSlot());
         }
         if (request.getType() != null) {
-            packageEntity.setType(request.getType());
+            Type type = typeRepository.findByName(request.getType())
+                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Type not found: " + request.getType()));
+            packageEntity.setType(type);
         }
         if (request.getDescription() != null) {
             packageEntity.setDescription(request.getDescription());

@@ -25,9 +25,9 @@ public class Package extends BaseEntity {
     @Column(nullable = false)
     private String slot;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PackageType type;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "type_id", nullable = false)
+    private Type type;
 
     @Column(columnDefinition = "TEXT")
     private String description;

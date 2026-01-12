@@ -38,6 +38,10 @@ public class Folder extends BaseEntity {
     @Builder.Default
     private List<Folder> subfolders = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "package_id")
+    private Package packageEntity;
+
     @ManyToMany
     @JoinTable(name = "folder_study_sets", joinColumns = @JoinColumn(name = "folder_id"), inverseJoinColumns = @JoinColumn(name = "study_set_id"))
     @Builder.Default

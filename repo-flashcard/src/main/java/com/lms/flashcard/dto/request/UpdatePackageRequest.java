@@ -1,6 +1,6 @@
 package com.lms.flashcard.dto.request;
 
-import com.lms.flashcard.entity.PackageType;
+import com.lms.flashcard.entity.TypeName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +18,7 @@ public class UpdatePackageRequest {
 
     private String slot;
 
-    private PackageType type;
+    private TypeName type;
 
     private String description;
 }

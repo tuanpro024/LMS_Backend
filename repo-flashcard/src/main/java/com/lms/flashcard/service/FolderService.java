@@ -17,8 +17,6 @@ public interface FolderService {
 
     List<FolderResponse> getFoldersByUserId(String userId, String currentUserId);
 
-    List<FolderResponse> getRootFoldersByUserId(String userId);
-
     FolderResponse addStudySetToFolder(String folderId, String studySetId, String userId);
 
     FolderResponse removeStudySetFromFolder(String folderId, String studySetId, String userId);

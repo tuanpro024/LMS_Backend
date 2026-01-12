@@ -52,6 +52,26 @@ public class DataInitializer implements CommandLineRunner {
             roleRepository.save(userRole);
             log.info("Created ROLE_USER");
         }
+        if (roleRepository.findByName(RoleName.ROLE_TEACHER).isEmpty()) {
+            Role teacherRole = Role.builder()
+                    .name(RoleName.ROLE_TEACHER)
+                    .build();
+            teacherRole.setId("01JFZC5Y3K1M7X9C6T2B4N8PT");
+            teacherRole.onCreate();
+            roleRepository.save(teacherRole);
+            log.info("Created ROLE_TEACHER");
+        }
+
+        // ROLE_TEACHER_MANAGER
+        if (roleRepository.findByName(RoleName.ROLE_TEACHER_MANAGER).isEmpty()) {
+            Role teacherManagerRole = Role.builder()
+                    .name(RoleName.ROLE_TEACHER_MANAGER)
+                    .build();
+            teacherManagerRole.setId("01JFZC5Y3K1M7X9C6T2B4N8PU");
+            teacherManagerRole.onCreate();
+            roleRepository.save(teacherManagerRole);
+            log.info("Created ROLE_TEACHER_MANAGER");
+        }
     }
 
     private void initializeAdminUser() {

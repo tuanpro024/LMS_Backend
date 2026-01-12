@@ -3,7 +3,7 @@ package com.lms.flashcard.service;
 import com.lms.flashcard.dto.request.CreatePackageRequest;
 import com.lms.flashcard.dto.request.UpdatePackageRequest;
 import com.lms.flashcard.dto.response.PackageResponse;
-import com.lms.flashcard.entity.PackageType;
+import com.lms.flashcard.entity.TypeName;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ public interface PackageService {
 
     List<PackageResponse> getPackagesBySubjectCode(String subjectCode, String currentUserId);
 
-    List<PackageResponse> getPackagesByType(PackageType type, String currentUserId);
+    List<PackageResponse> getPackagesByType(TypeName type, String currentUserId);
 
     PackageResponse updatePackage(String id, UpdatePackageRequest request, String userId);
 

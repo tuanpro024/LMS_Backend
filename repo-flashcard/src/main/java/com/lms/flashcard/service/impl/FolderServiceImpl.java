@@ -36,17 +36,17 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderMapper.toEntity(request);
         folder.setUserId(userId);
 
-        // Set parent folder if provided
-        if (request.getParentFolderId() != null) {
-            Folder parentFolder = folderRepository.findById(request.getParentFolderId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Parent folder not found"));
+        // Set package if provided
+        if (request.getPackageId() != null) {
+            com.lms.flashcard.entity.Package packageEntity = packageRepository.findById(request.getPackageId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
-            // Check if user owns the parent folder
-            if (!parentFolder.getUserId().equals(userId)) {
-                throw new ApiException(ErrorCode.E240, "No permission to add subfolder to this folder");
+            // Check if user owns the package
+            if (!packageEntity.getUserId().equals(userId)) {
+                throw new ApiException(ErrorCode.E240, "No permission to assign folder to this package");
             }
 
-            folder.setParentFolder(parentFolder);
+            folder.setPackageEntity(packageEntity);
         }
 
         // Set package if provided
@@ -118,13 +118,6 @@ public class FolderServiceImpl implements FolderService {
                     .toList();
         }
 
-        return folderMapper.toResponseList(folders);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<FolderResponse> getRootFoldersByUserId(String userId) {
-        List<Folder> folders = folderRepository.findByUserIdAndParentFolderIsNull(userId);
         return folderMapper.toResponseList(folders);
     }
 

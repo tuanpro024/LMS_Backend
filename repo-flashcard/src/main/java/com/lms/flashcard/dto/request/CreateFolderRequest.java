@@ -23,7 +23,5 @@ public class CreateFolderRequest {
     @NotNull(message = "isPrivate is required")
     private Boolean isPrivate;
 
-    private String parentFolderId;
-
     private String packageId;
 }

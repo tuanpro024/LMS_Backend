@@ -1,6 +1,6 @@
 package com.lms.flashcard.dto.response;
 
-import com.lms.flashcard.entity.PackageType;
+import com.lms.flashcard.entity.TypeName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +19,7 @@ public class PackageResponse {
     private String name;
     private String subjectCode;
     private String slot;
-    private PackageType type;
+    private TypeName type;
     private String description;
     private String userId;
     private List<FolderResponse> folders;

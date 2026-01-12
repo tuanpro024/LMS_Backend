@@ -1,6 +1,6 @@
 package com.lms.flashcard.dto.request;
 
-import com.lms.flashcard.entity.PackageType;
+import com.lms.flashcard.entity.TypeName;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -24,7 +24,7 @@ public class CreatePackageRequest {
     private String slot;
 
     @NotNull(message = "Type is required")
-    private PackageType type;
+    private TypeName type;
 
     private String description;
 }

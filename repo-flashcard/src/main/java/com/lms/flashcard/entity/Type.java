@@ -21,3 +21,4 @@ public class Type extends BaseEntity {
     @Column(unique = true, nullable = false)
     private TypeName name;
 }
+

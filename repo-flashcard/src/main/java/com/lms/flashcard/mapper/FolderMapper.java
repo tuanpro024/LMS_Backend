@@ -20,6 +20,7 @@ public interface FolderMapper {
     Folder toEntity(CreateFolderRequest request);
 
     @Mapping(target = "parentFolderId", expression = "java(folder.getParentFolder() != null ? folder.getParentFolder().getId() : null)")
+    @Mapping(target = "packageId", expression = "java(folder.getPackageEntity() != null ? folder.getPackageEntity().getId() : null)")
     @Mapping(target = "studySetIds", expression = "java(mapStudySetIds(folder.getStudySets()))")
     FolderResponse toResponse(Folder folder);
 

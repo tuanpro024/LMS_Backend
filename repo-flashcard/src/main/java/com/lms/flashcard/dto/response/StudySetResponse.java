@@ -19,6 +19,7 @@ public class StudySetResponse {
     private String description;
     private boolean isPrivate;
     private String userId;
+    private double progress;
     private List<CardResponse> cards;
     private Instant createdAt;
     private Instant updatedAt;

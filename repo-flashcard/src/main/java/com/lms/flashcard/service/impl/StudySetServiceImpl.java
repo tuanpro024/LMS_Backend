@@ -29,6 +29,7 @@ public class StudySetServiceImpl implements StudySetService {
     private final StudySetRepository studySetRepository;
     private final StudySetMapper studySetMapper;
     private final CardMapper cardMapper;
+    private final com.lms.flashcard.repository.CardRepository cardRepository;
 
     @Override
     public StudySetResponse createStudySet(CreateStudySetRequest request, String userId) {
@@ -60,7 +61,9 @@ public class StudySetServiceImpl implements StudySetService {
             throw new ApiException(ErrorCode.E240, "No permission to view this study set");
         }
 
-        return studySetMapper.toResponse(studySet);
+        StudySetResponse response = studySetMapper.toResponse(studySet);
+        calculateAndSetProgress(response, studySet);
+        return response;
     }
 
     @Override
@@ -157,5 +160,33 @@ public class StudySetServiceImpl implements StudySetService {
         }
 
         studySetRepository.delete(studySet);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.lms.flashcard.dto.response.CardResponse> getCardsByStatus(String studySetId,
+            com.lms.flashcard.entity.enums.CardStatus status) {
+        List<Card> cards = cardRepository.findByStudySetIdAndStatus(studySetId, status);
+        return cardMapper.toResponseList(cards);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long getCountByStatus(String studySetId, com.lms.flashcard.entity.enums.CardStatus status) {
+        return cardRepository.countByStudySetIdAndStatus(studySetId, status);
+    }
+
+    private void calculateAndSetProgress(StudySetResponse response, StudySet studySet) {
+        if (studySet.getCards() == null || studySet.getCards().isEmpty()) {
+            response.setProgress(0);
+            return;
+        }
+        long total = studySet.getCards().size();
+        long learned = studySet.getCards().stream()
+                .filter(card -> card.getStatus() == com.lms.flashcard.entity.enums.CardStatus.LEARNED)
+                .count();
+        double progress = ((double) learned / total) * 100;
+        // Round to 1 decimal place if needed, or leave as double
+        response.setProgress(progress);
     }
 }

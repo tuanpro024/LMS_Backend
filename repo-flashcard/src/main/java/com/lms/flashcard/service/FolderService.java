@@ -21,5 +21,7 @@ public interface FolderService {
 
     FolderResponse removeStudySetFromFolder(String folderId, String studySetId, String userId);
 
+    FolderResponse updateFolderPrivacy(String folderId, boolean isPrivate, String userId);
+
     void deleteFolder(String id, String userId);
 }

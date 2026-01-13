@@ -21,4 +21,10 @@ public interface StudySetService {
     StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId);
 
     void deleteStudySet(String id, String userId);
+
+    // Statistics
+    List<com.lms.flashcard.dto.response.CardResponse> getCardsByStatus(String studySetId,
+            com.lms.flashcard.entity.enums.CardStatus status);
+
+    long getCountByStatus(String studySetId, com.lms.flashcard.entity.enums.CardStatus status);
 }

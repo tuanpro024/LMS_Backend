@@ -21,6 +21,7 @@ public class CardResponse {
     private String pinyin;
     private String pronunciation;
     private String exampleSentence;
+    private String status;
     private Instant createdAt;
     private Instant updatedAt;
 }

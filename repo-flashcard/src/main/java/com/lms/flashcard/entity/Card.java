@@ -37,4 +37,9 @@ public class Card extends BaseEntity {
     @JoinColumn(name = "study_set_id", nullable = false)
     private StudySet studySet;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private com.lms.flashcard.entity.enums.CardStatus status = com.lms.flashcard.entity.enums.CardStatus.NOT_LEARNED;
+
 }

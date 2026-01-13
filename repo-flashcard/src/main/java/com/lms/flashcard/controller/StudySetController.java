@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import com.lms.flashcard.dto.response.CardResponse;
+import com.lms.flashcard.entity.enums.CardStatus;
 import java.util.List;
 
 @RestController
@@ -91,5 +93,29 @@ public class StudySetController {
         studySetService.deleteStudySet(id, principal.userId());
 
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @GetMapping("/{id}/cards/learned")
+    public ResponseEntity<ApiResponse<List<CardResponse>>> getLearnedCards(@PathVariable String id) {
+        List<CardResponse> response = studySetService.getCardsByStatus(id, CardStatus.LEARNED);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/{id}/cards/unlearned")
+    public ResponseEntity<ApiResponse<List<CardResponse>>> getUnlearnedCards(@PathVariable String id) {
+        List<CardResponse> response = studySetService.getCardsByStatus(id, CardStatus.NOT_LEARNED);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/{id}/count/learned")
+    public ResponseEntity<ApiResponse<Long>> getLearnedCount(@PathVariable String id) {
+        long count = studySetService.getCountByStatus(id, CardStatus.LEARNED);
+        return ResponseEntity.ok(ApiResponse.ok(count));
+    }
+
+    @GetMapping("/{id}/count/unlearned")
+    public ResponseEntity<ApiResponse<Long>> getUnlearnedCount(@PathVariable String id) {
+        long count = studySetService.getCountByStatus(id, CardStatus.NOT_LEARNED);
+        return ResponseEntity.ok(ApiResponse.ok(count));
     }
 }

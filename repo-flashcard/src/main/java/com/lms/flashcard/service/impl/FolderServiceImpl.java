@@ -165,6 +165,21 @@ public class FolderServiceImpl implements FolderService {
     }
 
     @Override
+    public FolderResponse updateFolderPrivacy(String folderId, boolean isPrivate, String userId) {
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        // Check if user owns the folder
+        if (!folder.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to update this folder");
+        }
+
+        folder.setPrivate(isPrivate);
+        Folder updated = folderRepository.save(folder);
+        return folderMapper.toResponse(updated);
+    }
+
+    @Override
     public void deleteFolder(String id, String userId) {
         Folder folder = folderRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));

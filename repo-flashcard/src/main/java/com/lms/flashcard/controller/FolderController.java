@@ -115,6 +115,18 @@ public class FolderController {
                 .body(ApiResponse.ok(response));
     }
 
+    @PatchMapping("/{id}/privacy")
+    public ResponseEntity<ApiResponse<FolderResponse>> updateFolderPrivacy(
+            @PathVariable String id,
+            @RequestParam boolean isPrivate,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        FolderResponse response = folderService.updateFolderPrivacy(id, isPrivate, principal.userId());
+
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteFolder(
             @PathVariable String id,

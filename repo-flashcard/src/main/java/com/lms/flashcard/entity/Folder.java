@@ -31,12 +31,8 @@ public class Folder extends BaseEntity {
     private String userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_folder_id")
-    private Folder parentFolder;
-
-    @OneToMany(mappedBy = "parentFolder", cascade = CascadeType.ALL)
-    @Builder.Default
-    private List<Folder> subfolders = new ArrayList<>();
+    @JoinColumn(name = "package_id")
+    private Package packageEntity;
 
     @ManyToMany
     @JoinTable(name = "folder_study_sets", joinColumns = @JoinColumn(name = "folder_id"), inverseJoinColumns = @JoinColumn(name = "study_set_id"))
@@ -54,13 +50,4 @@ public class Folder extends BaseEntity {
         studySet.getFolders().remove(this);
     }
 
-    public void addSubfolder(Folder subfolder) {
-        subfolders.add(subfolder);
-        subfolder.setParentFolder(this);
-    }
-
-    public void removeSubfolder(Folder subfolder) {
-        subfolders.remove(subfolder);
-        subfolder.setParentFolder(null);
-    }
 }

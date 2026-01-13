@@ -53,7 +53,6 @@ public class FolderController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<FolderResponse>>> getFolders(
             @RequestParam(required = false) String userId,
-            @RequestParam(required = false, defaultValue = "false") boolean rootOnly,
             Authentication authentication) {
 
         String currentUserId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
@@ -62,9 +61,7 @@ public class FolderController {
 
         List<FolderResponse> response;
 
-        if (rootOnly && currentUserId != null) {
-            response = folderService.getRootFoldersByUserId(currentUserId);
-        } else if (userId != null) {
+        if (userId != null) {
             response = folderService.getFoldersByUserId(userId, currentUserId);
         } else {
             // Return public folders + current user's private folders
@@ -116,6 +113,18 @@ public class FolderController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(response));
+    }
+
+    @PatchMapping("/{id}/privacy")
+    public ResponseEntity<ApiResponse<FolderResponse>> updateFolderPrivacy(
+            @PathVariable String id,
+            @RequestParam boolean isPrivate,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        FolderResponse response = folderService.updateFolderPrivacy(id, isPrivate, principal.userId());
+
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @DeleteMapping("/{id}")

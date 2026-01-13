@@ -14,16 +14,14 @@ import com.lms.identity.entity.UserStatus;
 import com.lms.identity.mapper.UserMapper;
 import com.lms.identity.repository.RoleRepository;
 import com.lms.identity.repository.UserRepository;
+import com.lms.identity.repository.UserSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.jpa.domain.Specification;
 import com.lms.identity.service.AdminService;
 
 import java.util.HashSet;
@@ -39,29 +37,25 @@ public class AdminServiceImpl implements AdminService {
     private final RoleRepository roleRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
-    private final MongoTemplate mongoTemplate;
 
     @Transactional(readOnly = true)
     @Override
     public AdminUserPageResponse listUsers(AdminUserFilterRequest filter) {
         PageRequest pageRequest = PageRequest.of(filter.getPage(), filter.getSize());
-        Query query = buildQuery(filter);
-        
-        long total = mongoTemplate.count(query, User.class);
-        query.with(pageRequest);
-        List<User> users = mongoTemplate.find(query, User.class);
-        
-        List<AdminUserResponse> items = users.stream()
+        Specification<User> spec = UserSpecification.buildSpecification(filter);
+
+        Page<User> userPage = userRepository.findAll(spec, pageRequest);
+
+        List<AdminUserResponse> items = userPage.getContent().stream()
                 .map(userMapper::toAdmin)
                 .toList();
-        
-        Page<User> result = new PageImpl<>(users, pageRequest, total);
+
         return AdminUserPageResponse.builder()
                 .items(items)
-                .totalElements(result.getTotalElements())
-                .totalPages(result.getTotalPages())
-                .page(result.getNumber())
-                .size(result.getSize())
+                .totalElements(userPage.getTotalElements())
+                .totalPages(userPage.getTotalPages())
+                .page(userPage.getNumber())
+                .size(userPage.getSize())
                 .build();
     }
 
@@ -171,15 +165,13 @@ public class AdminServiceImpl implements AdminService {
                     if (!isValidRoleName(name)) {
                         throw new ApiException(
                                 ErrorCode.E221,
-                                "Role not found data: " + name
-                        );
+                                "Role not found data: " + name);
                     }
 
                     return roleRepository.findByName(RoleName.valueOf(name))
                             .orElseThrow(() -> new ApiException(
                                     ErrorCode.E221,
-                                    "Role not found data: " + name
-                            ));
+                                    "Role not found data: " + name));
                 })
                 .collect(Collectors.toSet());
     }
@@ -191,28 +183,5 @@ public class AdminServiceImpl implements AdminService {
         } catch (IllegalArgumentException ex) {
             return false;
         }
-    }
-
-    private Query buildQuery(AdminUserFilterRequest filter) {
-        Query query = new Query();
-        Criteria criteria = new Criteria();
-        
-        // Always exclude deleted users
-        criteria.and("deleted").is(false);
-        
-        if (filter.getEmailContains() != null && !filter.getEmailContains().isBlank()) {
-            criteria.and("email").regex(filter.getEmailContains(), "i");
-        }
-        
-        if (filter.getStatus() != null) {
-            criteria.and("status").is(filter.getStatus());
-        }
-        
-        if (filter.getRole() != null && !filter.getRole().isBlank()) {
-            criteria.and("roles.name").is(filter.getRole());
-        }
-        
-        query.addCriteria(criteria);
-        return query;
     }
 }

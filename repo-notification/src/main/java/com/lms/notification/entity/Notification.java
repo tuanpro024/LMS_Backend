@@ -28,7 +28,7 @@ import java.time.Instant;
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_notification_dedupe", columnNames = "dedupeKey")
         })
-public class Notification extends BaseEntityLongId {
+public class Notification extends BaseEntity {
 
     @Column(nullable = false, length = 26)
     private String userId;

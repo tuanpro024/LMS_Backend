@@ -8,6 +8,7 @@ import com.lms.flashcard.entity.Folder;
 import com.lms.flashcard.entity.StudySet;
 import com.lms.flashcard.mapper.FolderMapper;
 import com.lms.flashcard.repository.FolderRepository;
+import com.lms.flashcard.repository.PackageRepository;
 import com.lms.flashcard.repository.StudySetRepository;
 import com.lms.flashcard.service.FolderService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class FolderServiceImpl implements FolderService {
 
     private final FolderRepository folderRepository;
     private final StudySetRepository studySetRepository;
+    private final PackageRepository packageRepository;
     private final FolderMapper folderMapper;
 
     @Override
@@ -34,17 +36,30 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderMapper.toEntity(request);
         folder.setUserId(userId);
 
-        // Set parent folder if provided
-        if (request.getParentFolderId() != null) {
-            Folder parentFolder = folderRepository.findById(request.getParentFolderId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Parent folder not found"));
+        // Set package if provided
+        if (request.getPackageId() != null) {
+            com.lms.flashcard.entity.Package packageEntity = packageRepository.findById(request.getPackageId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
-            // Check if user owns the parent folder
-            if (!parentFolder.getUserId().equals(userId)) {
-                throw new ApiException(ErrorCode.E240, "No permission to add subfolder to this folder");
+            // Check if user owns the package
+            if (!packageEntity.getUserId().equals(userId)) {
+                throw new ApiException(ErrorCode.E240, "No permission to assign folder to this package");
             }
 
-            folder.setParentFolder(parentFolder);
+            folder.setPackageEntity(packageEntity);
+        }
+
+        // Set package if provided
+        if (request.getPackageId() != null) {
+            com.lms.flashcard.entity.Package packageEntity = packageRepository.findById(request.getPackageId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
+
+            // Check if user owns the package
+            if (!packageEntity.getUserId().equals(userId)) {
+                throw new ApiException(ErrorCode.E240, "No permission to assign folder to this package");
+            }
+
+            folder.setPackageEntity(packageEntity);
         }
 
         Folder saved = folderRepository.save(folder);
@@ -107,13 +122,6 @@ public class FolderServiceImpl implements FolderService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<FolderResponse> getRootFoldersByUserId(String userId) {
-        List<Folder> folders = folderRepository.findByUserIdAndParentFolderIsNull(userId);
-        return folderMapper.toResponseList(folders);
-    }
-
-    @Override
     public FolderResponse addStudySetToFolder(String folderId, String studySetId, String userId) {
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
@@ -153,6 +161,21 @@ public class FolderServiceImpl implements FolderService {
         folder.removeStudySet(studySet);
         Folder updated = folderRepository.save(folder);
 
+        return folderMapper.toResponse(updated);
+    }
+
+    @Override
+    public FolderResponse updateFolderPrivacy(String folderId, boolean isPrivate, String userId) {
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        // Check if user owns the folder
+        if (!folder.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to update this folder");
+        }
+
+        folder.setPrivate(isPrivate);
+        Folder updated = folderRepository.save(folder);
         return folderMapper.toResponse(updated);
     }
 

@@ -1,5 +1,6 @@
 package com.lms.flashcard.dto.response;
 
+import com.lms.flashcard.entity.TypeName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,16 +13,16 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FolderResponse {
+public class PackageResponse {
 
     private String id;
     private String name;
+    private String subjectCode;
+    private String slot;
+    private TypeName type;
     private String description;
-    private String color;
-    private boolean isPrivate;
     private String userId;
-    private String packageId;
-    private List<StudySetResponse> studySets;
+    private List<FolderResponse> folders;
     private Instant createdAt;
     private Instant updatedAt;
 }

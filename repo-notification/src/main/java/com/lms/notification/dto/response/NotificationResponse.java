@@ -9,7 +9,7 @@ import java.util.Map;
 @Getter
 @Builder
 public class NotificationResponse {
-    private final Long id;
+    private final String id;
     private final String topic;
     private final String title;
     private final String message;

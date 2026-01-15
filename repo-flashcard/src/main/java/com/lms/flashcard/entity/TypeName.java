@@ -2,9 +2,14 @@ package com.lms.flashcard.entity;
 
 public enum TypeName {
     /**
+     * tu do
+     */
+    FREE,
+
+    /**
      * on luyen
      */
-    PRACTICE,
+    LEARNING_PATH,
     /**
      * video khoa hoc
      */

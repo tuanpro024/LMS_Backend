@@ -20,7 +20,7 @@ public class FolderResponse {
     private String color;
     private boolean isPrivate;
     private String userId;
-    private String packageId;
+    private String slotId;
     private List<StudySetResponse> studySets;
     private Instant createdAt;
     private Instant updatedAt;

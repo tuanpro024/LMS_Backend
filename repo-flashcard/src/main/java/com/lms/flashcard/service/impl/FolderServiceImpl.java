@@ -8,7 +8,6 @@ import com.lms.flashcard.entity.Folder;
 import com.lms.flashcard.entity.StudySet;
 import com.lms.flashcard.mapper.FolderMapper;
 import com.lms.flashcard.repository.FolderRepository;
-import com.lms.flashcard.repository.PackageRepository;
 import com.lms.flashcard.repository.StudySetRepository;
 import com.lms.flashcard.service.FolderService;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ public class FolderServiceImpl implements FolderService {
 
     private final FolderRepository folderRepository;
     private final StudySetRepository studySetRepository;
-    private final PackageRepository packageRepository;
     private final FolderMapper folderMapper;
 
     @Override
@@ -35,19 +33,6 @@ public class FolderServiceImpl implements FolderService {
 
         Folder folder = folderMapper.toEntity(request);
         folder.setUserId(userId);
-
-        // Set package if provided
-        if (request.getPackageId() != null) {
-            com.lms.flashcard.entity.Package packageEntity = packageRepository.findById(request.getPackageId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
-
-            // Check if user owns the package
-            if (!packageEntity.getUserId().equals(userId)) {
-                throw new ApiException(ErrorCode.E240, "No permission to assign folder to this package");
-            }
-
-            folder.setPackageEntity(packageEntity);
-        }
 
         Folder saved = folderRepository.save(folder);
         return folderMapper.toResponse(saved);

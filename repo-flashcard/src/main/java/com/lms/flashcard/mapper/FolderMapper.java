@@ -13,10 +13,10 @@ public interface FolderMapper {
 
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "studySets", ignore = true)
-    @Mapping(target = "packageEntity", ignore = true)
+    @Mapping(target = "slot", ignore = true)
     Folder toEntity(CreateFolderRequest request);
 
-    @Mapping(target = "packageId", expression = "java(folder.getPackageEntity() != null ? folder.getPackageEntity().getId() : null)")
+    @Mapping(target = "slotId", expression = "java(folder.getSlot() != null ? folder.getSlot().getId() : null)")
     FolderResponse toResponse(Folder folder);
 
     List<FolderResponse> toResponseList(List<Folder> folders);

@@ -24,6 +24,8 @@ public class Card extends BaseEntity {
 
     private String imageUrl;
 
+    private String audio;
+
     @Column(columnDefinition = "TEXT")
     private String pinyin;
 

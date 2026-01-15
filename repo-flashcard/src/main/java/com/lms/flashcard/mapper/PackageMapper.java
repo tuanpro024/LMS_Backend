@@ -9,11 +9,11 @@ import org.mapstruct.Mapping;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = { FolderMapper.class })
+@Mapper(componentModel = "spring", uses = { SubjectMapper.class })
 public interface PackageMapper {
 
     @Mapping(target = "userId", ignore = true)
-    @Mapping(target = "folders", ignore = true)
+    @Mapping(target = "subjects", ignore = true)
     @Mapping(target = "type", ignore = true)
     Package toEntity(CreatePackageRequest request);
 

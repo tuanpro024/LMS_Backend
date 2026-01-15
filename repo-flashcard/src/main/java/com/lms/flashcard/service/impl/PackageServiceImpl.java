@@ -34,7 +34,7 @@ public class PackageServiceImpl implements PackageService {
 
     @Override
     public PackageResponse createPackage(CreatePackageRequest request, String userId) {
-        log.info("Creating package for user: {} with subject code: {}", userId, request.getSubjectCode());
+        log.info("Creating package for user: {}", userId);
 
         // Fetch Type entity from TypeRepository
         Type type = typeRepository.findByName(request.getType())
@@ -75,20 +75,6 @@ public class PackageServiceImpl implements PackageService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PackageResponse> getPackagesBySubjectCode(String subjectCode, String currentUserId) {
-        List<Package> packages;
-
-        if (currentUserId != null) {
-            packages = packageRepository.findBySubjectCodeAndUserId(subjectCode, currentUserId);
-        } else {
-            packages = packageRepository.findBySubjectCode(subjectCode);
-        }
-
-        return packageMapper.toResponseList(packages);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<PackageResponse> getPackagesByType(TypeName typeName, String currentUserId) {
         List<Package> packages;
 
@@ -119,12 +105,6 @@ public class PackageServiceImpl implements PackageService {
         if (request.getName() != null) {
             packageEntity.setName(request.getName());
         }
-        if (request.getSubjectCode() != null) {
-            packageEntity.setSubjectCode(request.getSubjectCode());
-        }
-        if (request.getSlot() != null) {
-            packageEntity.setSlot(request.getSlot());
-        }
         if (request.getType() != null) {
             Type type = typeRepository.findByName(request.getType())
                     .orElseThrow(() -> new ApiException(ErrorCode.E227, "Type not found: " + request.getType()));
@@ -148,11 +128,7 @@ public class PackageServiceImpl implements PackageService {
             throw new ApiException(ErrorCode.E240, "No permission to delete this package");
         }
 
-        // Remove package association from all folders
-        for (Folder folder : packageEntity.getFolders()) {
-            folder.setPackageEntity(null);
-        }
-
+        // Cascade delete will handle subjects and their slots automatically
         packageRepository.delete(packageEntity);
     }
 

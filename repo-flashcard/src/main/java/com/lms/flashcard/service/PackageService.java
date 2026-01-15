@@ -15,8 +15,6 @@ public interface PackageService {
 
     List<PackageResponse> getAllPackages(String currentUserId);
 
-    List<PackageResponse> getPackagesBySubjectCode(String subjectCode, String currentUserId);
-
     List<PackageResponse> getPackagesByType(TypeName type, String currentUserId);
 
     PackageResponse updatePackage(String id, UpdatePackageRequest request, String userId);

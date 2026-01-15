@@ -8,20 +8,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "packages")
+@Table(name = "subjects")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Package extends BaseEntity {
+public class Subject extends BaseEntity {
 
     @Column(nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "type_id", nullable = false)
-    private Type type;
+    @Column(nullable = false)
+    private String code;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -29,32 +28,36 @@ public class Package extends BaseEntity {
     @Column(nullable = false, length = 26)
     private String userId;
 
-    @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Subject> subjects = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "package_id", nullable = false)
+    private Package packageEntity;
 
-    @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Slot> slots = new ArrayList<>();
+
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.PERSIST)
     @Builder.Default
     private List<Folder> folders = new ArrayList<>();
 
     // Helper methods
-    public void addSubject(Subject subject) {
-        subjects.add(subject);
-        subject.setPackageEntity(this);
+    public void addSlot(Slot slot) {
+        slots.add(slot);
+        slot.setSubject(this);
     }
 
-    public void removeSubject(Subject subject) {
-        subjects.remove(subject);
-        subject.setPackageEntity(null);
+    public void removeSlot(Slot slot) {
+        slots.remove(slot);
+        slot.setSubject(null);
     }
 
     public void addFolder(Folder folder) {
         folders.add(folder);
-        folder.setPackageEntity(this);
+        folder.setSubject(this);
     }
 
     public void removeFolder(Folder folder) {
         folders.remove(folder);
-        folder.setPackageEntity(null);
+        folder.setSubject(null);
     }
 }

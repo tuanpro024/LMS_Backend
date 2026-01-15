@@ -1,6 +1,7 @@
 package com.lms.flashcard.entity;
 
 import com.lms.common.jpa.BaseEntity;
+import com.lms.flashcard.entity.enums.CardStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,7 +35,6 @@ public class Card extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String exampleSentence;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "study_set_id", nullable = false)
     private StudySet studySet;
@@ -42,6 +42,6 @@ public class Card extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private com.lms.flashcard.entity.enums.CardStatus status = com.lms.flashcard.entity.enums.CardStatus.NOT_LEARNED;
+    private CardStatus status = CardStatus.NOT_LEARNED;
 
 }

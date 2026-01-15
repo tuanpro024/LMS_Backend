@@ -49,19 +49,6 @@ public class FolderServiceImpl implements FolderService {
             folder.setPackageEntity(packageEntity);
         }
 
-        // Set package if provided
-        if (request.getPackageId() != null) {
-            com.lms.flashcard.entity.Package packageEntity = packageRepository.findById(request.getPackageId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
-
-            // Check if user owns the package
-            if (!packageEntity.getUserId().equals(userId)) {
-                throw new ApiException(ErrorCode.E240, "No permission to assign folder to this package");
-            }
-
-            folder.setPackageEntity(packageEntity);
-        }
-
         Folder saved = folderRepository.save(folder);
         return folderMapper.toResponse(saved);
     }

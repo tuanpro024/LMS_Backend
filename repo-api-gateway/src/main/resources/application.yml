@@ -68,6 +68,13 @@ spring:
             - Path=${config.api-prefix}/flashcard/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: dictionary
+          uri: lb://REPO-DICTIONARY
+          predicates:
+            - Path=${config.api-prefix}/dictionary/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
+
   main:
     web-application-type: reactive
 

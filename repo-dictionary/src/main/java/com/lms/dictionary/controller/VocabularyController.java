@@ -1,0 +1,55 @@
+package com.lms.dictionary.controller;
+
+import com.lms.common.dto.PageResponse;
+import com.lms.common.dto.PaginationRequest;
+import com.lms.common.dto.ApiResponse;
+import com.lms.dictionary.dto.request.CreateVocabularyRequest;
+import com.lms.dictionary.dto.request.UpdateVocabularyRequest;
+import com.lms.dictionary.dto.request.VocabularySearchRequest;
+import com.lms.dictionary.dto.response.VocabularyBasicResponse;
+import com.lms.dictionary.dto.response.VocabularyResponse;
+import com.lms.dictionary.service.VocabularyService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/vocabulary")
+@RequiredArgsConstructor
+public class VocabularyController {
+
+    private final VocabularyService vocabularyService;
+
+    @GetMapping("/{id}")
+    public ApiResponse<VocabularyResponse> getVocabularyById(@PathVariable Long id) {
+        return ApiResponse.ok(vocabularyService.getVocabularyById(id));
+    }
+
+    @PostMapping
+    public ApiResponse<VocabularyResponse> createVocabulary(@Valid @RequestBody CreateVocabularyRequest request) {
+        return ApiResponse.ok(vocabularyService.createVocabulary(request));
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<VocabularyResponse> updateVocabulary(@PathVariable Long id, @RequestBody @Valid UpdateVocabularyRequest request) {
+        return ApiResponse.ok(vocabularyService.updateVocabulary(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteVocabulary(@PathVariable Long id) {
+        vocabularyService.deleteVocabulary(id);
+        return ApiResponse.ok(null);
+    }
+
+    @GetMapping("/search")
+    public ApiResponse<PageResponse<VocabularyBasicResponse>> search(@Valid VocabularySearchRequest request) {
+        return ApiResponse.ok(vocabularyService.search(request));
+    }
+
+    @GetMapping("/suggestions")
+    public ApiResponse<PageResponse<VocabularyBasicResponse>> getSuggestions(@Valid PaginationRequest request) {
+        return ApiResponse.ok(vocabularyService.getSuggestions(request));
+    }
+
+
+}

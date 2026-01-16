@@ -218,7 +218,8 @@ public class VocabularyServiceImpl implements VocabularyService {
             throw new ApiException(ErrorCode.E227, "Cannot delete vocabulary because it is used as a component in other vocabularies");
         }
 
-        vocabularyRepository.deleteById(id);
+        vocabulary.setDeleted(true);
+        vocabularyRepository.save(vocabulary);
     }
 
     @Override

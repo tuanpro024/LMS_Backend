@@ -23,8 +23,9 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
            "AND v.deleted = false")
     Page<Vocabulary> searchByQuery(@Param("keySearch") String keySearch, @Param("isSingleVocab") Boolean isSingleVocab, Pageable pageable);
 
-    @Query("SELECT v FROM Vocabulary v WHERE v.deleted = false ORDER BY v.updatedAt DESC")
+    @Query("SELECT v FROM Vocabulary v WHERE v.deleted = false ORDER BY RAND()")
     Page<Vocabulary> findSuggestions(Pageable pageable);
+
 
     Optional<Vocabulary> findByHanziAndPinyinAndDeletedFalse(String hanzi, String pinyin);
     

@@ -18,7 +18,7 @@ spring:
     open-in-view: false
 
 server:
-  port: 8083
+  port: 8085
 
 security:
   jwt:

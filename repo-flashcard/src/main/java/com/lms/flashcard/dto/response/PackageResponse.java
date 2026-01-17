@@ -21,6 +21,7 @@ public class PackageResponse {
     private String description;
     private String userId;
     private List<SubjectResponse> subjects;
+    private List<FolderResponse> folders;
     private Instant createdAt;
     private Instant updatedAt;
 }

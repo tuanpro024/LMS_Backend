@@ -3,6 +3,7 @@ package com.lms.flashcard.controller;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.flashcard.dto.request.CreateFolderRequest;
+import com.lms.flashcard.dto.request.UpdateFolderRequest;
 import com.lms.flashcard.dto.response.ExcelImportResponse;
 import com.lms.flashcard.dto.response.FolderResponse;
 import com.lms.flashcard.service.ExcelImportService;
@@ -67,6 +68,18 @@ public class FolderController {
             // Return public folders + current user's private folders
             response = folderService.getAccessibleFolders(currentUserId);
         }
+
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<FolderResponse>> updateFolder(
+            @PathVariable String id,
+            @RequestBody @Valid UpdateFolderRequest request,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        FolderResponse response = folderService.updateFolder(id, request, principal.userId());
 
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

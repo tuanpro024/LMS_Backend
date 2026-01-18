@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -24,6 +25,12 @@ import java.util.List;
 public class PackageController {
 
     private final PackageService packageService;
+
+    @GetMapping("/types")
+    public ResponseEntity<ApiResponse<List<TypeName>>> getPackageTypes() {
+        List<TypeName> types = Arrays.asList(TypeName.values());
+        return ResponseEntity.ok(ApiResponse.ok(types));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(

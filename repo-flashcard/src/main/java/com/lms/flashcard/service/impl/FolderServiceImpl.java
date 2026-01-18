@@ -3,6 +3,7 @@ package com.lms.flashcard.service.impl;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.flashcard.dto.request.CreateFolderRequest;
+import com.lms.flashcard.dto.request.UpdateFolderRequest;
 import com.lms.flashcard.dto.response.FolderResponse;
 import com.lms.flashcard.entity.Folder;
 import com.lms.flashcard.entity.StudySet;
@@ -50,6 +51,33 @@ public class FolderServiceImpl implements FolderService {
         }
 
         return folderMapper.toResponse(folder);
+    }
+
+    @Override
+    public FolderResponse updateFolder(String id, UpdateFolderRequest request, String userId) {
+        log.info("Updating folder {} for user: {}", id, userId);
+
+        Folder folder = folderRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        // Check ownership
+        if (!folder.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to update this folder");
+        }
+
+        // Update fields if provided
+        if (request.getName() != null) {
+            folder.setName(request.getName());
+        }
+        if (request.getDescription() != null) {
+            folder.setDescription(request.getDescription());
+        }
+        if (request.getColor() != null) {
+            folder.setColor(request.getColor());
+        }
+
+        Folder updated = folderRepository.save(folder);
+        return folderMapper.toResponse(updated);
     }
 
     @Override

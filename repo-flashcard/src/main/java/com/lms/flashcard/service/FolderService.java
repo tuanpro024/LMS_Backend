@@ -1,6 +1,7 @@
 package com.lms.flashcard.service;
 
 import com.lms.flashcard.dto.request.CreateFolderRequest;
+import com.lms.flashcard.dto.request.UpdateFolderRequest;
 import com.lms.flashcard.dto.response.FolderResponse;
 
 import java.util.List;
@@ -10,6 +11,8 @@ public interface FolderService {
     FolderResponse createFolder(CreateFolderRequest request, String userId);
 
     FolderResponse getFolderById(String id, String currentUserId);
+
+    FolderResponse updateFolder(String id, UpdateFolderRequest request, String userId);
 
     List<FolderResponse> getAllPublicFolders();
 

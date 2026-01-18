@@ -1,5 +1,6 @@
 package com.lms.writing.dto.request;
 
+import com.lms.writing.entity.enums.WordStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,11 +18,25 @@ public class UpdateWordRequest {
 
     private String meaning;
 
-    private String imageUrl;
+    private Integer wordIndex;
+
+    private String sinoVn;
+
+    private String wordType;
+
+    private String hskLevel;
 
     private String example;
 
     private String examplePinyin;
 
     private String exampleMeaning;
+
+    private String sinoOrigin;
+
+    private String imageWord;
+
+    private String imageOrigin;
+
+    private WordStatus status;
 }

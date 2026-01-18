@@ -16,4 +16,7 @@ public interface StudySetRepository extends JpaRepository<StudySet, String> {
 
     @Query("SELECT s FROM StudySet s WHERE s.userId = :userId OR s.isPrivate = false")
     List<StudySet> findByUserIdOrIsPrivateFalse(@Param("userId") String userId);
+
+    @Query("SELECT s FROM StudySet s WHERE (s.isPrivate = false OR s.userId = :userId) AND (LOWER(s.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(s.description) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<StudySet> searchByTitleOrDescription(@Param("query") String query, @Param("userId") String userId);
 }

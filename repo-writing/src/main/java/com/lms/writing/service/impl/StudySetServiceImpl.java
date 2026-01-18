@@ -121,6 +121,16 @@ public class StudySetServiceImpl implements StudySetService {
         // Update using mapper
         studySetMapper.updateEntity(studySet, request);
 
+        // Manually update words if provided
+        if (request.getWords() != null) {
+            studySet.getWords().clear();
+
+            for (CreateWordRequest wordRequest : request.getWords()) {
+                Word word = wordMapper.toEntity(wordRequest);
+                studySet.addWord(word);
+            }
+        }
+
         StudySet updated = studySetRepository.save(studySet);
         return studySetMapper.toResponse(updated);
     }

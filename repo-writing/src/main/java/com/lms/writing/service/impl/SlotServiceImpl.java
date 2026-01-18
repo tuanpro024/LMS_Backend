@@ -61,7 +61,7 @@ public class SlotServiceImpl implements SlotService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SlotResponse> getAllSlots(String userId) {
+    public List<SlotResponse> getAllSlots() {
         List<Slot> slots = slotRepository.findAll();
         return slotMapper.toResponseList(slots);
     }

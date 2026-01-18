@@ -7,11 +7,11 @@ public interface SubjectService {
     com.lms.flashcard.dto.response.SubjectResponse createSubject(
             com.lms.flashcard.dto.request.CreateSubjectRequest request, String userId);
 
-    SubjectResponse getSubjectById(String id, String userId);
+    SubjectResponse getSubjectById(String id);
 
-    java.util.List<SubjectResponse> getSubjectsByPackageId(String packageId, String userId);
+    java.util.List<SubjectResponse> getSubjectsByPackageId(String packageId);
 
-    java.util.List<SubjectResponse> getAllSubjects(String userId);
+    java.util.List<SubjectResponse> getAllSubjects();
 
     SubjectResponse updateSubject(String id, com.lms.flashcard.dto.request.UpdateSubjectRequest request, String userId);
 

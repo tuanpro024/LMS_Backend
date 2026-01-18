@@ -49,8 +49,8 @@ public class SlotServiceImpl implements SlotService {
 
     @Override
     @Transactional(readOnly = true)
-    public SlotResponse getSlotById(String id, String userId) {
-        Slot slot = slotRepository.findByIdAndUserId(id, userId)
+    public SlotResponse getSlotById(String id) {
+        Slot slot = slotRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Slot not found"));
 
         return slotMapper.toResponse(slot);
@@ -58,15 +58,15 @@ public class SlotServiceImpl implements SlotService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SlotResponse> getSlotsBySubjectId(String subjectId, String userId) {
-        List<Slot> slots = slotRepository.findBySubjectIdAndUserId(subjectId, userId);
+    public List<SlotResponse> getSlotsBySubjectId(String subjectId) {
+        List<Slot> slots = slotRepository.findBySubjectId(subjectId);
         return slotMapper.toResponseList(slots);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<SlotResponse> getAllSlots(String userId) {
-        List<Slot> slots = slotRepository.findByUserId(userId);
+    public List<SlotResponse> getAllSlots() {
+        List<Slot> slots = slotRepository.findAll();
         return slotMapper.toResponseList(slots);
     }
 

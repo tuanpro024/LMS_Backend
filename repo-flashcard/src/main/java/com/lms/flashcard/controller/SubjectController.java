@@ -36,27 +36,22 @@ public class SubjectController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<SubjectResponse>> getSubjectById(
-            @PathVariable String id,
-            Authentication authentication) {
+            @PathVariable String id) {
 
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        SubjectResponse response = subjectService.getSubjectById(id, principal.userId());
-
+        SubjectResponse response = subjectService.getSubjectById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<SubjectResponse>>> getSubjects(
-            @RequestParam(required = false) String packageId,
-            Authentication authentication) {
+            @RequestParam(required = false) String packageId) {
 
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         List<SubjectResponse> response;
 
         if (packageId != null) {
-            response = subjectService.getSubjectsByPackageId(packageId, principal.userId());
+            response = subjectService.getSubjectsByPackageId(packageId);
         } else {
-            response = subjectService.getAllSubjects(principal.userId());
+            response = subjectService.getAllSubjects();
         }
 
         return ResponseEntity.ok(ApiResponse.ok(response));

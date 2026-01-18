@@ -44,32 +44,22 @@ public class PackageController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PackageResponse>> getPackageById(
-            @PathVariable String id,
-            Authentication authentication) {
+            @PathVariable String id) {
 
-        String userId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        PackageResponse response = packageService.getPackageById(id, userId);
+        PackageResponse response = packageService.getPackageById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getPackages(
-            @RequestParam(required = false) TypeName type,
-            Authentication authentication) {
-
-        String userId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
+            @RequestParam(required = false) TypeName type) {
 
         List<PackageResponse> response;
 
         if (type != null) {
-            response = packageService.getPackagesByType(type, userId);
+            response = packageService.getPackagesByType(type);
         } else {
-            response = packageService.getAllPackages(userId);
+            response = packageService.getAllPackages();
         }
 
         return ResponseEntity.ok(ApiResponse.ok(response));

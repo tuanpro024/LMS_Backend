@@ -44,16 +44,14 @@ public class SubjectController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<SubjectResponse>>> getSubjects(
-            @RequestParam(required = false) String packageId,
-            Authentication authentication) {
+            @RequestParam(required = false) String packageId) {
 
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         List<SubjectResponse> response;
 
         if (packageId != null) {
             response = subjectService.getSubjectsByPackageId(packageId);
         } else {
-            response = subjectService.getAllSubjects(principal.userId());
+            response = subjectService.getAllSubjects();
         }
 
         return ResponseEntity.ok(ApiResponse.ok(response));

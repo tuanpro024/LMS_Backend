@@ -8,7 +8,7 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = { StudySetMapper.class })
 public interface FolderMapper {
 
     @Mapping(target = "packageEntity", ignore = true)
@@ -20,7 +20,6 @@ public interface FolderMapper {
     @Mapping(target = "packageId", source = "packageEntity.id")
     @Mapping(target = "subjectId", source = "subject.id")
     @Mapping(target = "slotId", source = "slot.id")
-    @Mapping(target = "studySets", ignore = true)
     FolderResponse toResponse(Folder folder);
 
     List<FolderResponse> toResponseList(List<Folder> folders);

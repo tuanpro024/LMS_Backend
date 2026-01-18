@@ -23,4 +23,6 @@ public class CreateCardRequest {
     private Integer cardIndex;
 
     private String imageUrl;
+
+    private String audio;
 }

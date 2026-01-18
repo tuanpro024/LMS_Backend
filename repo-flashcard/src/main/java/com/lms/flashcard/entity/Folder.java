@@ -34,6 +34,14 @@ public class Folder extends BaseEntity {
     @JoinColumn(name = "package_id")
     private Package packageEntity;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id")
+    private Subject subject;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "slot_id")
+    private Slot slot;
+
     @ManyToMany
     @JoinTable(name = "folder_study_sets", joinColumns = @JoinColumn(name = "folder_id"), inverseJoinColumns = @JoinColumn(name = "study_set_id"))
     @Builder.Default

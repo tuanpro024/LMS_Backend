@@ -17,11 +17,10 @@ public class PackageResponse {
 
     private String id;
     private String name;
-    private String subjectCode;
-    private String slot;
     private TypeName type;
     private String description;
     private String userId;
+    private List<SubjectResponse> subjects;
     private List<FolderResponse> folders;
     private Instant createdAt;
     private Instant updatedAt;

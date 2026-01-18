@@ -14,10 +14,6 @@ public class UpdatePackageRequest {
 
     private String name;
 
-    private String subjectCode;
-
-    private String slot;
-
     private TypeName type;
 
     private String description;

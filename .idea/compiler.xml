@@ -8,7 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
       </profile>
-      <profile name="Annotation profile for repo-realtime" enabled="true">
+      <profile name="Annotation profile for repo-flashcard" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -22,13 +22,13 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.32/lombok-1.18.32.jar" />
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" />
         </processorPath>
-        <module name="repo-realtime" />
         <module name="repo-flashcard" />
+        <module name="repo-realtime" />
         <module name="repo-eureka" />
         <module name="repo-notification" />
         <module name="repo-api-gateway" />
       </profile>
-      <profile name="Annotation profile for repo-identity-api" enabled="true">
+      <profile name="Annotation profile for repo-writing" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -39,6 +39,7 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" />
         </processorPath>
         <module name="repo-identity" />
+        <module name="repo-writing" />
         <module name="repo-common-framework" />
       </profile>
     </annotationProcessing>
@@ -52,6 +53,7 @@
       <module name="repo-identity" options="-parameters" />
       <module name="repo-notification" options="-parameters" />
       <module name="repo-realtime" options="-parameters" />
+      <module name="repo-writing" options="-parameters" />
     </option>
   </component>
 </project>

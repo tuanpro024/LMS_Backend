@@ -68,6 +68,13 @@ spring:
             - Path=${config.api-prefix}/flashcard/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: writing
+          uri: lb://REPO-WRITING
+          predicates:
+            - Path=${config.api-prefix}/writing/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
+
   main:
     web-application-type: reactive
 

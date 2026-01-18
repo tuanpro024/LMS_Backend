@@ -57,7 +57,6 @@ public class PackageController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getPackages(
-            @RequestParam(required = false) String subjectCode,
             @RequestParam(required = false) TypeName type,
             Authentication authentication) {
 
@@ -67,9 +66,7 @@ public class PackageController {
 
         List<PackageResponse> response;
 
-        if (subjectCode != null) {
-            response = packageService.getPackagesBySubjectCode(subjectCode, userId);
-        } else if (type != null) {
+        if (type != null) {
             response = packageService.getPackagesByType(type, userId);
         } else {
             response = packageService.getAllPackages(userId);

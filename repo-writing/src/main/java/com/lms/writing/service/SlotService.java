@@ -12,7 +12,7 @@ public interface SlotService {
 
     SlotResponse getSlotById(String id);
 
-    List<SlotResponse> getAllSlots(String userId);
+    List<SlotResponse> getAllSlots();
 
     List<SlotResponse> getSlotsBySubjectId(String subjectId);
 

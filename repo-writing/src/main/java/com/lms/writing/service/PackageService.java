@@ -11,11 +11,11 @@ public interface PackageService {
 
     PackageResponse createPackage(CreatePackageRequest request, String userId);
 
-    PackageResponse getPackageById(String id, String currentUserId);
+    PackageResponse getPackageById(String id);
 
-    List<PackageResponse> getAllPackages(String currentUserId);
+    List<PackageResponse> getAllPackages();
 
-    List<PackageResponse> getPackagesByType(TypeName type, String currentUserId);
+    List<PackageResponse> getPackagesByType(TypeName type);
 
     PackageResponse updatePackage(String id, UpdatePackageRequest request, String userId);
 

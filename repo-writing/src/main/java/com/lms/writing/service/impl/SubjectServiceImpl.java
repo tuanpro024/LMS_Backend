@@ -61,7 +61,7 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubjectResponse> getAllSubjects(String userId) {
+    public List<SubjectResponse> getAllSubjects() {
         List<Subject> subjects = subjectRepository.findAll();
         return subjectMapper.toResponseList(subjects);
     }

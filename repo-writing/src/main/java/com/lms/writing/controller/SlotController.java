@@ -44,16 +44,14 @@ public class SlotController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<SlotResponse>>> getSlots(
-            @RequestParam(required = false) String subjectId,
-            Authentication authentication) {
+            @RequestParam(required = false) String subjectId) {
 
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         List<SlotResponse> response;
 
         if (subjectId != null) {
             response = slotService.getSlotsBySubjectId(subjectId);
         } else {
-            response = slotService.getAllSlots(principal.userId());
+            response = slotService.getAllSlots();
         }
 
         return ResponseEntity.ok(ApiResponse.ok(response));

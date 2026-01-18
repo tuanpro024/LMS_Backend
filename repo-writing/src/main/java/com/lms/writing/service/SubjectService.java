@@ -12,7 +12,7 @@ public interface SubjectService {
 
     SubjectResponse getSubjectById(String id);
 
-    List<SubjectResponse> getAllSubjects(String userId);
+    List<SubjectResponse> getAllSubjects();
 
     List<SubjectResponse> getSubjectsByPackageId(String packageId);
 

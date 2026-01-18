@@ -1,6 +1,6 @@
-package com.lms.flashcard.util;
+package com.lms.writing.util;
 
-import com.lms.flashcard.exception.InvalidFileFormatException;
+import com.lms.writing.exception.InvalidFileFormatException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -72,7 +72,7 @@ public class ExcelParser {
         List<ExcelRow> rows = new ArrayList<>();
 
         try (Workbook workbook = new XSSFWorkbook(inputStream)) {
-            Sheet sheet = workbook.getSheetAt(0); // Lấy sheet đầu tiên
+            Sheet sheet = workbook.getSheetAt(0);
 
             int rowNumber = 0;
             for (Row row : sheet) {
@@ -121,7 +121,7 @@ public class ExcelParser {
                 .build()
                 .parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
 
-            int rowNumber = 1; // Bắt đầu từ 1 vì đã skip header
+            int rowNumber = 1;
             for (CSVRecord record : csvParser) {
                 rowNumber++;
 
@@ -164,7 +164,6 @@ public class ExcelParser {
                 if (DateUtil.isCellDateFormatted(cell)) {
                     yield cell.getDateCellValue().toString();
                 } else {
-                    // Convert numeric to string without scientific notation
                     double numericValue = cell.getNumericCellValue();
                     if (numericValue == (long) numericValue) {
                         yield String.valueOf((long) numericValue);

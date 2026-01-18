@@ -1,15 +1,16 @@
-package com.lms.flashcard.service.impl;
+package com.lms.writing.service.impl;
 
-import com.lms.flashcard.dto.response.ExcelImportResponse;
-import com.lms.flashcard.dto.response.ImportWarning;
-import com.lms.flashcard.entity.Card;
-import com.lms.flashcard.entity.Folder;
-import com.lms.flashcard.entity.StudySet;
-import com.lms.flashcard.exception.InvalidFileFormatException;
-import com.lms.flashcard.repository.FolderRepository;
-import com.lms.flashcard.repository.StudySetRepository;
-import com.lms.flashcard.service.ExcelImportService;
-import com.lms.flashcard.util.ExcelParser;
+import com.lms.writing.dto.response.ExcelImportResponse;
+import com.lms.writing.dto.response.ImportWarning;
+import com.lms.writing.entity.Folder;
+import com.lms.writing.entity.StudySet;
+import com.lms.writing.entity.Word;
+import com.lms.writing.exception.InvalidFileFormatException;
+import com.lms.writing.repository.FolderRepository;
+import com.lms.writing.repository.StudySetRepository;
+import com.lms.writing.service.ExcelImportService;
+import com.lms.writing.util.CharacterUtils;
+import com.lms.writing.util.ExcelParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -64,7 +65,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         for (StudySet studySet : result.studySets) {
             StudySet saved = studySetRepository.save(studySet);
             savedStudySets.add(saved);
-            log.debug("Saved study set: {} with {} cards", saved.getTitle(), saved.getCards().size());
+            log.debug("Saved study set: {} with {} words", saved.getTitle(), saved.getWords().size());
         }
 
         // Tạo folder
@@ -83,43 +84,43 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         // Save folder
         Folder savedFolder = folderRepository.save(folder);
 
-        log.info("Import completed. Folder ID: {}, Study Sets: {}, Cards: {}",
-                savedFolder.getId(), result.studySets.size(), result.totalCards);
+        log.info("Import completed. Folder ID: {}, Study Sets: {}, Words: {}",
+                savedFolder.getId(), result.studySets.size(), result.totalWords);
 
         // Build response
         return ExcelImportResponse.builder()
                 .folderId(savedFolder.getId())
                 .folderName(savedFolder.getName())
                 .totalStudySets(result.studySets.size())
-                .totalCards(result.totalCards)
+                .totalWords(result.totalWords)
                 .studySetIds(savedFolder.getStudySets().stream()
                         .map(StudySet::getId)
                         .toList())
                 .warnings(result.warnings)
-                .message(String.format("Successfully imported %d study sets with %d cards",
-                        result.studySets.size(), result.totalCards))
+                .message(String.format("Successfully imported %d study sets with %d words",
+                        result.studySets.size(), result.totalWords))
                 .build();
     }
 
     /**
-     * Process rows và tạo study sets với cards
+     * Process rows và tạo study sets với words
      */
     private ImportResult processRows(List<ExcelParser.ExcelRow> rows, String userId, boolean isPrivate) {
         List<StudySet> studySets = new ArrayList<>();
         List<ImportWarning> warnings = new ArrayList<>();
-        int totalCards = 0;
+        int totalWords = 0;
 
         StudySet currentStudySet = null;
-        int cardIndex = 0;
+        int wordIndex = 0;
 
         for (ExcelParser.ExcelRow row : rows) {
             // Skip empty rows
             if (ExcelParser.isRowEmpty(row)) {
                 // Dòng trống đánh dấu kết thúc study set hiện tại
-                if (currentStudySet != null && !currentStudySet.getCards().isEmpty()) {
+                if (currentStudySet != null && !currentStudySet.getWords().isEmpty()) {
                     studySets.add(currentStudySet);
                     currentStudySet = null;
-                    cardIndex = 0;
+                    wordIndex = 0;
                 }
                 continue;
             }
@@ -127,7 +128,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
             // Nếu cột A có giá trị → Study Set mới
             if (row.getStudySetName() != null && !row.getStudySetName().trim().isEmpty()) {
                 // Save study set cũ nếu có
-                if (currentStudySet != null && !currentStudySet.getCards().isEmpty()) {
+                if (currentStudySet != null && !currentStudySet.getWords().isEmpty()) {
                     studySets.add(currentStudySet);
                 }
 
@@ -137,72 +138,79 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                         .isPrivate(isPrivate)
                         .userId(userId)
                         .build();
-                cardIndex = 0;
+                wordIndex = 0;
 
                 log.debug("Created new study set: {}", row.getStudySetName());
             }
 
-            // Nếu có term (cột B) → tạo card
+            // Nếu có term (cột B) → tạo word
             if (row.getTerm() != null && !row.getTerm().trim().isEmpty()) {
                 if (currentStudySet == null) {
-                    // Card không thuộc study set nào
+                    // Word không thuộc study set nào
                     warnings.add(ImportWarning.builder()
                             .rowNumber(row.getRowNumber())
                             .type(ImportWarning.WarningType.MISSING_STUDY_SET_NAME)
-                            .message("Card found without a study set name. Skipped.")
+                            .message("Word found without a study set name. Skipped.")
                             .build());
                     continue;
                 }
 
-                // Validate definition
-                String definition = row.getDefinition();
-                if (definition == null || definition.trim().isEmpty()) {
+                // Validate definition/meaning
+                String meaning = row.getDefinition();
+                if (meaning == null || meaning.trim().isEmpty()) {
                     warnings.add(ImportWarning.builder()
                             .rowNumber(row.getRowNumber())
                             .type(ImportWarning.WarningType.MISSING_DEFINITION)
-                            .message("Card has no definition. Using empty string.")
+                            .message("Word has no meaning. Using empty string.")
                             .build());
-                    definition = "";
+                    meaning = "";
                 }
 
-                // Tạo card với tất cả các thuộc tính
-                Card card = Card.builder()
-                        .term(row.getTerm().trim())
-                        .definition(definition.trim())
-                        .cardIndex(cardIndex++)
-                        .pinyin(row.getPinyin() != null ? row.getPinyin().trim() : null)
+                // Generate characters JSON if not provided
+                String termValue = row.getTerm().trim();
+                String charactersJson = row.getCharactersJson();
+                if (charactersJson == null || charactersJson.trim().isEmpty()) {
+                    charactersJson = CharacterUtils.wordToJsonArray(termValue);
+                }
+
+                // Tạo word với tất cả các thuộc tính
+                Word word = Word.builder()
+                        .word(termValue)
+                        .meaning(meaning.trim())
+                        .wordIndex(wordIndex++)
+                        .pinyin(row.getPinyin() != null ? row.getPinyin().trim() : "")
                         .sinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null)
                         .wordType(row.getWordType() != null ? row.getWordType().trim() : null)
                         .hskLevel(row.getHskLevel() != null ? row.getHskLevel().trim() : null)
                         .imageWord(row.getImageWord() != null ? row.getImageWord().trim() : null)
                         .sinoOrigin(row.getSinoOrigin() != null ? row.getSinoOrigin().trim() : null)
                         .imageOrigin(row.getImageOrigin() != null ? row.getImageOrigin().trim() : null)
-                        .exampleSentence(row.getExampleSentence() != null ? row.getExampleSentence().trim() : null)
+                        .example(row.getExampleSentence() != null ? row.getExampleSentence().trim() : null)
                         .examplePinyin(row.getExamplePinyin() != null ? row.getExamplePinyin().trim() : null)
                         .exampleMeaning(row.getExampleMeaning() != null ? row.getExampleMeaning().trim() : null)
-                        .characters(row.getCharactersJson() != null ? row.getCharactersJson().trim() : null)
+                        .characters(charactersJson)
                         .build();
 
-                currentStudySet.addCard(card);
-                totalCards++;
+                currentStudySet.addWord(word);
+                totalWords++;
 
-                log.debug("Added card to study set: {} - {}", row.getTerm(), currentStudySet.getTitle());
+                log.debug("Added word to study set: {} - {}", row.getTerm(), currentStudySet.getTitle());
             } else if (row.getDefinition() != null && !row.getDefinition().trim().isEmpty()) {
                 // Có definition nhưng không có term
                 warnings.add(ImportWarning.builder()
                         .rowNumber(row.getRowNumber())
                         .type(ImportWarning.WarningType.MISSING_TERM)
-                        .message("Row has definition but no term. Skipped.")
+                        .message("Row has meaning but no word. Skipped.")
                         .build());
             }
         }
 
         // Lưu study set cuối cùng nếu có
-        if (currentStudySet != null && !currentStudySet.getCards().isEmpty()) {
+        if (currentStudySet != null && !currentStudySet.getWords().isEmpty()) {
             studySets.add(currentStudySet);
         }
 
-        return new ImportResult(studySets, totalCards, warnings);
+        return new ImportResult(studySets, totalWords, warnings);
     }
 
     /**
@@ -210,7 +218,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
      */
     private record ImportResult(
             List<StudySet> studySets,
-            int totalCards,
+            int totalWords,
             List<ImportWarning> warnings) {
     }
 }

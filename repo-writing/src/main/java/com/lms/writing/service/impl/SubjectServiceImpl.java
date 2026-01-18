@@ -5,9 +5,11 @@ import com.lms.common.exception.ErrorCode;
 import com.lms.writing.dto.request.CreateSubjectRequest;
 import com.lms.writing.dto.request.UpdateSubjectRequest;
 import com.lms.writing.dto.response.SubjectResponse;
+import com.lms.writing.entity.Folder;
 import com.lms.writing.entity.Package;
 import com.lms.writing.entity.Subject;
 import com.lms.writing.mapper.SubjectMapper;
+import com.lms.writing.repository.FolderRepository;
 import com.lms.writing.repository.PackageRepository;
 import com.lms.writing.repository.SubjectRepository;
 import com.lms.writing.service.SubjectService;
@@ -26,6 +28,7 @@ public class SubjectServiceImpl implements SubjectService {
 
     private final SubjectRepository subjectRepository;
     private final PackageRepository packageRepository;
+    private final FolderRepository folderRepository;
     private final SubjectMapper subjectMapper;
 
     @Override
@@ -54,6 +57,13 @@ public class SubjectServiceImpl implements SubjectService {
         Subject subject = subjectRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Subject not found"));
         return subjectMapper.toResponse(subject);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SubjectResponse> getAllSubjects(String userId) {
+        List<Subject> subjects = subjectRepository.findAll();
+        return subjectMapper.toResponseList(subjects);
     }
 
     @Override
@@ -90,5 +100,46 @@ public class SubjectServiceImpl implements SubjectService {
         }
 
         subjectRepository.delete(subject);
+    }
+
+    @Override
+    public SubjectResponse addFolderToSubject(String subjectId, String folderId, String userId) {
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Subject not found"));
+
+        // Check ownership
+        if (!subject.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to modify this subject");
+        }
+
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        // Check folder ownership
+        if (!folder.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to add this folder");
+        }
+
+        subject.addFolder(folder);
+        Subject updated = subjectRepository.save(subject);
+        return subjectMapper.toResponse(updated);
+    }
+
+    @Override
+    public SubjectResponse removeFolderFromSubject(String subjectId, String folderId, String userId) {
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Subject not found"));
+
+        // Check ownership
+        if (!subject.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to modify this subject");
+        }
+
+        Folder folder = folderRepository.findById(folderId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
+
+        subject.removeFolder(folder);
+        Subject updated = subjectRepository.save(subject);
+        return subjectMapper.toResponse(updated);
     }
 }

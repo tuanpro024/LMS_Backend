@@ -5,6 +5,8 @@ import com.lms.common.security.AuthPrincipal;
 import com.lms.writing.dto.request.CreateStudySetRequest;
 import com.lms.writing.dto.request.UpdateStudySetRequest;
 import com.lms.writing.dto.response.StudySetResponse;
+import com.lms.writing.dto.response.WordResponse;
+import com.lms.writing.entity.enums.WordStatus;
 import com.lms.writing.service.StudySetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,7 @@ public class StudySetController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<StudySetResponse>>> getStudySets(
             @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String q,
             Authentication authentication) {
 
         String currentUserId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
@@ -62,6 +65,8 @@ public class StudySetController {
 
         if (userId != null) {
             response = studySetService.getStudySetsByUserId(userId, currentUserId);
+        } else if (q != null) {
+            response = studySetService.searchStudySets(q, currentUserId);
         } else {
             response = studySetService.getAllPublicStudySets();
         }
@@ -90,5 +95,29 @@ public class StudySetController {
         studySetService.deleteStudySet(id, principal.userId());
 
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @GetMapping("/{id}/words/learned")
+    public ResponseEntity<ApiResponse<List<WordResponse>>> getLearnedWords(@PathVariable String id) {
+        List<WordResponse> response = studySetService.getWordsByStatus(id, WordStatus.LEARNED);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/{id}/words/unlearned")
+    public ResponseEntity<ApiResponse<List<WordResponse>>> getUnlearnedWords(@PathVariable String id) {
+        List<WordResponse> response = studySetService.getWordsByStatus(id, WordStatus.NOT_LEARNED);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/{id}/count/learned")
+    public ResponseEntity<ApiResponse<Long>> getLearnedCount(@PathVariable String id) {
+        long count = studySetService.getCountByStatus(id, WordStatus.LEARNED);
+        return ResponseEntity.ok(ApiResponse.ok(count));
+    }
+
+    @GetMapping("/{id}/count/unlearned")
+    public ResponseEntity<ApiResponse<Long>> getUnlearnedCount(@PathVariable String id) {
+        long count = studySetService.getCountByStatus(id, WordStatus.NOT_LEARNED);
+        return ResponseEntity.ok(ApiResponse.ok(count));
     }
 }

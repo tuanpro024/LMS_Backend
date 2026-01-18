@@ -4,7 +4,9 @@ import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.writing.dto.request.CreateFolderRequest;
 import com.lms.writing.dto.request.UpdateFolderRequest;
+import com.lms.writing.dto.response.ExcelImportResponse;
 import com.lms.writing.dto.response.FolderResponse;
+import com.lms.writing.service.ExcelImportService;
 import com.lms.writing.service.FolderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,6 +26,7 @@ import java.util.List;
 public class FolderController {
 
     private final FolderService folderService;
+    private final ExcelImportService excelImportService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
@@ -126,5 +130,25 @@ public class FolderController {
         folderService.updateFolderPrivacy(id, isPrivate, principal.userId());
 
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/import-excel")
+    public ResponseEntity<ApiResponse<ExcelImportResponse>> importFromExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("folderName") String folderName,
+            @RequestParam(required = false) String description,
+            @RequestParam(defaultValue = "true") boolean isPrivate,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        ExcelImportResponse response = excelImportService.importFromExcel(
+                file,
+                folderName,
+                description,
+                isPrivate,
+                principal.userId());
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(response));
     }
 }

@@ -6,11 +6,14 @@ import com.lms.writing.dto.request.CreateStudySetRequest;
 import com.lms.writing.dto.request.CreateWordRequest;
 import com.lms.writing.dto.request.UpdateStudySetRequest;
 import com.lms.writing.dto.response.StudySetResponse;
+import com.lms.writing.dto.response.WordResponse;
 import com.lms.writing.entity.StudySet;
 import com.lms.writing.entity.Word;
+import com.lms.writing.entity.enums.WordStatus;
 import com.lms.writing.mapper.StudySetMapper;
 import com.lms.writing.mapper.WordMapper;
 import com.lms.writing.repository.StudySetRepository;
+import com.lms.writing.repository.WordRepository;
 import com.lms.writing.service.StudySetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +29,7 @@ import java.util.List;
 public class StudySetServiceImpl implements StudySetService {
 
     private final StudySetRepository studySetRepository;
+    private final WordRepository wordRepository;
     private final StudySetMapper studySetMapper;
     private final WordMapper wordMapper;
 
@@ -109,6 +113,21 @@ public class StudySetServiceImpl implements StudySetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<StudySetResponse> searchStudySets(String query, String currentUserId) {
+        List<StudySet> studySets = studySetRepository.searchByTitleOrDescription(query, currentUserId);
+        return studySets.stream()
+                .map(studySet -> {
+                    StudySetResponse response = studySetMapper.toResponse(studySet);
+                    if (studySet.getWords() != null) {
+                        response.setWords(wordMapper.toResponseList(studySet.getWords()));
+                    }
+                    return response;
+                })
+                .toList();
+    }
+
+    @Override
     public StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId) {
         StudySet studySet = studySetRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Study set not found"));
@@ -136,5 +155,18 @@ public class StudySetServiceImpl implements StudySetService {
         }
 
         studySetRepository.delete(studySet);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WordResponse> getWordsByStatus(String studySetId, WordStatus status) {
+        List<Word> words = wordRepository.findByStudySetIdAndStatus(studySetId, status);
+        return wordMapper.toResponseList(words);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long getCountByStatus(String studySetId, WordStatus status) {
+        return wordRepository.countByStudySetIdAndStatus(studySetId, status);
     }
 }

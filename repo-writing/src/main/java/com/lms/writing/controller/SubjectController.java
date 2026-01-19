@@ -42,9 +42,18 @@ public class SubjectController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @GetMapping("/package/{packageId}")
-    public ResponseEntity<ApiResponse<List<SubjectResponse>>> getSubjectsByPackage(@PathVariable String packageId) {
-        List<SubjectResponse> response = subjectService.getSubjectsByPackageId(packageId);
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<SubjectResponse>>> getSubjects(
+            @RequestParam(required = false) String packageId) {
+
+        List<SubjectResponse> response;
+
+        if (packageId != null) {
+            response = subjectService.getSubjectsByPackageId(packageId);
+        } else {
+            response = subjectService.getAllSubjects();
+        }
+
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -69,5 +78,29 @@ public class SubjectController {
         subjectService.deleteSubject(id, principal.userId());
 
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/{subjectId}/folders/{folderId}")
+    public ResponseEntity<ApiResponse<SubjectResponse>> addFolderToSubject(
+            @PathVariable String subjectId,
+            @PathVariable String folderId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        SubjectResponse response = subjectService.addFolderToSubject(subjectId, folderId, principal.userId());
+
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @DeleteMapping("/{subjectId}/folders/{folderId}")
+    public ResponseEntity<ApiResponse<SubjectResponse>> removeFolderFromSubject(
+            @PathVariable String subjectId,
+            @PathVariable String folderId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        SubjectResponse response = subjectService.removeFolderFromSubject(subjectId, folderId, principal.userId());
+
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

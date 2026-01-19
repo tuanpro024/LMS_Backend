@@ -8,14 +8,13 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = { WordMapper.class })
 public interface StudySetMapper {
 
     @Mapping(target = "words", ignore = true)
     @Mapping(target = "folders", ignore = true)
     StudySet toEntity(CreateStudySetRequest request);
 
-    @Mapping(target = "words", ignore = true)
     StudySetResponse toResponse(StudySet studySet);
 
     List<StudySetResponse> toResponseList(List<StudySet> studySets);

@@ -5,8 +5,10 @@ import com.lms.common.exception.ErrorCode;
 import com.lms.writing.dto.request.CreateFolderRequest;
 import com.lms.writing.dto.request.UpdateFolderRequest;
 import com.lms.writing.dto.response.FolderResponse;
+import com.lms.writing.dto.response.StudySetResponse;
 import com.lms.writing.entity.*;
 import com.lms.writing.mapper.FolderMapper;
+import com.lms.writing.mapper.WordMapper;
 import com.lms.writing.repository.*;
 import com.lms.writing.service.FolderService;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +31,7 @@ public class FolderServiceImpl implements FolderService {
     private final SlotRepository slotRepository;
     private final StudySetRepository studySetRepository;
     private final FolderMapper folderMapper;
+    private final WordMapper wordMapper;
 
     @Override
     public FolderResponse createFolder(CreateFolderRequest request, String userId) {
@@ -37,20 +41,22 @@ public class FolderServiceImpl implements FolderService {
         folder.setUserId(userId);
 
         // Set optional parent relationships
+
         if (request.getPackageId() != null) {
-            com.lms.writing.entity.Package packageEntity = packageRepository.findById(request.getPackageId())
+            com.lms.writing.entity.Package packageEntity = packageRepository
+                    .findById(Objects.requireNonNull(request.getPackageId()))
                     .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
             folder.setPackageEntity(packageEntity);
         }
 
         if (request.getSubjectId() != null) {
-            Subject subject = subjectRepository.findById(request.getSubjectId())
+            Subject subject = subjectRepository.findById(Objects.requireNonNull(request.getSubjectId()))
                     .orElseThrow(() -> new ApiException(ErrorCode.E227, "Subject not found"));
             folder.setSubject(subject);
         }
 
         if (request.getSlotId() != null) {
-            Slot slot = slotRepository.findById(request.getSlotId())
+            Slot slot = slotRepository.findById(Objects.requireNonNull(request.getSlotId()))
                     .orElseThrow(() -> new ApiException(ErrorCode.E227, "Slot not found"));
             folder.setSlot(slot);
         }
@@ -62,7 +68,7 @@ public class FolderServiceImpl implements FolderService {
     @Override
     @Transactional(readOnly = true)
     public FolderResponse getFolderById(String id, String currentUserId) {
-        Folder folder = folderRepository.findById(id)
+        Folder folder = folderRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
         // Check access permission
@@ -70,7 +76,22 @@ public class FolderServiceImpl implements FolderService {
             throw new ApiException(ErrorCode.E240, "No permission to view this folder");
         }
 
-        return folderMapper.toResponse(folder);
+        FolderResponse response = folderMapper.toResponse(folder);
+        // Manually map words for each study set
+        if (response.getStudySets() != null && folder.getStudySets() != null) {
+            mapWordsToStudySets(response, folder);
+        }
+        return response;
+    }
+
+    private void mapWordsToStudySets(FolderResponse response, Folder folder) {
+        for (int i = 0; i < response.getStudySets().size(); i++) {
+            StudySetResponse setResponse = response.getStudySets().get(i);
+            StudySet setEntity = folder.getStudySets().get(i);
+            if (setEntity.getWords() != null) {
+                setResponse.setWords(wordMapper.toResponseList(setEntity.getWords()));
+            }
+        }
     }
 
     @Override
@@ -84,7 +105,11 @@ public class FolderServiceImpl implements FolderService {
             folders = folderRepository.findByIsPrivateFalse();
         }
 
-        return folderMapper.toResponseList(folders);
+        List<FolderResponse> responses = folderMapper.toResponseList(folders);
+        for (int i = 0; i < responses.size(); i++) {
+            mapWordsToStudySets(responses.get(i), folders.get(i));
+        }
+        return responses;
     }
 
     @Override
@@ -100,12 +125,17 @@ public class FolderServiceImpl implements FolderService {
                     .toList();
         }
 
-        return folderMapper.toResponseList(folders);
+        List<FolderResponse> responses = folderMapper.toResponseList(folders);
+        // Map words for each folder's study sets
+        for (int i = 0; i < responses.size(); i++) {
+            mapWordsToStudySets(responses.get(i), folders.get(i));
+        }
+        return responses;
     }
 
     @Override
     public FolderResponse updateFolder(String id, UpdateFolderRequest request, String userId) {
-        Folder folder = folderRepository.findById(id)
+        Folder folder = folderRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
         // Check ownership
@@ -121,7 +151,7 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     public void deleteFolder(String id, String userId) {
-        Folder folder = folderRepository.findById(id)
+        Folder folder = folderRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
         // Check ownership
@@ -134,14 +164,14 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     public FolderResponse addStudySetToFolder(String folderId, String studySetId, String userId) {
-        Folder folder = folderRepository.findById(folderId)
+        Folder folder = folderRepository.findById(Objects.requireNonNull(folderId))
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
         if (!folder.getUserId().equals(userId)) {
             throw new ApiException(ErrorCode.E240, "No permission to modify this folder");
         }
 
-        StudySet studySet = studySetRepository.findById(studySetId)
+        StudySet studySet = studySetRepository.findById(Objects.requireNonNull(studySetId))
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Study set not found"));
 
         folder.addStudySet(studySet);
@@ -152,7 +182,7 @@ public class FolderServiceImpl implements FolderService {
 
     @Override
     public FolderResponse removeStudySetFromFolder(String folderId, String studySetId, String userId) {
-        Folder folder = folderRepository.findById(folderId)
+        Folder folder = folderRepository.findById(Objects.requireNonNull(folderId))
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
         if (!folder.getUserId().equals(userId)) {

@@ -12,9 +12,15 @@ public interface SubjectService {
 
     SubjectResponse getSubjectById(String id);
 
+    List<SubjectResponse> getAllSubjects();
+
     List<SubjectResponse> getSubjectsByPackageId(String packageId);
 
     SubjectResponse updateSubject(String id, UpdateSubjectRequest request, String userId);
 
     void deleteSubject(String id, String userId);
+
+    SubjectResponse addFolderToSubject(String subjectId, String folderId, String userId);
+
+    SubjectResponse removeFolderFromSubject(String subjectId, String folderId, String userId);
 }

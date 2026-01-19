@@ -12,9 +12,15 @@ public interface SlotService {
 
     SlotResponse getSlotById(String id);
 
+    List<SlotResponse> getAllSlots();
+
     List<SlotResponse> getSlotsBySubjectId(String subjectId);
 
     SlotResponse updateSlot(String id, UpdateSlotRequest request, String userId);
 
     void deleteSlot(String id, String userId);
+
+    SlotResponse addFolderToSlot(String slotId, String folderId, String userId);
+
+    SlotResponse removeFolderFromSlot(String slotId, String folderId, String userId);
 }

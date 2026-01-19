@@ -53,8 +53,8 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public SubjectResponse getSubjectById(String id, String userId) {
-        Subject subject = subjectRepository.findByIdAndUserId(id, userId)
+    public SubjectResponse getSubjectById(String id) {
+        Subject subject = subjectRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Subject not found"));
 
         return subjectMapper.toResponse(subject);
@@ -62,15 +62,15 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubjectResponse> getSubjectsByPackageId(String packageId, String userId) {
-        List<Subject> subjects = subjectRepository.findByPackageEntityIdAndUserId(packageId, userId);
+    public List<SubjectResponse> getSubjectsByPackageId(String packageId) {
+        List<Subject> subjects = subjectRepository.findByPackageEntityId(packageId);
         return subjectMapper.toResponseList(subjects);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubjectResponse> getAllSubjects(String userId) {
-        List<Subject> subjects = subjectRepository.findByUserId(userId);
+    public List<SubjectResponse> getAllSubjects() {
+        List<Subject> subjects = subjectRepository.findAll();
         return subjectMapper.toResponseList(subjects);
     }
 

@@ -21,11 +21,23 @@ public class CreateWordRequest {
     @NotBlank(message = "Meaning is required")
     private String meaning;
 
-    private String imageUrl;
+    private int wordIndex;
+
+    private String sinoVn;
+
+    private String wordType;
+
+    private String hskLevel;
 
     private String example;
 
     private String examplePinyin;
 
     private String exampleMeaning;
+
+    private String sinoOrigin;
+
+    private String imageWord;
+
+    private String imageOrigin;
 }

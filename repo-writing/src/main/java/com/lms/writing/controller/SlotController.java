@@ -42,9 +42,18 @@ public class SlotController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @GetMapping("/subject/{subjectId}")
-    public ResponseEntity<ApiResponse<List<SlotResponse>>> getSlotsBySubject(@PathVariable String subjectId) {
-        List<SlotResponse> response = slotService.getSlotsBySubjectId(subjectId);
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<SlotResponse>>> getSlots(
+            @RequestParam(required = false) String subjectId) {
+
+        List<SlotResponse> response;
+
+        if (subjectId != null) {
+            response = slotService.getSlotsBySubjectId(subjectId);
+        } else {
+            response = slotService.getAllSlots();
+        }
+
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -69,5 +78,29 @@ public class SlotController {
         slotService.deleteSlot(id, principal.userId());
 
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PostMapping("/{slotId}/folders/{folderId}")
+    public ResponseEntity<ApiResponse<SlotResponse>> addFolderToSlot(
+            @PathVariable String slotId,
+            @PathVariable String folderId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        SlotResponse response = slotService.addFolderToSlot(slotId, folderId, principal.userId());
+
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @DeleteMapping("/{slotId}/folders/{folderId}")
+    public ResponseEntity<ApiResponse<SlotResponse>> removeFolderFromSlot(
+            @PathVariable String slotId,
+            @PathVariable String folderId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        SlotResponse response = slotService.removeFolderFromSlot(slotId, folderId, principal.userId());
+
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

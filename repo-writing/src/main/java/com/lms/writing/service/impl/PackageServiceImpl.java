@@ -49,7 +49,7 @@ public class PackageServiceImpl implements PackageService {
 
     @Override
     @Transactional(readOnly = true)
-    public PackageResponse getPackageById(String id, String currentUserId) {
+    public PackageResponse getPackageById(String id) {
         Package packageEntity = packageRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
@@ -58,24 +58,18 @@ public class PackageServiceImpl implements PackageService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PackageResponse> getAllPackages(String currentUserId) {
+    public List<PackageResponse> getAllPackages() {
         List<Package> packages = packageRepository.findAll();
         return packageMapper.toResponseList(packages);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PackageResponse> getPackagesByType(TypeName typeName, String currentUserId) {
+    public List<PackageResponse> getPackagesByType(TypeName typeName) {
         Type type = typeRepository.findByName(typeName)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Type not found: " + typeName));
 
-        List<Package> packages;
-        if (currentUserId != null) {
-            packages = packageRepository.findByTypeAndUserId(type, currentUserId);
-        } else {
-            packages = packageRepository.findByType(type);
-        }
-
+        List<Package> packages = packageRepository.findByType(type);
         return packageMapper.toResponseList(packages);
     }
 

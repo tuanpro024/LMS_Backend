@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -24,6 +25,12 @@ import java.util.List;
 public class PackageController {
 
     private final PackageService packageService;
+
+    @GetMapping("/types")
+    public ResponseEntity<ApiResponse<List<TypeName>>> getPackageTypes() {
+        List<TypeName> types = Arrays.asList(TypeName.values());
+        return ResponseEntity.ok(ApiResponse.ok(types));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
@@ -39,39 +46,24 @@ public class PackageController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PackageResponse>> getPackage(
-            @PathVariable String id,
-            Authentication authentication) {
+            @PathVariable String id) {
 
-        String currentUserId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        PackageResponse response = packageService.getPackageById(id, currentUserId);
+        PackageResponse response = packageService.getPackageById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllPackages(
-            Authentication authentication) {
+    public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllPackages() {
 
-        String currentUserId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        List<PackageResponse> response = packageService.getAllPackages(currentUserId);
+        List<PackageResponse> response = packageService.getAllPackages();
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping("/type/{type}")
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getPackagesByType(
-            @PathVariable TypeName type,
-            Authentication authentication) {
+            @PathVariable TypeName type) {
 
-        String currentUserId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        List<PackageResponse> response = packageService.getPackagesByType(type, currentUserId);
+        List<PackageResponse> response = packageService.getPackagesByType(type);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 

@@ -165,15 +165,22 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                     definition = "";
                 }
 
-                // Tạo card
+                // Tạo card với tất cả các thuộc tính
                 Card card = Card.builder()
                         .term(row.getTerm().trim())
                         .definition(definition.trim())
                         .cardIndex(cardIndex++)
-                        .imageUrl(row.getImageFileName() != null ? row.getImageFileName().trim() : null)
                         .pinyin(row.getPinyin() != null ? row.getPinyin().trim() : null)
-                        .pronunciation(row.getPronunciation() != null ? row.getPronunciation().trim() : null)
+                        .sinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null)
+                        .wordType(row.getWordType() != null ? row.getWordType().trim() : null)
+                        .hskLevel(row.getHskLevel() != null ? row.getHskLevel().trim() : null)
+                        .imageWord(row.getImageWord() != null ? row.getImageWord().trim() : null)
+                        .sinoOrigin(row.getSinoOrigin() != null ? row.getSinoOrigin().trim() : null)
+                        .imageOrigin(row.getImageOrigin() != null ? row.getImageOrigin().trim() : null)
                         .exampleSentence(row.getExampleSentence() != null ? row.getExampleSentence().trim() : null)
+                        .examplePinyin(row.getExamplePinyin() != null ? row.getExamplePinyin().trim() : null)
+                        .exampleMeaning(row.getExampleMeaning() != null ? row.getExampleMeaning().trim() : null)
+                        .characters(row.getCharactersJson() != null ? row.getCharactersJson().trim() : null)
                         .build();
 
                 currentStudySet.addCard(card);

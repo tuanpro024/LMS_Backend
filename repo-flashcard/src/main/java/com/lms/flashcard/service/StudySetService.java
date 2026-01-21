@@ -22,9 +22,23 @@ public interface StudySetService {
 
     void deleteStudySet(String id, String userId);
 
-    // Statistics
-    List<com.lms.flashcard.dto.response.CardResponse> getCardsByStatus(String studySetId,
+    // Statistics - for specific user
+    List<com.lms.flashcard.dto.response.CardResponse> getCardsByStatusForUser(
+            String studySetId,
+            com.lms.flashcard.entity.enums.CardStatus status,
+            String userId);
+
+    long getCountByStatusForUser(
+            String studySetId, 
+            com.lms.flashcard.entity.enums.CardStatus status,
+            String userId);
+
+    // Statistics - deprecated (backward compatibility, no user context)
+    @Deprecated
+    List<com.lms.flashcard.dto.response.CardResponse> getCardsByStatus(
+            String studySetId,
             com.lms.flashcard.entity.enums.CardStatus status);
 
+    @Deprecated
     long getCountByStatus(String studySetId, com.lms.flashcard.entity.enums.CardStatus status);
 }

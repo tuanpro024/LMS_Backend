@@ -23,18 +23,34 @@ public class Card extends BaseEntity {
     @Column(nullable = false)
     private int cardIndex;
 
-    private String imageUrl;
-
-    private String audio;
-
     @Column(columnDefinition = "TEXT")
     private String pinyin;
 
     @Column(columnDefinition = "TEXT")
-    private String pronunciation;
+    private String exampleSentence;
+
+    private String sinoVn;
+
+    private String wordType;
+
+    private String hskLevel;
 
     @Column(columnDefinition = "TEXT")
-    private String exampleSentence;
+    private String examplePinyin;
+
+    @Column(columnDefinition = "TEXT")
+    private String exampleMeaning;
+
+    @Column(columnDefinition = "TEXT")
+    private String sinoOrigin;
+
+    private String imageWord;
+
+    private String imageOrigin;
+
+    @Column(columnDefinition = "JSON")
+    private String characters;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "study_set_id", nullable = false)
     private StudySet studySet;

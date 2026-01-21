@@ -10,11 +10,11 @@ public interface SlotService {
 
     SlotResponse createSlot(CreateSlotRequest request, String userId);
 
-    SlotResponse getSlotById(String id, String userId);
+    SlotResponse getSlotById(String id);
 
-    List<SlotResponse> getSlotsBySubjectId(String subjectId, String userId);
+    List<SlotResponse> getSlotsBySubjectId(String subjectId);
 
-    List<SlotResponse> getAllSlots(String userId);
+    List<SlotResponse> getAllSlots();
 
     SlotResponse updateSlot(String id, UpdateSlotRequest request, String userId);
 

@@ -1,11 +1,13 @@
 package com.lms.flashcard.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.AuthPrincipal;
 import com.lms.flashcard.dto.request.UpdateCardStatusRequest;
 import com.lms.flashcard.service.CardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,9 +20,11 @@ public class CardController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<Void>> updateCardStatus(
             @PathVariable String id,
-            @RequestBody @Valid UpdateCardStatusRequest request) {
+            @RequestBody @Valid UpdateCardStatusRequest request,
+            Authentication authentication) {
 
-        cardService.updateCardStatus(id, request);
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        cardService.updateCardStatus(id, request, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

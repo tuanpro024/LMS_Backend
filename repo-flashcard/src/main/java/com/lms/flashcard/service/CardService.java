@@ -4,5 +4,5 @@ import com.lms.flashcard.dto.request.UpdateCardStatusRequest;
 
 public interface CardService {
 
-    void updateCardStatus(String cardId, UpdateCardStatusRequest request);
+    void updateCardStatus(String cardId, UpdateCardStatusRequest request, String userId);
 }

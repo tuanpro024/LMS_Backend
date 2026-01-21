@@ -1,8 +1,9 @@
 package com.lms.flashcard.config;
 
-import com.lms.flashcard.entity.Type;
-import com.lms.flashcard.entity.TypeName;
-import com.lms.flashcard.repository.TypeRepository;
+
+import com.lms.content.common.entity.Type;
+import com.lms.content.common.entity.TypeName;
+import com.lms.content.common.repository.TypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;

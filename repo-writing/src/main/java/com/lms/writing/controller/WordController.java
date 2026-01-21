@@ -26,8 +26,9 @@ public class WordController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @GetMapping("/study-set/{studySetId}")
-    public ResponseEntity<ApiResponse<List<WordResponse>>> getWordsByStudySet(@PathVariable String studySetId) {
+    @GetMapping("/study-set")
+    public ResponseEntity<ApiResponse<List<WordResponse>>> getWordsByStudySet(
+            @RequestParam String studySetId) {
         List<WordResponse> response = wordService.getWordsByStudySetId(studySetId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

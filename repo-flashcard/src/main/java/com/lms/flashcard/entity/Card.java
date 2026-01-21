@@ -1,10 +1,20 @@
 package com.lms.flashcard.entity;
 
-import com.lms.common.jpa.BaseEntity;
-import com.lms.flashcard.entity.enums.CardStatus;
+import com.lms.content.common.entity.BaseContentItem;
+import com.lms.content.common.entity.enums.ContentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Card entity - extends BaseContentItem which contains common fields:
+ * - studySet relationship
+ * - contentIndex (replaces cardIndex)
+ * - status (CardStatus → ContentStatus)
+ * - sinoVn, wordType, hskLevel
+ * - examplePinyin, exampleMeaning
+ * - sinoOrigin, imageWord, imageOrigin
+ * - characters
+ */
 @Entity
 @Table(name = "cards")
 @Getter
@@ -12,16 +22,14 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Card extends BaseEntity {
+public class Card extends BaseContentItem {
 
+    // Card-specific fields (not in BaseContentItem)
     @Column(nullable = false)
     private String term;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String definition;
-
-    @Column(nullable = false)
-    private int cardIndex;
 
     @Column(columnDefinition = "TEXT")
     private String pinyin;
@@ -29,35 +37,12 @@ public class Card extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String exampleSentence;
 
-    private String sinoVn;
-
-    private String wordType;
-
-    private String hskLevel;
-
-    @Column(columnDefinition = "TEXT")
-    private String examplePinyin;
-
-    @Column(columnDefinition = "TEXT")
-    private String exampleMeaning;
-
-    @Column(columnDefinition = "TEXT")
-    private String sinoOrigin;
-
-    private String imageWord;
-
-    private String imageOrigin;
-
-    @Column(columnDefinition = "JSON")
-    private String characters;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_set_id", nullable = false)
-    private StudySet studySet;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private CardStatus status = CardStatus.NOT_LEARNED;
-
+    // Note: The following fields are now inherited from BaseContentItem:
+    // - studySet (ManyToOne relationship)
+    // - contentIndex (was cardIndex)
+    // - status (ContentStatus enum - compatible with CardStatus)
+    // - sinoVn, wordType, hskLevel
+    // - examplePinyin, exampleMeaning
+    // - sinoOrigin, imageWord, imageOrigin
+    // - characters
 }

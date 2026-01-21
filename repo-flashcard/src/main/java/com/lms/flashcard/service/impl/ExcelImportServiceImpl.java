@@ -3,11 +3,11 @@ package com.lms.flashcard.service.impl;
 import com.lms.flashcard.dto.response.ExcelImportResponse;
 import com.lms.flashcard.dto.response.ImportWarning;
 import com.lms.flashcard.entity.Card;
-import com.lms.flashcard.entity.Folder;
-import com.lms.flashcard.entity.StudySet;
+import com.lms.content.common.entity.Folder;
+import com.lms.content.common.entity.StudySet;
 import com.lms.flashcard.exception.InvalidFileFormatException;
-import com.lms.flashcard.repository.FolderRepository;
-import com.lms.flashcard.repository.StudySetRepository;
+import com.lms.content.common.repository.FolderRepository;
+import com.lms.content.common.repository.StudySetRepository;
 import com.lms.flashcard.service.ExcelImportService;
 import com.lms.flashcard.util.ExcelParser;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +26,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
 
     private final FolderRepository folderRepository;
     private final StudySetRepository studySetRepository;
+    private final com.lms.flashcard.repository.CardRepository cardRepository;
 
     @Override
     @Transactional
@@ -55,16 +56,23 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         ImportResult result = processRows(rows, userId, isPrivate);
 
         // Validate có study sets không
-        if (result.studySets.isEmpty()) {
+        if (result.studySetsWithCards.isEmpty()) {
             throw new InvalidFileFormatException("No valid study sets found in the file");
         }
 
-        // Save study sets trước (vì ManyToMany không có cascade)
+        // Save study sets trước
         List<StudySet> savedStudySets = new ArrayList<>();
-        for (StudySet studySet : result.studySets) {
-            StudySet saved = studySetRepository.save(studySet);
+        for (StudySetWithCards ssc : result.studySetsWithCards) {
+            StudySet saved = studySetRepository.save(ssc.studySet);
             savedStudySets.add(saved);
-            log.debug("Saved study set: {} with {} cards", saved.getTitle(), saved.getCards().size());
+
+            // Save cards for this study set
+            for (Card card : ssc.cards) {
+                card.setStudySet(saved);
+                cardRepository.save(card);
+            }
+
+            log.debug("Saved study set: {} with {} cards", saved.getTitle(), ssc.cards.size());
         }
 
         // Tạo folder
@@ -84,20 +92,20 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         Folder savedFolder = folderRepository.save(folder);
 
         log.info("Import completed. Folder ID: {}, Study Sets: {}, Cards: {}",
-                savedFolder.getId(), result.studySets.size(), result.totalCards);
+                savedFolder.getId(), result.studySetsWithCards.size(), result.totalCards);
 
         // Build response
         return ExcelImportResponse.builder()
                 .folderId(savedFolder.getId())
                 .folderName(savedFolder.getName())
-                .totalStudySets(result.studySets.size())
+                .totalStudySets(result.studySetsWithCards.size())
                 .totalCards(result.totalCards)
                 .studySetIds(savedFolder.getStudySets().stream()
                         .map(StudySet::getId)
                         .toList())
                 .warnings(result.warnings)
                 .message(String.format("Successfully imported %d study sets with %d cards",
-                        result.studySets.size(), result.totalCards))
+                        result.studySetsWithCards.size(), result.totalCards))
                 .build();
     }
 
@@ -105,21 +113,23 @@ public class ExcelImportServiceImpl implements ExcelImportService {
      * Process rows và tạo study sets với cards
      */
     private ImportResult processRows(List<ExcelParser.ExcelRow> rows, String userId, boolean isPrivate) {
-        List<StudySet> studySets = new ArrayList<>();
+        List<StudySetWithCards> studySetsWithCards = new ArrayList<>();
         List<ImportWarning> warnings = new ArrayList<>();
         int totalCards = 0;
 
         StudySet currentStudySet = null;
-        int cardIndex = 0;
+        List<Card> currentCards = null;
+        int contentIndex = 0;
 
         for (ExcelParser.ExcelRow row : rows) {
             // Skip empty rows
             if (ExcelParser.isRowEmpty(row)) {
                 // Dòng trống đánh dấu kết thúc study set hiện tại
-                if (currentStudySet != null && !currentStudySet.getCards().isEmpty()) {
-                    studySets.add(currentStudySet);
+                if (currentStudySet != null && currentCards != null && !currentCards.isEmpty()) {
+                    studySetsWithCards.add(new StudySetWithCards(currentStudySet, currentCards));
                     currentStudySet = null;
-                    cardIndex = 0;
+                    currentCards = null;
+                    contentIndex = 0;
                 }
                 continue;
             }
@@ -127,8 +137,8 @@ public class ExcelImportServiceImpl implements ExcelImportService {
             // Nếu cột A có giá trị → Study Set mới
             if (row.getStudySetName() != null && !row.getStudySetName().trim().isEmpty()) {
                 // Save study set cũ nếu có
-                if (currentStudySet != null && !currentStudySet.getCards().isEmpty()) {
-                    studySets.add(currentStudySet);
+                if (currentStudySet != null && currentCards != null && !currentCards.isEmpty()) {
+                    studySetsWithCards.add(new StudySetWithCards(currentStudySet, currentCards));
                 }
 
                 // Tạo study set mới
@@ -137,7 +147,8 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                         .isPrivate(isPrivate)
                         .userId(userId)
                         .build();
-                cardIndex = 0;
+                currentCards = new ArrayList<>();
+                contentIndex = 0;
 
                 log.debug("Created new study set: {}", row.getStudySetName());
             }
@@ -165,25 +176,24 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                     definition = "";
                 }
 
-                // Tạo card với tất cả các thuộc tính
-                Card card = Card.builder()
-                        .term(row.getTerm().trim())
-                        .definition(definition.trim())
-                        .cardIndex(cardIndex++)
-                        .pinyin(row.getPinyin() != null ? row.getPinyin().trim() : null)
-                        .sinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null)
-                        .wordType(row.getWordType() != null ? row.getWordType().trim() : null)
-                        .hskLevel(row.getHskLevel() != null ? row.getHskLevel().trim() : null)
-                        .imageWord(row.getImageWord() != null ? row.getImageWord().trim() : null)
-                        .sinoOrigin(row.getSinoOrigin() != null ? row.getSinoOrigin().trim() : null)
-                        .imageOrigin(row.getImageOrigin() != null ? row.getImageOrigin().trim() : null)
-                        .exampleSentence(row.getExampleSentence() != null ? row.getExampleSentence().trim() : null)
-                        .examplePinyin(row.getExamplePinyin() != null ? row.getExamplePinyin().trim() : null)
-                        .exampleMeaning(row.getExampleMeaning() != null ? row.getExampleMeaning().trim() : null)
-                        .characters(row.getCharactersJson() != null ? row.getCharactersJson().trim() : null)
-                        .build();
+                // Tạo card với tất cả các thuộc tính (không set studySet ở đây)
+                Card card = new Card();
+                card.setTerm(row.getTerm().trim());
+                card.setDefinition(definition.trim());
+                card.setContentIndex(contentIndex++);
+                card.setPinyin(row.getPinyin() != null ? row.getPinyin().trim() : null);
+                card.setSinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null);
+                card.setWordType(row.getWordType() != null ? row.getWordType().trim() : null);
+                card.setHskLevel(row.getHskLevel() != null ? row.getHskLevel().trim() : null);
+                card.setImageWord(row.getImageWord() != null ? row.getImageWord().trim() : null);
+                card.setSinoOrigin(row.getSinoOrigin() != null ? row.getSinoOrigin().trim() : null);
+                card.setImageOrigin(row.getImageOrigin() != null ? row.getImageOrigin().trim() : null);
+                card.setExampleSentence(row.getExampleSentence() != null ? row.getExampleSentence().trim() : null);
+                card.setExamplePinyin(row.getExamplePinyin() != null ? row.getExamplePinyin().trim() : null);
+                card.setExampleMeaning(row.getExampleMeaning() != null ? row.getExampleMeaning().trim() : null);
+                card.setCharacters(row.getCharactersJson() != null ? row.getCharactersJson().trim() : null);
 
-                currentStudySet.addCard(card);
+                currentCards.add(card);
                 totalCards++;
 
                 log.debug("Added card to study set: {} - {}", row.getTerm(), currentStudySet.getTitle());
@@ -198,18 +208,26 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         }
 
         // Lưu study set cuối cùng nếu có
-        if (currentStudySet != null && !currentStudySet.getCards().isEmpty()) {
-            studySets.add(currentStudySet);
+        if (currentStudySet != null && currentCards != null && !currentCards.isEmpty()) {
+            studySetsWithCards.add(new StudySetWithCards(currentStudySet, currentCards));
         }
 
-        return new ImportResult(studySets, totalCards, warnings);
+        return new ImportResult(studySetsWithCards, totalCards, warnings);
+    }
+
+    /**
+     * Helper class để group StudySet với Cards của nó
+     */
+    private record StudySetWithCards(
+            StudySet studySet,
+            List<Card> cards) {
     }
 
     /**
      * Helper class để return multiple values
      */
     private record ImportResult(
-            List<StudySet> studySets,
+            List<StudySetWithCards> studySetsWithCards,
             int totalCards,
             List<ImportWarning> warnings) {
     }

@@ -1,10 +1,19 @@
 package com.lms.writing.entity;
 
-import com.lms.common.jpa.BaseEntity;
-import com.lms.writing.entity.enums.WordStatus;
+import com.lms.content.common.entity.BaseContentItem;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Word entity - extends BaseContentItem which contains common fields:
+ * - studySet relationship
+ * - contentIndex (replaces wordIndex)
+ * - status (WordStatus → ContentStatus)
+ * - sinoVn, wordType, hskLevel
+ * - examplePinyin, exampleMeaning
+ * - sinoOrigin, imageWord, imageOrigin
+ * - characters
+ */
 @Entity
 @Table(name = "words")
 @Getter
@@ -12,8 +21,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Word extends BaseEntity {
+public class Word extends BaseContentItem {
 
+    // Word-specific fields (not in BaseContentItem)
     @Column(nullable = false)
     private String word;
 
@@ -23,39 +33,15 @@ public class Word extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String meaning;
 
-    private int wordIndex;
-
-    private String sinoVn;
-
-    private String wordType;
-
-    private String hskLevel;
-
-    @Column(columnDefinition = "TEXT")
-    private String examplePinyin;
-
-    @Column(columnDefinition = "TEXT")
-    private String exampleMeaning;
-
-    @Column(columnDefinition = "TEXT")
-    private String sinoOrigin;
-
-    private String imageWord;
-
-    private String imageOrigin;
-
     @Column(columnDefinition = "TEXT")
     private String example;
 
-    @Column(nullable = false, columnDefinition = "JSON")
-    private String characters;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_set_id", nullable = false)
-    private StudySet studySet;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private WordStatus status = WordStatus.NOT_LEARNED;
+    // Note: The following fields are now inherited from BaseContentItem:
+    // - studySet (ManyToOne relationship)
+    // - contentIndex (was wordIndex)
+    // - status (ContentStatus enum - compatible with WordStatus)
+    // - sinoVn, wordType, hskLevel
+    // - examplePinyin, exampleMeaning
+    // - sinoOrigin, imageWord, imageOrigin
+    // - characters
 }

@@ -14,4 +14,14 @@ public interface WordService {
     WordResponse updateWord(String id, UpdateWordRequest request, String userId);
 
     void deleteWord(String id, String userId);
+
+    List<WordResponse> getLearnedWords(String studySetId);
+
+    List<WordResponse> getNotLearnedWords(String studySetId);
+
+    long countLearnedWords(String studySetId);
+
+    long countNotLearnedWords(String studySetId);
+
+    long countTotalWords(String studySetId);
 }

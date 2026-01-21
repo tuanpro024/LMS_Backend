@@ -2,10 +2,12 @@ package com.lms.flashcard.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
-import com.lms.flashcard.dto.request.CreateStudySetRequest;
-import com.lms.flashcard.dto.request.UpdateStudySetRequest;
-import com.lms.flashcard.dto.response.StudySetResponse;
-import com.lms.flashcard.service.StudySetService;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
+import com.lms.content.common.dto.request.CreateStudySetRequest;
+import com.lms.content.common.dto.request.UpdateStudySetRequest;
+import com.lms.content.common.dto.response.StudySetResponse;
+import com.lms.flashcard.dto.response.CardResponse;
+import com.lms.flashcard.service.CardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,8 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import com.lms.flashcard.dto.response.CardResponse;
-import com.lms.flashcard.entity.enums.CardStatus;
 import java.util.List;
 
 @RestController
@@ -22,53 +22,44 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StudySetController {
 
-    private final StudySetService studySetService;
+    private final StudySetApiDelegate delegate;
+    private final CardService cardService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<StudySetResponse>> createStudySet(
             @RequestBody @Valid CreateStudySetRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        StudySetResponse response = studySetService.createStudySet(request, principal.userId());
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
+        StudySetResponse response = delegate.createStudySet(request, principal.userId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<StudySetResponse>> getStudySetById(
-            @PathVariable String id,
-            Authentication authentication) {
-
-        String userId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        StudySetResponse response = studySetService.getStudySetById(id, userId);
+    public ResponseEntity<ApiResponse<StudySetResponse>> getStudySetById(@PathVariable String id) {
+        StudySetResponse response = delegate.getStudySetById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<StudySetResponse>>> getStudySets(
+    public ResponseEntity<ApiResponse<List<StudySetResponse>>> getAllStudySets(
             @RequestParam(required = false) String userId,
-            @RequestParam(required = false) String q,
-            Authentication authentication) {
-
-        String currentUserId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        List<StudySetResponse> response;
-
+            @RequestParam(required = false) String q) {
         if (userId != null) {
-            response = studySetService.getStudySetsByUserId(userId, currentUserId);
-        } else if (q != null) {
-            response = studySetService.searchStudySets(q, currentUserId);
-        } else {
-            response = studySetService.getAllPublicStudySets();
+            List<StudySetResponse> response = delegate.getStudySetsByUserId(userId);
+            return ResponseEntity.ok(ApiResponse.ok(response));
         }
+        if (q != null) {
+            List<StudySetResponse> response = delegate.searchStudySets(q);
+            return ResponseEntity.ok(ApiResponse.ok(response));
+        }
+        List<StudySetResponse> response = delegate.getAllStudySets();
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
 
+    @GetMapping("/folder/{folderId}")
+    public ResponseEntity<ApiResponse<List<StudySetResponse>>> getStudySetsByFolderId(
+            @PathVariable String folderId) {
+        List<StudySetResponse> response = delegate.getStudySetsByFolderId(folderId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -77,10 +68,8 @@ public class StudySetController {
             @PathVariable String id,
             @RequestBody @Valid UpdateStudySetRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        StudySetResponse response = studySetService.updateStudySet(id, request, principal.userId());
-
+        StudySetResponse response = delegate.updateStudySet(id, request, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -88,34 +77,37 @@ public class StudySetController {
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        studySetService.deleteStudySet(id, principal.userId());
-
+        delegate.deleteStudySet(id, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    // Card-related endpoints for study sets
     @GetMapping("/{id}/cards/learned")
-    public ResponseEntity<ApiResponse<List<CardResponse>>> getLearnedCards(@PathVariable String id) {
-        List<CardResponse> response = studySetService.getCardsByStatus(id, CardStatus.LEARNED);
-        return ResponseEntity.ok(ApiResponse.ok(response));
+    public ResponseEntity<ApiResponse<List<CardResponse>>> getLearnedCards(
+            @PathVariable String id) {
+        List<CardResponse> cards = cardService.getLearnedCards(id);
+        return ResponseEntity.ok(ApiResponse.ok(cards));
     }
 
     @GetMapping("/{id}/cards/unlearned")
-    public ResponseEntity<ApiResponse<List<CardResponse>>> getUnlearnedCards(@PathVariable String id) {
-        List<CardResponse> response = studySetService.getCardsByStatus(id, CardStatus.NOT_LEARNED);
-        return ResponseEntity.ok(ApiResponse.ok(response));
+    public ResponseEntity<ApiResponse<List<CardResponse>>> getUnlearnedCards(
+            @PathVariable String id) {
+        List<CardResponse> cards = cardService.getNotLearnedCards(id);
+        return ResponseEntity.ok(ApiResponse.ok(cards));
     }
 
-    @GetMapping("/{id}/count/learned")
-    public ResponseEntity<ApiResponse<Long>> getLearnedCount(@PathVariable String id) {
-        long count = studySetService.getCountByStatus(id, CardStatus.LEARNED);
+    @GetMapping("/{studySetId}/count/learned")
+    public ResponseEntity<ApiResponse<Long>> countLearnedCards(
+            @PathVariable String studySetId) {
+        long count = cardService.countLearnedCards(studySetId);
         return ResponseEntity.ok(ApiResponse.ok(count));
     }
 
-    @GetMapping("/{id}/count/unlearned")
-    public ResponseEntity<ApiResponse<Long>> getUnlearnedCount(@PathVariable String id) {
-        long count = studySetService.getCountByStatus(id, CardStatus.NOT_LEARNED);
+    @GetMapping("/{studySetId}/count/unlearned")
+    public ResponseEntity<ApiResponse<Long>> countUnlearnedCards(
+            @PathVariable String studySetId) {
+        long count = cardService.countNotLearnedCards(studySetId);
         return ResponseEntity.ok(ApiResponse.ok(count));
     }
 }

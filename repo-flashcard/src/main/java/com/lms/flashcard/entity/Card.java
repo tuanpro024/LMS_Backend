@@ -37,12 +37,25 @@ public class Card extends BaseContentItem {
     @Column(columnDefinition = "TEXT")
     private String exampleSentence;
 
-    // Note: The following fields are now inherited from BaseContentItem:
-    // - studySet (ManyToOne relationship)
-    // - contentIndex (was cardIndex)
-    // - status (ContentStatus enum - compatible with CardStatus)
-    // - sinoVn, wordType, hskLevel
-    // - examplePinyin, exampleMeaning
-    // - sinoOrigin, imageWord, imageOrigin
-    // - characters
+    private String sinoVn;
+
+    private String wordType;
+
+    private String hskLevel;
+
+    @Column(columnDefinition = "TEXT")
+    private String examplePinyin;
+
+    @Column(columnDefinition = "TEXT")
+    private String exampleMeaning;
+
+    @Column(columnDefinition = "TEXT")
+    private String sinoOrigin;
+
+    private String imageWord;
+
+    private String imageOrigin;
+
+    @Column(columnDefinition = "TEXT")
+    private String characters;
 }

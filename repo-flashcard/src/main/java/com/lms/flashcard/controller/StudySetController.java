@@ -85,29 +85,37 @@ public class StudySetController {
     // Card-related endpoints for study sets
     @GetMapping("/{id}/cards/learned")
     public ResponseEntity<ApiResponse<List<CardResponse>>> getLearnedCards(
-            @PathVariable String id) {
-        List<CardResponse> cards = cardService.getLearnedCards(id);
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        List<CardResponse> cards = cardService.getLearnedCards(principal.userId(), id);
         return ResponseEntity.ok(ApiResponse.ok(cards));
     }
 
     @GetMapping("/{id}/cards/unlearned")
     public ResponseEntity<ApiResponse<List<CardResponse>>> getUnlearnedCards(
-            @PathVariable String id) {
-        List<CardResponse> cards = cardService.getNotLearnedCards(id);
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        List<CardResponse> cards = cardService.getNotLearnedCards(principal.userId(), id);
         return ResponseEntity.ok(ApiResponse.ok(cards));
     }
 
     @GetMapping("/{studySetId}/count/learned")
     public ResponseEntity<ApiResponse<Long>> countLearnedCards(
-            @PathVariable String studySetId) {
-        long count = cardService.countLearnedCards(studySetId);
+            @PathVariable String studySetId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        long count = cardService.countLearnedCards(principal.userId(), studySetId);
         return ResponseEntity.ok(ApiResponse.ok(count));
     }
 
     @GetMapping("/{studySetId}/count/unlearned")
     public ResponseEntity<ApiResponse<Long>> countUnlearnedCards(
-            @PathVariable String studySetId) {
-        long count = cardService.countNotLearnedCards(studySetId);
+            @PathVariable String studySetId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        long count = cardService.countNotLearnedCards(principal.userId(), studySetId);
         return ResponseEntity.ok(ApiResponse.ok(count));
     }
 }

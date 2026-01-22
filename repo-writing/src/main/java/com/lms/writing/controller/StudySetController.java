@@ -85,29 +85,37 @@ public class StudySetController {
     // Word-related endpoints for study sets
     @GetMapping("/{id}/words/learned")
     public ResponseEntity<ApiResponse<List<WordResponse>>> getLearnedWords(
-            @PathVariable String id) {
-        List<WordResponse> words = wordService.getLearnedWords(id);
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        List<WordResponse> words = wordService.getLearnedWords(principal.userId(), id);
         return ResponseEntity.ok(ApiResponse.ok(words));
     }
 
     @GetMapping("/{id}/words/unlearned")
     public ResponseEntity<ApiResponse<List<WordResponse>>> getUnlearnedWords(
-            @PathVariable String id) {
-        List<WordResponse> words = wordService.getNotLearnedWords(id);
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        List<WordResponse> words = wordService.getNotLearnedWords(principal.userId(), id);
         return ResponseEntity.ok(ApiResponse.ok(words));
     }
 
     @GetMapping("/{studySetId}/count/learned")
     public ResponseEntity<ApiResponse<Long>> countLearnedWords(
-            @PathVariable String studySetId) {
-        long count = wordService.countLearnedWords(studySetId);
+            @PathVariable String studySetId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        long count = wordService.countLearnedWords(principal.userId(), studySetId);
         return ResponseEntity.ok(ApiResponse.ok(count));
     }
 
     @GetMapping("/{studySetId}/count/unlearned")
     public ResponseEntity<ApiResponse<Long>> countUnlearnedWords(
-            @PathVariable String studySetId) {
-        long count = wordService.countNotLearnedWords(studySetId);
+            @PathVariable String studySetId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        long count = wordService.countNotLearnedWords(principal.userId(), studySetId);
         return ResponseEntity.ok(ApiResponse.ok(count));
     }
 }

@@ -22,30 +22,4 @@ public abstract class BaseContentItem extends BaseEntity {
     @Column(nullable = false)
     private int contentIndex;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ContentStatus status = ContentStatus.NOT_LEARNED;
-
-    // Common Chinese learning fields
-    private String sinoVn;
-
-    private String wordType;
-
-    private String hskLevel;
-
-    @Column(columnDefinition = "TEXT")
-    private String examplePinyin;
-
-    @Column(columnDefinition = "TEXT")
-    private String exampleMeaning;
-
-    @Column(columnDefinition = "TEXT")
-    private String sinoOrigin;
-
-    private String imageWord;
-
-    private String imageOrigin;
-
-    @Column(columnDefinition = "TEXT")
-    private String characters;
 }

@@ -36,12 +36,26 @@ public class Word extends BaseContentItem {
     @Column(columnDefinition = "TEXT")
     private String example;
 
-    // Note: The following fields are now inherited from BaseContentItem:
-    // - studySet (ManyToOne relationship)
-    // - contentIndex (was wordIndex)
-    // - status (ContentStatus enum - compatible with WordStatus)
-    // - sinoVn, wordType, hskLevel
-    // - examplePinyin, exampleMeaning
-    // - sinoOrigin, imageWord, imageOrigin
-    // - characters
+    private String sinoVn;
+
+    private String wordType;
+
+    private String hskLevel;
+
+    @Column(columnDefinition = "TEXT")
+    private String examplePinyin;
+
+    @Column(columnDefinition = "TEXT")
+    private String exampleMeaning;
+
+    @Column(columnDefinition = "TEXT")
+    private String sinoOrigin;
+
+    private String imageWord;
+
+    private String imageOrigin;
+
+    @Column(columnDefinition = "TEXT")
+    private String characters;
+
 }

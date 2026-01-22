@@ -30,6 +30,7 @@ public interface CardMapper {
     Card toEntity(CreateCardRequest request);
 
     @Mapping(target = "characters", source = "characters", qualifiedByName = "jsonToCharacters")
+    @Mapping(target = "status", ignore = true)
     CardResponse toResponse(Card card);
 
     List<CardResponse> toResponseList(List<Card> cards);

@@ -20,6 +20,7 @@ public interface WordMapper {
 
     @Mapping(target = "studySetId", source = "studySet.id")
     @Mapping(target = "characters", ignore = true)
+    @Mapping(target = "status", ignore = true)
     WordResponse toResponse(Word word);
 
     List<WordResponse> toResponseList(List<Word> words);

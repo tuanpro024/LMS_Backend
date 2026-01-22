@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import com.lms.common.security.AuthPrincipal;
+import org.springframework.security.core.Authentication;
+
 @RestController
 @RequestMapping("/cards")
 @RequiredArgsConstructor
@@ -21,9 +24,11 @@ public class CardController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<Void>> updateCardStatus(
             @PathVariable String id,
-            @RequestBody @Valid UpdateCardStatusRequest request) {
+            @RequestBody @Valid UpdateCardStatusRequest request,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
 
-        cardService.updateCardStatus(id, request);
+        cardService.updateCardStatus(principal.userId(), id, request);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

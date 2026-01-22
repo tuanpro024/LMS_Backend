@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +37,8 @@ public class FolderServiceImpl implements FolderService {
     private final SlotRepository slotRepository;
     private final StudySetRepository studySetRepository;
     private final FolderMapper folderMapper;
+    private final StudySetMapper studySetMapper;
+    private final UserCardProgressRepository userCardProgressRepository;
 
     @Override
     public FolderResponse createFolder(CreateFolderRequest request, String userId) {

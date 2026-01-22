@@ -10,6 +10,7 @@ import com.lms.flashcard.entity.enums.CardStatus;
 import com.lms.flashcard.mapper.CardMapper;
 import com.lms.flashcard.repository.CardRepository;
 import com.lms.flashcard.repository.UserCardProgressRepository;
+import com.lms.flashcard.repository.UserCardProgressRepository;
 import com.lms.flashcard.service.CardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

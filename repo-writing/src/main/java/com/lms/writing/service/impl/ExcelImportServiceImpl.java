@@ -2,12 +2,13 @@ package com.lms.writing.service.impl;
 
 import com.lms.writing.dto.response.ExcelImportResponse;
 import com.lms.writing.dto.response.ImportWarning;
-import com.lms.writing.entity.Folder;
-import com.lms.writing.entity.StudySet;
+import com.lms.content.common.entity.Folder;
+import com.lms.content.common.entity.StudySet;
 import com.lms.writing.entity.Word;
 import com.lms.writing.exception.InvalidFileFormatException;
-import com.lms.writing.repository.FolderRepository;
-import com.lms.writing.repository.StudySetRepository;
+import com.lms.content.common.repository.FolderRepository;
+import com.lms.content.common.repository.StudySetRepository;
+import com.lms.writing.repository.WordRepository;
 import com.lms.writing.service.ExcelImportService;
 import com.lms.writing.util.CharacterUtils;
 import com.lms.writing.util.ExcelParser;
@@ -27,6 +28,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
 
     private final FolderRepository folderRepository;
     private final StudySetRepository studySetRepository;
+    private final WordRepository wordRepository;
 
     @Override
     @Transactional
@@ -56,16 +58,23 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         ImportResult result = processRows(rows, userId, isPrivate);
 
         // Validate có study sets không
-        if (result.studySets.isEmpty()) {
+        if (result.studySetsWithWords.isEmpty()) {
             throw new InvalidFileFormatException("No valid study sets found in the file");
         }
 
-        // Save study sets trước (vì ManyToMany không có cascade)
+        // Save study sets trước
         List<StudySet> savedStudySets = new ArrayList<>();
-        for (StudySet studySet : result.studySets) {
-            StudySet saved = studySetRepository.save(studySet);
+        for (StudySetWithWords ssw : result.studySetsWithWords) {
+            StudySet saved = studySetRepository.save(ssw.studySet);
             savedStudySets.add(saved);
-            log.debug("Saved study set: {} with {} words", saved.getTitle(), saved.getWords().size());
+
+            // Save words for this study set
+            for (Word word : ssw.words) {
+                word.setStudySet(saved);
+                wordRepository.save(word);
+            }
+
+            log.debug("Saved study set: {} with {} words", saved.getTitle(), ssw.words.size());
         }
 
         // Tạo folder
@@ -85,20 +94,20 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         Folder savedFolder = folderRepository.save(folder);
 
         log.info("Import completed. Folder ID: {}, Study Sets: {}, Words: {}",
-                savedFolder.getId(), result.studySets.size(), result.totalWords);
+                savedFolder.getId(), result.studySetsWithWords.size(), result.totalWords);
 
         // Build response
         return ExcelImportResponse.builder()
                 .folderId(savedFolder.getId())
                 .folderName(savedFolder.getName())
-                .totalStudySets(result.studySets.size())
+                .totalStudySets(result.studySetsWithWords.size())
                 .totalWords(result.totalWords)
                 .studySetIds(savedFolder.getStudySets().stream()
                         .map(StudySet::getId)
                         .toList())
                 .warnings(result.warnings)
                 .message(String.format("Successfully imported %d study sets with %d words",
-                        result.studySets.size(), result.totalWords))
+                        result.studySetsWithWords.size(), result.totalWords))
                 .build();
     }
 
@@ -106,21 +115,23 @@ public class ExcelImportServiceImpl implements ExcelImportService {
      * Process rows và tạo study sets với words
      */
     private ImportResult processRows(List<ExcelParser.ExcelRow> rows, String userId, boolean isPrivate) {
-        List<StudySet> studySets = new ArrayList<>();
+        List<StudySetWithWords> studySetsWithWords = new ArrayList<>();
         List<ImportWarning> warnings = new ArrayList<>();
         int totalWords = 0;
 
         StudySet currentStudySet = null;
-        int wordIndex = 0;
+        List<Word> currentWords = null;
+        int contentIndex = 0;
 
         for (ExcelParser.ExcelRow row : rows) {
             // Skip empty rows
             if (ExcelParser.isRowEmpty(row)) {
                 // Dòng trống đánh dấu kết thúc study set hiện tại
-                if (currentStudySet != null && !currentStudySet.getWords().isEmpty()) {
-                    studySets.add(currentStudySet);
+                if (currentStudySet != null && currentWords != null && !currentWords.isEmpty()) {
+                    studySetsWithWords.add(new StudySetWithWords(currentStudySet, currentWords));
                     currentStudySet = null;
-                    wordIndex = 0;
+                    currentWords = null;
+                    contentIndex = 0;
                 }
                 continue;
             }
@@ -128,8 +139,8 @@ public class ExcelImportServiceImpl implements ExcelImportService {
             // Nếu cột A có giá trị → Study Set mới
             if (row.getStudySetName() != null && !row.getStudySetName().trim().isEmpty()) {
                 // Save study set cũ nếu có
-                if (currentStudySet != null && !currentStudySet.getWords().isEmpty()) {
-                    studySets.add(currentStudySet);
+                if (currentStudySet != null && currentWords != null && !currentWords.isEmpty()) {
+                    studySetsWithWords.add(new StudySetWithWords(currentStudySet, currentWords));
                 }
 
                 // Tạo study set mới
@@ -138,7 +149,8 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                         .isPrivate(isPrivate)
                         .userId(userId)
                         .build();
-                wordIndex = 0;
+                currentWords = new ArrayList<>();
+                contentIndex = 0;
 
                 log.debug("Created new study set: {}", row.getStudySetName());
             }
@@ -173,25 +185,24 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                     charactersJson = CharacterUtils.wordToJsonArray(termValue);
                 }
 
-                // Tạo word với tất cả các thuộc tính
-                Word word = Word.builder()
-                        .word(termValue)
-                        .meaning(meaning.trim())
-                        .wordIndex(wordIndex++)
-                        .pinyin(row.getPinyin() != null ? row.getPinyin().trim() : "")
-                        .sinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null)
-                        .wordType(row.getWordType() != null ? row.getWordType().trim() : null)
-                        .hskLevel(row.getHskLevel() != null ? row.getHskLevel().trim() : null)
-                        .imageWord(row.getImageWord() != null ? row.getImageWord().trim() : null)
-                        .sinoOrigin(row.getSinoOrigin() != null ? row.getSinoOrigin().trim() : null)
-                        .imageOrigin(row.getImageOrigin() != null ? row.getImageOrigin().trim() : null)
-                        .example(row.getExampleSentence() != null ? row.getExampleSentence().trim() : null)
-                        .examplePinyin(row.getExamplePinyin() != null ? row.getExamplePinyin().trim() : null)
-                        .exampleMeaning(row.getExampleMeaning() != null ? row.getExampleMeaning().trim() : null)
-                        .characters(charactersJson)
-                        .build();
+                // Tạo word với tất cả các thuộc tính (không set studySet ở đây)
+                Word word = new Word();
+                word.setWord(termValue);
+                word.setMeaning(meaning.trim());
+                word.setContentIndex(contentIndex++);
+                word.setPinyin(row.getPinyin() != null ? row.getPinyin().trim() : "");
+                word.setSinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null);
+                word.setWordType(row.getWordType() != null ? row.getWordType().trim() : null);
+                word.setHskLevel(row.getHskLevel() != null ? row.getHskLevel().trim() : null);
+                word.setImageWord(row.getImageWord() != null ? row.getImageWord().trim() : null);
+                word.setSinoOrigin(row.getSinoOrigin() != null ? row.getSinoOrigin().trim() : null);
+                word.setImageOrigin(row.getImageOrigin() != null ? row.getImageOrigin().trim() : null);
+                word.setExample(row.getExampleSentence() != null ? row.getExampleSentence().trim() : null);
+                word.setExamplePinyin(row.getExamplePinyin() != null ? row.getExamplePinyin().trim() : null);
+                word.setExampleMeaning(row.getExampleMeaning() != null ? row.getExampleMeaning().trim() : null);
+                word.setCharacters(charactersJson);
 
-                currentStudySet.addWord(word);
+                currentWords.add(word);
                 totalWords++;
 
                 log.debug("Added word to study set: {} - {}", row.getTerm(), currentStudySet.getTitle());
@@ -206,18 +217,26 @@ public class ExcelImportServiceImpl implements ExcelImportService {
         }
 
         // Lưu study set cuối cùng nếu có
-        if (currentStudySet != null && !currentStudySet.getWords().isEmpty()) {
-            studySets.add(currentStudySet);
+        if (currentStudySet != null && currentWords != null && !currentWords.isEmpty()) {
+            studySetsWithWords.add(new StudySetWithWords(currentStudySet, currentWords));
         }
 
-        return new ImportResult(studySets, totalWords, warnings);
+        return new ImportResult(studySetsWithWords, totalWords, warnings);
+    }
+
+    /**
+     * Helper class để group StudySet với Words của nó
+     */
+    private record StudySetWithWords(
+            StudySet studySet,
+            List<Word> words) {
     }
 
     /**
      * Helper class để return multiple values
      */
     private record ImportResult(
-            List<StudySet> studySets,
+            List<StudySetWithWords> studySetsWithWords,
             int totalWords,
             List<ImportWarning> warnings) {
     }

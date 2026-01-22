@@ -14,11 +14,13 @@ public interface WordMapper {
 
     @Mapping(target = "studySet", ignore = true)
     @Mapping(target = "characters", ignore = true)
+    @Mapping(target = "contentIndex", ignore = true)
     @BeanMapping(builder = @Builder(disableBuilder = true))
     Word toEntity(CreateWordRequest request);
 
     @Mapping(target = "studySetId", source = "studySet.id")
     @Mapping(target = "characters", ignore = true)
+    @Mapping(target = "status", ignore = true)
     WordResponse toResponse(Word word);
 
     List<WordResponse> toResponseList(List<Word> words);
@@ -26,6 +28,7 @@ public interface WordMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "studySet", ignore = true)
     @Mapping(target = "characters", ignore = true)
+    @Mapping(target = "contentIndex", ignore = true)
     void updateEntity(@MappingTarget Word word, UpdateWordRequest request);
 
     // Generate characters JSON from word after mapping (for create)
@@ -34,6 +37,8 @@ public interface WordMapper {
         if (request.getWord() != null && !request.getWord().isEmpty()) {
             word.setCharacters(CharacterUtils.wordToJsonArray(request.getWord()));
         }
+        // Map wordIndex to contentIndex (inherited from BaseContentItem)
+        word.setContentIndex(request.getWordIndex());
     }
 
     // Generate characters JSON from word after mapping (for update)
@@ -41,6 +46,10 @@ public interface WordMapper {
     default void generateCharactersAfterUpdate(@MappingTarget Word word, UpdateWordRequest request) {
         if (request.getWord() != null && !request.getWord().isEmpty()) {
             word.setCharacters(CharacterUtils.wordToJsonArray(request.getWord()));
+        }
+        // Map wordIndex to contentIndex (inherited from BaseContentItem)
+        if (request.getWordIndex() != null) {
+            word.setContentIndex(request.getWordIndex());
         }
     }
 

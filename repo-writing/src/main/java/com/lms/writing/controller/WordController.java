@@ -1,5 +1,7 @@
 package com.lms.writing.controller;
 
+import com.lms.common.security.AuthPrincipal;
+import org.springframework.security.core.Authentication;
 import com.lms.common.dto.ApiResponse;
 import com.lms.writing.dto.request.UpdateWordRequest;
 import com.lms.writing.dto.response.WordResponse;
@@ -26,8 +28,9 @@ public class WordController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @GetMapping("/study-set/{studySetId}")
-    public ResponseEntity<ApiResponse<List<WordResponse>>> getWordsByStudySet(@PathVariable String studySetId) {
+    @GetMapping("/study-set")
+    public ResponseEntity<ApiResponse<List<WordResponse>>> getWordsByStudySet(
+            @RequestParam String studySetId) {
         List<WordResponse> response = wordService.getWordsByStudySetId(studySetId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
@@ -39,6 +42,16 @@ public class WordController {
             @RequestHeader("X-User-Id") String userId) {
         WordResponse response = wordService.updateWord(id, request, userId);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<Void>> updateWordStatus(
+            @PathVariable String id,
+            @RequestBody @Valid com.lms.writing.dto.request.UpdateWordStatusRequest request,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        wordService.updateWordStatus(principal.userId(), id, request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
     @DeleteMapping("/{id}")

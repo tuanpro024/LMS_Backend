@@ -2,10 +2,10 @@ package com.lms.flashcard.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
-import com.lms.flashcard.dto.request.CreateSlotRequest;
-import com.lms.flashcard.dto.request.UpdateSlotRequest;
-import com.lms.flashcard.dto.response.SlotResponse;
-import com.lms.flashcard.service.SlotService;
+import com.lms.content.common.delegate.api.SlotApiDelegate;
+import com.lms.content.common.dto.request.CreateSlotRequest;
+import com.lms.content.common.dto.request.UpdateSlotRequest;
+import com.lms.content.common.dto.response.SlotResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,40 +20,33 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SlotController {
 
-    private final SlotService slotService;
+    private final SlotApiDelegate delegate;
 
     @PostMapping
     public ResponseEntity<ApiResponse<SlotResponse>> createSlot(
             @RequestBody @Valid CreateSlotRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        SlotResponse response = slotService.createSlot(request, principal.userId());
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
+        SlotResponse response = delegate.createSlot(request, principal.userId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SlotResponse>> getSlotById(
-            @PathVariable String id) {
-
-        SlotResponse response = slotService.getSlotById(id);
+    public ResponseEntity<ApiResponse<SlotResponse>> getSlotById(@PathVariable String id) {
+        SlotResponse response = delegate.getSlotById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SlotResponse>>> getSlots(
-            @RequestParam(required = false) String subjectId) {
+    public ResponseEntity<ApiResponse<List<SlotResponse>>> getAllSlots() {
+        List<SlotResponse> response = delegate.getAllSlots();
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
 
-        List<SlotResponse> response;
-
-        if (subjectId != null) {
-            response = slotService.getSlotsBySubjectId(subjectId);
-        } else {
-            response = slotService.getAllSlots();
-        }
-
+    @GetMapping("/subject/{subjectId}")
+    public ResponseEntity<ApiResponse<List<SlotResponse>>> getSlotsBySubjectId(
+            @PathVariable String subjectId) {
+        List<SlotResponse> response = delegate.getSlotsBySubjectId(subjectId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -62,10 +55,8 @@ public class SlotController {
             @PathVariable String id,
             @RequestBody @Valid UpdateSlotRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        SlotResponse response = slotService.updateSlot(id, request, principal.userId());
-
+        SlotResponse response = delegate.updateSlot(id, request, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -73,10 +64,8 @@ public class SlotController {
     public ResponseEntity<ApiResponse<Void>> deleteSlot(
             @PathVariable String id,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        slotService.deleteSlot(id, principal.userId());
-
+        delegate.deleteSlot(id, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
@@ -85,10 +74,8 @@ public class SlotController {
             @PathVariable String slotId,
             @PathVariable String folderId,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        SlotResponse response = slotService.addFolderToSlot(slotId, folderId, principal.userId());
-
+        SlotResponse response = delegate.addFolderToSlot(slotId, folderId, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -97,10 +84,8 @@ public class SlotController {
             @PathVariable String slotId,
             @PathVariable String folderId,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        SlotResponse response = slotService.removeFolderFromSlot(slotId, folderId, principal.userId());
-
+        SlotResponse response = delegate.removeFolderFromSlot(slotId, folderId, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

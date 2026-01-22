@@ -6,8 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "user_card_progress",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "card_id"}))
+@Table(name = "user_card_progress", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "card_id" }))
 @Getter
 @Setter
 @NoArgsConstructor

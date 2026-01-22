@@ -6,12 +6,16 @@ import com.lms.common.dto.ApiResponse;
 import com.lms.dictionary.dto.request.CreateVocabularyRequest;
 import com.lms.dictionary.dto.request.UpdateVocabularyRequest;
 import com.lms.dictionary.dto.request.VocabularySearchRequest;
+import com.lms.dictionary.dto.response.ImportResult;
 import com.lms.dictionary.dto.response.VocabularyBasicResponse;
 import com.lms.dictionary.dto.response.VocabularyResponse;
 import com.lms.dictionary.service.VocabularyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/vocabularies")
@@ -50,6 +54,11 @@ public class VocabularyController {
     @GetMapping("/suggestions")
     public ApiResponse<PageResponse<VocabularyBasicResponse>> getSuggestions(@Valid PaginationRequest request) {
         return ApiResponse.ok(vocabularyService.getSuggestions(request));
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ImportResult> importVocabularies(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.ok(vocabularyService.importVocabularies(file));
     }
 
 

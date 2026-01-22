@@ -9,6 +9,7 @@ import com.lms.dictionary.dto.request.UpdateVocabComponentRequest;
 import com.lms.dictionary.dto.request.UpdateVocabularyRequest;
 import com.lms.dictionary.dto.request.VocabularySearchRequest;
 import com.lms.dictionary.dto.request.VocabComponentRequest;
+import com.lms.dictionary.dto.response.ImportResult;
 import com.lms.dictionary.dto.response.VocabularyBasicResponse;
 import com.lms.dictionary.dto.response.VocabularyResponse;
 import com.lms.dictionary.entity.VocabComponent;
@@ -18,6 +19,8 @@ import com.lms.dictionary.mapper.VocabularyMapper;
 import com.lms.dictionary.mapper.VocabularyMeaningMapper;
 import com.lms.dictionary.repository.VocabularyRepository;
 import com.lms.dictionary.service.VocabularyService;
+import com.lms.dictionary.util.ExcelHelper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,7 +28,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,10 +82,21 @@ public class VocabularyServiceImpl implements VocabularyService {
                     componentVocab = vocabularyRepository.findById(cReq.getId())
                             .orElseThrow(() -> new ApiException(ErrorCode.E227, "Component vocabulary not found with id: " + cReq.getId()));
                 } else if (cReq.getNewVocabulary() != null) {
-                    componentVocab = vocabularyRepository.findByHanziAndPinyinAndDeletedFalse(
-                            cReq.getNewVocabulary().getHanzi(),
-                            cReq.getNewVocabulary().getPinyin())
+                    // Try to find by Hanzi + Pinyin first
+                    String cHanzi = cReq.getNewVocabulary().getHanzi();
+                    String cPinyin = cReq.getNewVocabulary().getPinyin();
+                    
+                    componentVocab = vocabularyRepository.findByHanziAndPinyinAndDeletedFalse(cHanzi, cPinyin)
                             .orElse(null);
+                    
+                    // Fallback: Find by Hanzi only (if pinyin is missing or mismatch)
+                    if (componentVocab == null) {
+                         List<Vocabulary> exactHanziMatches = vocabularyRepository.findByHanziAndDeletedFalse(cHanzi);
+                         if (!exactHanziMatches.isEmpty()) {
+                             componentVocab = exactHanziMatches.get(0); // Take the first one (acceptable risk for import)
+                         }
+                    }
+
                     if (componentVocab == null) {
                         componentVocab = processCreateVocabulary(cReq.getNewVocabulary());
                         componentVocab = vocabularyRepository.save(componentVocab);
@@ -255,5 +269,50 @@ public class VocabularyServiceImpl implements VocabularyService {
                 .build();
     }
 
+
+    @Override
+    @Transactional
+    public ImportResult importVocabularies(MultipartFile file) {
+        if (!ExcelHelper.hasExcelFormat(file)) {
+            throw new ApiException(ErrorCode.E227, "Invalid file format. Please upload an Excel file.");
+        }
+
+        try {
+            List<CreateVocabularyRequest> requests = ExcelHelper.excelToVocabularies(file.getInputStream());
+            List<String> errors = new ArrayList<>();
+            int successCount = 0;
+            int failureCount = 0;
+
+            for (int i = 0; i < requests.size(); i++) {
+                CreateVocabularyRequest req = requests.get(i);
+                try {
+                    // Check duplicate
+                    if (vocabularyRepository.existsByHanziAndDeletedFalse(req.getHanzi())) {
+                        errors.add("Row " + (i + 2) + ": Hanzi already exists: " + req.getHanzi());
+                        failureCount++;
+                        continue;
+                    }
+                    
+                    Vocabulary vocabulary = processCreateVocabulary(req);
+                    vocabularyRepository.save(vocabulary);
+                    successCount++;
+                } catch (Exception e) {
+                    log.error("Error importing row {}", i + 2, e);
+                    errors.add("Row " + (i + 2) + ": " + e.getMessage());
+                    failureCount++;
+                }
+            }
+
+            return ImportResult.builder()
+                    .totalRows(requests.size())
+                    .successCount(successCount)
+                    .failureCount(failureCount)
+                    .errors(errors)
+                    .build();
+
+        } catch (java.io.IOException e) {
+             throw new ApiException(ErrorCode.E227, "Fail to parse Excel file: " + e.getMessage());
+        }
+    }
 
 }

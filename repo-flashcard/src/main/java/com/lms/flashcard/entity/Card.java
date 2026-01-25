@@ -1,19 +1,12 @@
 package com.lms.flashcard.entity;
 
 import com.lms.content.common.entity.BaseContentItem;
-import com.lms.content.common.entity.enums.ContentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 /**
  * Card entity - extends BaseContentItem which contains common fields:
  * - studySet relationship
- * - contentIndex (replaces cardIndex)
- * - status (CardStatus → ContentStatus)
- * - sinoVn, wordType, hskLevel
- * - examplePinyin, exampleMeaning
- * - sinoOrigin, imageWord, imageOrigin
- * - characters
  */
 @Entity
 @Table(name = "cards")
@@ -24,7 +17,10 @@ import lombok.*;
 @Builder
 public class Card extends BaseContentItem {
 
-    // Card-specific fields (not in BaseContentItem)
+    // Card-specific fields
+    @Column(nullable = false)
+    private int cardIndex;
+
     @Column(nullable = false)
     private String term;
 

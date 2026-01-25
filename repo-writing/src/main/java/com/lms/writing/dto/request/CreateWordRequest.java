@@ -21,8 +21,6 @@ public class CreateWordRequest {
     @NotBlank(message = "Meaning is required")
     private String meaning;
 
-    private int wordIndex;
-
     private String sinoVn;
 
     private String wordType;

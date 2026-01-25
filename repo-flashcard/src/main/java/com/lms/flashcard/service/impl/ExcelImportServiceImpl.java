@@ -119,7 +119,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
 
         StudySet currentStudySet = null;
         List<Card> currentCards = null;
-        int contentIndex = 0;
+        int cardIndex = 0;
 
         for (ExcelParser.ExcelRow row : rows) {
             // Skip empty rows
@@ -129,7 +129,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                     studySetsWithCards.add(new StudySetWithCards(currentStudySet, currentCards));
                     currentStudySet = null;
                     currentCards = null;
-                    contentIndex = 0;
+                    cardIndex = 0;
                 }
                 continue;
             }
@@ -148,7 +148,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                         .userId(userId)
                         .build();
                 currentCards = new ArrayList<>();
-                contentIndex = 0;
+                cardIndex = 0;
 
                 log.debug("Created new study set: {}", row.getStudySetName());
             }
@@ -180,7 +180,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                 Card card = new Card();
                 card.setTerm(row.getTerm().trim());
                 card.setDefinition(definition.trim());
-                card.setContentIndex(contentIndex++);
+                card.setCardIndex(cardIndex++);
                 card.setPinyin(row.getPinyin() != null ? row.getPinyin().trim() : null);
                 card.setSinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null);
                 card.setWordType(row.getWordType() != null ? row.getWordType().trim() : null);

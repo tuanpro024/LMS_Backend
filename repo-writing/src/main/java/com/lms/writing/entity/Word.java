@@ -7,12 +7,6 @@ import lombok.*;
 /**
  * Word entity - extends BaseContentItem which contains common fields:
  * - studySet relationship
- * - contentIndex (replaces wordIndex)
- * - status (WordStatus → ContentStatus)
- * - sinoVn, wordType, hskLevel
- * - examplePinyin, exampleMeaning
- * - sinoOrigin, imageWord, imageOrigin
- * - characters
  */
 @Entity
 @Table(name = "words")
@@ -23,7 +17,7 @@ import lombok.*;
 @Builder
 public class Word extends BaseContentItem {
 
-    // Word-specific fields (not in BaseContentItem)
+    // Word-specific fields
     @Column(nullable = false)
     private String word;
 

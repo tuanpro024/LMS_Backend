@@ -121,7 +121,6 @@ public class ExcelImportServiceImpl implements ExcelImportService {
 
         StudySet currentStudySet = null;
         List<Word> currentWords = null;
-        int contentIndex = 0;
 
         for (ExcelParser.ExcelRow row : rows) {
             // Skip empty rows
@@ -131,7 +130,6 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                     studySetsWithWords.add(new StudySetWithWords(currentStudySet, currentWords));
                     currentStudySet = null;
                     currentWords = null;
-                    contentIndex = 0;
                 }
                 continue;
             }
@@ -150,7 +148,6 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                         .userId(userId)
                         .build();
                 currentWords = new ArrayList<>();
-                contentIndex = 0;
 
                 log.debug("Created new study set: {}", row.getStudySetName());
             }
@@ -189,7 +186,6 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                 Word word = new Word();
                 word.setWord(termValue);
                 word.setMeaning(meaning.trim());
-                word.setContentIndex(contentIndex++);
                 word.setPinyin(row.getPinyin() != null ? row.getPinyin().trim() : "");
                 word.setSinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null);
                 word.setWordType(row.getWordType() != null ? row.getWordType().trim() : null);

@@ -25,7 +25,6 @@ public interface CardMapper {
 
     @Mapping(target = "studySet", ignore = true)
     @Mapping(target = "characters", ignore = true)
-    @Mapping(target = "contentIndex", ignore = true)
     @BeanMapping(builder = @Builder(disableBuilder = true))
     Card toEntity(CreateCardRequest request);
 
@@ -62,9 +61,9 @@ public interface CardMapper {
 
     @AfterMapping
     default void afterMapping(@MappingTarget Card card, CreateCardRequest request) {
-        // Map cardIndex to contentIndex (inherited from BaseContentItem)
+        // Set cardIndex directly
         if (request.getCardIndex() != null) {
-            card.setContentIndex(request.getCardIndex());
+            card.setCardIndex(request.getCardIndex());
         }
     }
 }

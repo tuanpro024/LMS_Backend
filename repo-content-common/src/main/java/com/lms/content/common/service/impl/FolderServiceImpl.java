@@ -141,9 +141,6 @@ public class FolderServiceImpl implements FolderService {
         if (request.getDescription() != null) {
             folder.setDescription(request.getDescription());
         }
-        if (request.getColor() != null) {
-            folder.setColor(request.getColor());
-        }
         if (request.getIsPrivate() != null) {
             folder.setPrivate(request.getIsPrivate());
         }

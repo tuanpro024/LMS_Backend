@@ -27,6 +27,7 @@ public class WordResponse {
     private String sinoOrigin;
     private String imageWord;
     private String imageOrigin;
+    private String audio;
     private List<String> characters;
     private WordStatus status;
     private String studySetId;

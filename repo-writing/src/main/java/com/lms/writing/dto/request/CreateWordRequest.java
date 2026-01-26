@@ -38,4 +38,6 @@ public class CreateWordRequest {
     private String imageWord;
 
     private String imageOrigin;
+
+    private String audio;
 }

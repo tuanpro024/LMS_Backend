@@ -36,5 +36,7 @@ public class UpdateWordRequest {
 
     private String imageOrigin;
 
+    private String audio;
+
     private WordStatus status;
 }

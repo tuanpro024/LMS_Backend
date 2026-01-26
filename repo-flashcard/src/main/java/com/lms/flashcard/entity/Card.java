@@ -1,5 +1,6 @@
 package com.lms.flashcard.entity;
 
+import com.lms.content.common.dto.excel.ImportableContentItem;
 import com.lms.content.common.entity.BaseContentItem;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,7 +16,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Card extends BaseContentItem {
+public class Card extends BaseContentItem implements ImportableContentItem {
 
     // Card-specific fields
     @Column(nullable = false)
@@ -51,6 +52,8 @@ public class Card extends BaseContentItem {
     private String imageWord;
 
     private String imageOrigin;
+
+    private String audio;
 
     @Column(columnDefinition = "TEXT")
     private String characters;

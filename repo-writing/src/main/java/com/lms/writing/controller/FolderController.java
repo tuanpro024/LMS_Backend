@@ -6,15 +6,12 @@ import com.lms.content.common.delegate.api.FolderApiDelegate;
 import com.lms.content.common.dto.request.CreateFolderRequest;
 import com.lms.content.common.dto.request.UpdateFolderRequest;
 import com.lms.content.common.dto.response.FolderResponse;
-import com.lms.writing.dto.response.ExcelImportResponse;
-import com.lms.writing.service.ExcelImportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,7 +21,6 @@ import java.util.List;
 public class FolderController {
 
     private final FolderApiDelegate delegate;
-    private final ExcelImportService excelImportService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
@@ -119,23 +115,6 @@ public class FolderController {
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         FolderResponse response = delegate.removeStudySetFromFolder(folderId, studySetId, principal.userId());
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
-    @PostMapping("/import-excel")
-    public ResponseEntity<ApiResponse<ExcelImportResponse>> importFromExcel(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "folderName", required = false) String folderName,
-            @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "isPrivate", defaultValue = "false") boolean isPrivate,
-            Authentication authentication) {
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        ExcelImportResponse response = excelImportService.importFromExcel(
-                file,
-                folderName,
-                description,
-                isPrivate,
-                principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

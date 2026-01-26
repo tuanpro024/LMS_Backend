@@ -11,7 +11,7 @@ import org.mapstruct.MappingTarget;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {VocabularyMeaningMapper.class})
+@Mapper(componentModel = "spring", uses = { VocabularyMeaningMapper.class })
 public interface VocabularyMapper {
 
     Vocabulary toEntity(CreateVocabularyRequest request);
@@ -23,7 +23,14 @@ public interface VocabularyMapper {
 
     List<VocabularyResponse> toResponseList(List<Vocabulary> vocabularies);
 
-    @Mapping(target = "meanings", expression = "java(vocabulary.getMeanings().stream().map(m -> m.getMeaning()).collect(java.util.stream.Collectors.toList()))")
+    @Mapping(target = "hskLevel", source = "hskLevel")
+    @Mapping(target = "audioUrl", source = "audioUrl")
+    @Mapping(target = "strokeAnimationUrl", source = "strokeAnimationUrl")
+    @Mapping(target = "etymologyStory", source = "etymologyStory")
+    @Mapping(target = "etymologyImage", source = "etymologyImage")
+    @Mapping(target = "isSingleVocab", source = "isSingleVocab")
+    @Mapping(target = "wordType", source = "wordType")
+    @Mapping(target = "imageUrl", source = "imageUrl")
     VocabularyBasicResponse toBasicResponse(Vocabulary vocabulary);
 
     List<VocabularyBasicResponse> toBasicResponseList(List<Vocabulary> vocabularies);

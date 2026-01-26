@@ -26,6 +26,11 @@ public class VocabularyMeaning extends BaseEntityLongId {
     private String exampleSentenceCn;
 
     @Column(name = "example_sentence_vi", columnDefinition = "TEXT")
-
     private String exampleSentenceVi;
+
+    @Column(name = "example_sentence_en", columnDefinition = "TEXT")
+    private String exampleSentenceEn;
+
+    @Column(name = "example_sentence_pinyin", columnDefinition = "TEXT")
+    private String exampleSentencePinyin;
 }

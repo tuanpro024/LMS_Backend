@@ -37,8 +37,8 @@ public class FolderServiceImpl implements FolderService {
     private final SlotRepository slotRepository;
     private final StudySetRepository studySetRepository;
     private final FolderMapper folderMapper;
-    private final StudySetMapper studySetMapper;
-    private final UserCardProgressRepository userCardProgressRepository;
+    // private final StudySetMapper studySetMapper;
+    // private final UserCardProgressRepository userCardProgressRepository;
 
     @Override
     public FolderResponse createFolder(CreateFolderRequest request, String userId) {

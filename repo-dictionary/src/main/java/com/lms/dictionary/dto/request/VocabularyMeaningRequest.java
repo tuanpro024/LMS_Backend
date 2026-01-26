@@ -17,4 +17,6 @@ public class VocabularyMeaningRequest {
 
     private String exampleSentenceCn;
     private String exampleSentenceVi;
+    private String exampleSentenceEn;
+    private String exampleSentencePinyin;
 }

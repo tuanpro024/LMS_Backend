@@ -18,6 +18,7 @@ import java.util.List;
 public class UpdateVocabularyRequest {
 
     private Integer hskLevel;
+    private String wordType;
 
     @NotBlank(message = "Hanzi is required")
     private String hanzi;
@@ -26,6 +27,7 @@ public class UpdateVocabularyRequest {
     private String pinyin;
 
     private String audioUrl;
+    private String imageUrl;
     private String strokeAnimationUrl;
     private String etymologyStory;
     private String etymologyImage;

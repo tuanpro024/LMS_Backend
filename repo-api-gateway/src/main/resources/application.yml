@@ -74,6 +74,12 @@ spring:
             - Path=${config.api-prefix}/writing/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: multimedia
+          uri: lb://REPO-MULTIMEDIA
+          predicates:
+            - Path=${config.api-prefix}/videos/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

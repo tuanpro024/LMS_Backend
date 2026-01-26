@@ -10,17 +10,13 @@ COPY repo-common-framework ./repo-common-framework
 RUN mvn -f repo-common-parent/pom.xml clean install -DskipTests
 RUN mvn -f repo-common-framework/pom.xml clean install -DskipTests
 
-# Copy and install content common module
-COPY repo-content-common ./repo-content-common
-RUN mvn -f repo-content-common/pom.xml clean install -DskipTests
-
-# Copy and build flashcard
-COPY repo-flashcard ./repo-flashcard
-RUN mvn -f repo-flashcard/pom.xml clean package -DskipTests
+# Copy and build pronunciation
+COPY repo-pronunciation ./repo-pronunciation
+RUN mvn -f repo-pronunciation/pom.xml clean package -DskipTests
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/repo-flashcard/target/repo-flashcard-*.jar app.jar
-EXPOSE 8083
+COPY --from=build /app/repo-pronunciation/target/repo-pronunciation-*.jar app.jar
+EXPOSE 8087
 ENTRYPOINT ["java", "-jar", "app.jar"]

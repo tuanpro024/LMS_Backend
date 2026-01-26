@@ -14,13 +14,13 @@ RUN mvn -f repo-common-framework/pom.xml clean install -DskipTests
 COPY repo-content-common ./repo-content-common
 RUN mvn -f repo-content-common/pom.xml clean install -DskipTests
 
-# Copy and build flashcard
-COPY repo-flashcard ./repo-flashcard
-RUN mvn -f repo-flashcard/pom.xml clean package -DskipTests
+# Copy and build dictionary
+COPY repo-dictionary ./repo-dictionary
+RUN mvn -f repo-dictionary/pom.xml clean package -DskipTests
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-COPY --from=build /app/repo-flashcard/target/repo-flashcard-*.jar app.jar
-EXPOSE 8083
+COPY --from=build /app/repo-dictionary/target/repo-dictionary-*.jar app.jar
+EXPOSE 8085
 ENTRYPOINT ["java", "-jar", "app.jar"]

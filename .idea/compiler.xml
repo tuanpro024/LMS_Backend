@@ -35,7 +35,7 @@
         </processorPath>
         <module name="repo-content-common" />
       </profile>
-      <profile name="Annotation profile for repo-writing" enabled="true">
+      <profile name="Annotation profile for repo-multimedia" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -52,6 +52,7 @@
         <module name="repo-writing" />
         <module name="repo-api-gateway" />
         <module name="repo-eureka" />
+        <module name="repo-multimedia" />
         <module name="repo-notification" />
         <module name="repo-identity" />
       </profile>
@@ -66,6 +67,7 @@
       <module name="repo-eureka" options="-parameters" />
       <module name="repo-flashcard" options="-parameters" />
       <module name="repo-identity" options="-parameters" />
+      <module name="repo-multimedia" options="-parameters" />
       <module name="repo-notification" options="-parameters" />
       <module name="repo-realtime" options="-parameters" />
       <module name="repo-writing" options="-parameters" />

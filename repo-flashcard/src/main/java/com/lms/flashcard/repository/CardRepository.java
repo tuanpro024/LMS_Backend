@@ -10,9 +10,7 @@ import java.util.List;
 @Repository
 public interface CardRepository extends JpaRepository<Card, String> {
 
-    List<Card> findByStudySetIdAndStatus(String studySetId, CardStatus status);
-
-    long countByStudySetIdAndStatus(String studySetId, CardStatus status);
+    List<Card> findByStudySetId(String studySetId);
 
     long countByStudySetId(String studySetId);
 }

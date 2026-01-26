@@ -1,8 +1,8 @@
 package com.lms.writing.config;
 
-import com.lms.writing.entity.Type;
-import com.lms.writing.entity.TypeName;
-import com.lms.writing.repository.TypeRepository;
+import com.lms.content.common.entity.Type;
+import com.lms.content.common.entity.TypeName;
+import com.lms.content.common.repository.TypeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;

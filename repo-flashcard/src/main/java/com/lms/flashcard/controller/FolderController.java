@@ -2,12 +2,12 @@ package com.lms.flashcard.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
-import com.lms.flashcard.dto.request.CreateFolderRequest;
-import com.lms.flashcard.dto.request.UpdateFolderRequest;
+import com.lms.content.common.delegate.api.FolderApiDelegate;
+import com.lms.content.common.dto.request.CreateFolderRequest;
+import com.lms.content.common.dto.request.UpdateFolderRequest;
+import com.lms.content.common.dto.response.FolderResponse;
 import com.lms.flashcard.dto.response.ExcelImportResponse;
-import com.lms.flashcard.dto.response.FolderResponse;
 import com.lms.flashcard.service.ExcelImportService;
-import com.lms.flashcard.service.FolderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,57 +18,62 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+/**
+ * Thin controller that delegates to FolderApiDelegate
+ * Handles HTTP concerns only (status codes, response wrapping)
+ */
 @RestController
 @RequestMapping("/folders")
 @RequiredArgsConstructor
 public class FolderController {
 
-    private final FolderService folderService;
+    private final FolderApiDelegate delegate;
     private final ExcelImportService excelImportService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @RequestBody @Valid CreateFolderRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.createFolder(request, principal.userId());
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
+        FolderResponse response = delegate.createFolder(request, principal.userId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<FolderResponse>> getFolderById(
-            @PathVariable String id,
-            Authentication authentication) {
-
-        String userId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        FolderResponse response = folderService.getFolderById(id, userId);
+    public ResponseEntity<ApiResponse<FolderResponse>> getFolderById(@PathVariable String id) {
+        FolderResponse response = delegate.getFolderById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFolders(
-            @RequestParam(required = false) String userId,
-            Authentication authentication) {
-
-        String currentUserId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        List<FolderResponse> response;
-
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getAllFolders(
+            @RequestParam(required = false) String userId) {
         if (userId != null) {
-            response = folderService.getFoldersByUserId(userId, currentUserId);
-        } else {
-            // Return public folders + current user's private folders
-            response = folderService.getAccessibleFolders(currentUserId);
+            List<FolderResponse> response = delegate.getFoldersByUserId(userId);
+            return ResponseEntity.ok(ApiResponse.ok(response));
         }
+        List<FolderResponse> response = delegate.getAllFolders();
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
 
+    @GetMapping("/package/{packageId}")
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFoldersByPackageId(
+            @PathVariable String packageId) {
+        List<FolderResponse> response = delegate.getFoldersByPackageId(packageId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/subject/{subjectId}")
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFoldersBySubjectId(
+            @PathVariable String subjectId) {
+        List<FolderResponse> response = delegate.getFoldersBySubjectId(subjectId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/slot/{slotId}")
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFoldersBySlotId(
+            @PathVariable String slotId) {
+        List<FolderResponse> response = delegate.getFoldersBySlotId(slotId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -77,11 +82,28 @@ public class FolderController {
             @PathVariable String id,
             @RequestBody @Valid UpdateFolderRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.updateFolder(id, request, principal.userId());
-
+        FolderResponse response = delegate.updateFolder(id, request, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PatchMapping("/{id}/privacy")
+    public ResponseEntity<ApiResponse<Void>> updateFolderPrivacy(
+            @PathVariable String id,
+            @RequestParam boolean isPrivate,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        delegate.updateFolderPrivacy(id, isPrivate, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteFolder(
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        delegate.deleteFolder(id, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
     @PostMapping("/{folderId}/study-sets/{studySetId}")
@@ -89,10 +111,8 @@ public class FolderController {
             @PathVariable String folderId,
             @PathVariable String studySetId,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.addStudySetToFolder(folderId, studySetId, principal.userId());
-
+        FolderResponse response = delegate.addStudySetToFolder(folderId, studySetId, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -101,21 +121,18 @@ public class FolderController {
             @PathVariable String folderId,
             @PathVariable String studySetId,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.removeStudySetFromFolder(folderId, studySetId, principal.userId());
-
+        FolderResponse response = delegate.removeStudySetFromFolder(folderId, studySetId, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @PostMapping("/import-excel")
     public ResponseEntity<ApiResponse<ExcelImportResponse>> importFromExcel(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("folderName") String folderName,
-            @RequestParam(required = false) String description,
-            @RequestParam(defaultValue = "true") boolean isPrivate,
+            @RequestParam(value = "folderName", required = false) String folderName,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "isPrivate", defaultValue = "false") boolean isPrivate,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         ExcelImportResponse response = excelImportService.importFromExcel(
                 file,
@@ -123,31 +140,6 @@ public class FolderController {
                 description,
                 isPrivate,
                 principal.userId());
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
-    }
-
-    @PatchMapping("/{id}/privacy")
-    public ResponseEntity<ApiResponse<FolderResponse>> updateFolderPrivacy(
-            @PathVariable String id,
-            @RequestParam boolean isPrivate,
-            Authentication authentication) {
-
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.updateFolderPrivacy(id, isPrivate, principal.userId());
-
         return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteFolder(
-            @PathVariable String id,
-            Authentication authentication) {
-
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        folderService.deleteFolder(id, principal.userId());
-
-        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

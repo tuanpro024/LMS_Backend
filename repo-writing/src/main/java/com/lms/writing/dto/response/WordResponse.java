@@ -18,7 +18,6 @@ public class WordResponse {
     private String word;
     private String pinyin;
     private String meaning;
-    private int wordIndex;
     private String sinoVn;
     private String wordType;
     private String hskLevel;
@@ -28,6 +27,7 @@ public class WordResponse {
     private String sinoOrigin;
     private String imageWord;
     private String imageOrigin;
+    private String audio;
     private List<String> characters;
     private WordStatus status;
     private String studySetId;

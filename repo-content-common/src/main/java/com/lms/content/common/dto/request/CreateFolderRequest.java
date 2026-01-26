@@ -18,8 +18,6 @@ public class CreateFolderRequest {
 
     private String description;
 
-    private String color;
-
     @NotNull(message = "isPrivate is required")
     private Boolean isPrivate;
 

@@ -28,6 +28,7 @@ public class CardResponse {
     private String sinoOrigin;
     private String imageWord;
     private String imageOrigin;
+    private String audio;
     private List<CharacterInfo> characters;
     private String status;
     private Instant createdAt;

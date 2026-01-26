@@ -62,11 +62,12 @@ public class FolderServiceImpl implements FolderService {
             folder.setSubject(subject);
         }
 
-        // Set slot if provided
-        if (request.getSlotId() != null) {
-            Slot slot = slotRepository.findById(request.getSlotId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Slot not found"));
-            folder.setSlot(slot);
+        // Set slot if provided (optional - will skip if not found)
+        if (request.getSlotId() != null && !request.getSlotId().trim().isEmpty()) {
+            slotRepository.findById(request.getSlotId()).ifPresentOrElse(
+                    folder::setSlot,
+                    () -> log.warn("Slot with id {} not found, creating folder without slot", request.getSlotId())
+            );
         }
 
         // Hook: before save
@@ -140,9 +141,6 @@ public class FolderServiceImpl implements FolderService {
         }
         if (request.getDescription() != null) {
             folder.setDescription(request.getDescription());
-        }
-        if (request.getColor() != null) {
-            folder.setColor(request.getColor());
         }
         if (request.getIsPrivate() != null) {
             folder.setPrivate(request.getIsPrivate());

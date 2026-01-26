@@ -1,7 +1,6 @@
 package com.lms.content.common.entity;
 
 import com.lms.common.jpa.BaseEntity;
-import com.lms.content.common.entity.enums.ContentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,8 +17,5 @@ public abstract class BaseContentItem extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "study_set_id", nullable = false)
     private StudySet studySet;
-
-    @Column(nullable = false)
-    private int contentIndex;
 
 }

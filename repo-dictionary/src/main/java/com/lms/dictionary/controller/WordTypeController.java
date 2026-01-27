@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/word-types")
+@RequestMapping("/word-types")
 public class WordTypeController {
 
     @GetMapping

@@ -16,5 +16,7 @@ public class UpdateVocabularyMeaningRequest {
     private String meaning;
 
     private String exampleSentenceCn;
+    private String exampleSentencePinyin;
     private String exampleSentenceVi;
+    private String exampleSentenceEn;
 }

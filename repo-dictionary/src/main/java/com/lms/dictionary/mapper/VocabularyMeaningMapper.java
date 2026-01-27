@@ -5,12 +5,13 @@ import com.lms.dictionary.dto.request.VocabularyMeaningRequest;
 
 import com.lms.dictionary.dto.response.VocabularyMeaningResponse;
 import com.lms.dictionary.entity.VocabularyMeaning;
+import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {VocabularyMapper.class})
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true))
 public interface VocabularyMeaningMapper {
 
     @Mapping(target = "vocabulary", ignore = true)

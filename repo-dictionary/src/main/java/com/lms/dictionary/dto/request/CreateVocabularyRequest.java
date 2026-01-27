@@ -18,6 +18,7 @@ import java.util.List;
 public class CreateVocabularyRequest {
 
     private Integer hskLevel;
+    private List<String> wordTypes;
 
     @NotBlank(message = "Hanzi is required")
     private String hanzi;

@@ -11,6 +11,7 @@ import java.util.List;
 public class VocabularyResponse {
     private Long id;
     private Integer hskLevel;
+    private List<String> wordTypes;
     private String hanzi;
     private String pinyin;
     private String audioUrl;

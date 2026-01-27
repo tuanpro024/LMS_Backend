@@ -15,5 +15,6 @@ public class VocabularyBasicResponse {
     private Long id;
     private String hanzi;
     private String pinyin;
+    private List<String> wordTypes;
     private List<String> meanings;
 }

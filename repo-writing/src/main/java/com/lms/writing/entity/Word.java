@@ -1,5 +1,6 @@
 package com.lms.writing.entity;
 
+import com.lms.content.common.dto.excel.ImportableContentItem;
 import com.lms.content.common.entity.BaseContentItem;
 import jakarta.persistence.*;
 import lombok.*;
@@ -7,12 +8,6 @@ import lombok.*;
 /**
  * Word entity - extends BaseContentItem which contains common fields:
  * - studySet relationship
- * - contentIndex (replaces wordIndex)
- * - status (WordStatus → ContentStatus)
- * - sinoVn, wordType, hskLevel
- * - examplePinyin, exampleMeaning
- * - sinoOrigin, imageWord, imageOrigin
- * - characters
  */
 @Entity
 @Table(name = "words")
@@ -21,9 +16,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Word extends BaseContentItem {
+public class Word extends BaseContentItem implements ImportableContentItem {
 
-    // Word-specific fields (not in BaseContentItem)
+    // Word-specific fields
     @Column(nullable = false)
     private String word;
 
@@ -55,7 +50,24 @@ public class Word extends BaseContentItem {
 
     private String imageOrigin;
 
+    private String audio;
+
     @Column(columnDefinition = "TEXT")
     private String characters;
 
+    // Override ImportableContentItem methods to map to Word-specific fields
+    @Override
+    public void setTerm(String term) {
+        this.word = term;
+    }
+
+    @Override
+    public void setDefinition(String definition) {
+        this.meaning = definition;
+    }
+
+    @Override
+    public void setExampleSentence(String exampleSentence) {
+        this.example = exampleSentence;
+    }
 }

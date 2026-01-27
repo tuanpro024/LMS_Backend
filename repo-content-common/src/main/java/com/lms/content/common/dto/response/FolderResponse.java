@@ -17,7 +17,6 @@ public class FolderResponse {
     private String id;
     private String name;
     private String description;
-    private String color;
     private boolean isPrivate;
     private String userId;
     private String packageId;

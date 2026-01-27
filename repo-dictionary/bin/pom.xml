@@ -10,9 +10,9 @@
         <relativePath>../repo-common-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>repo-kanji-origin</artifactId>
+    <artifactId>repo-dictionary</artifactId>
     <version>1.0.0</version>
-    <name>repo-kanji-origin</name>
+    <name>repo-dictionary</name>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -20,11 +20,6 @@
         <dependency>
             <groupId>com.lms</groupId>
             <artifactId>repo-common-framework</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.lms</groupId>
-            <artifactId>repo-content-common</artifactId>
             <version>1.0.0</version>
         </dependency>
 
@@ -69,6 +64,13 @@
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Apache POI for Excel -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>5.2.3</version>
         </dependency>
     </dependencies>
 

@@ -1,8 +1,8 @@
 spring:
   application:
-    name: repo-kanji-origin
+    name: repo-notification
   datasource:
-    url: jdbc:mysql://localhost:3306/lms_kanji_origin_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/lms_notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: sa
     password: 123
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -21,13 +21,22 @@ spring:
       enabled: true
       max-file-size: 10MB
       max-request-size: 10MB
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: latest
 
 server:
-  port: 8086
+  port: 8083
 
 security:
   jwt:
-    public-key-path: file:../secrets/jwt-public.pem
+    public-key-path: file:secrets/jwt-public.pem
 
 management:
   endpoints:
@@ -42,16 +51,21 @@ management:
 logging:
   level:
     org.springframework.security: INFO
-    com.lms.kanjiorigin: DEBUG
     org.hibernate.SQL: DEBUG
 
 eureka:
   client:
-    register-with-eureka: false
-    fetch-registry: false
+    register-with-eureka: true
+    fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka
   instance:
     prefer-ip-address: true
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
+
+notification:
+  kafka:
+    topic: notification.events
+    group: notification-service
+

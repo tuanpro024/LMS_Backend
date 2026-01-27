@@ -21,6 +21,5 @@ public class VideoWebhookRequest {
 
     private Integer duration; // Duration in seconds
     private String thumbnailPath;
-    private String subtitlePath;
     private String karaokePath;
 }

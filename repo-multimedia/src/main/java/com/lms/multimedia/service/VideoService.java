@@ -40,7 +40,6 @@ public class VideoService {
         video.setStatus(VideoStatus.valueOf(request.getStatus().toUpperCase()));
         video.setDuration(request.getDuration());
         video.setThumbnailPath(request.getThumbnailPath());
-        video.setSubtitlePath(request.getSubtitlePath());
         video.setKaraokePath(request.getKaraokePath());
 
         video = videoRepository.save(video);
@@ -89,7 +88,6 @@ public class VideoService {
                 .status(video.getStatus())
                 .duration(video.getDuration())
                 .thumbnailPath(video.getThumbnailPath())
-                .subtitlePath(video.getSubtitlePath())
                 .karaokePath(video.getKaraokePath())
                 .createdAt(video.getCreatedAt() != null ? video.getCreatedAt().toString() : null)
                 .updatedAt(video.getUpdatedAt() != null ? video.getUpdatedAt().toString() : null)

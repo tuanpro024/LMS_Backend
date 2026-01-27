@@ -19,7 +19,6 @@ public class VideoResponse {
     private VideoStatus status;
     private Integer duration;
     private String thumbnailPath;
-    private String subtitlePath;
     private String karaokePath;
     private String createdAt;
     private String updatedAt;

@@ -18,7 +18,7 @@ import java.util.List;
 public class Video extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 50)
-    private String code;  // Video code from Express.js
+    private String code; // Video code from Express.js
 
     @Column(nullable = false)
     private String name;
@@ -33,13 +33,11 @@ public class Video extends BaseEntity {
     @Column(nullable = false)
     private VideoStatus status;
 
-    private Integer duration;  // Duration in seconds
+    private Integer duration; // Duration in seconds
 
-    private String thumbnailPath;  // MinIO path to thumbnail
+    private String thumbnailPath; // MinIO path to thumbnail
 
-    private String subtitlePath;  // MinIO path to subtitle file
-
-    private String karaokePath;  // MinIO path to karaoke JSON
+    private String karaokePath; // MinIO path to karaoke JSON
 
     @ManyToMany(mappedBy = "videos")
     @Builder.Default

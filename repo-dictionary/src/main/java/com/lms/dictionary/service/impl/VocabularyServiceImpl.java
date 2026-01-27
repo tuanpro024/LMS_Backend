@@ -139,6 +139,13 @@ public class VocabularyServiceImpl implements VocabularyService {
 
             }
         }
+
+        // Auto-link components if not single vocab and no components provided
+        if (Boolean.FALSE.equals(vocabulary.getIsSingleVocab()) &&
+                (vocabulary.getSubVocabs() == null || vocabulary.getSubVocabs().isEmpty())) {
+            autoLinkComponents(vocabulary);
+        }
+
         return vocabulary;
     }
 
@@ -226,8 +233,65 @@ public class VocabularyServiceImpl implements VocabularyService {
             }
         }
 
+        // Auto-link components if not single vocab and no components provided (and
+        // update mode cleared them)
+        if (Boolean.FALSE.equals(vocabulary.getIsSingleVocab()) && vocabulary.getSubVocabs().isEmpty()) {
+            autoLinkComponents(vocabulary);
+        }
+
         Vocabulary savedVocabulary = vocabularyRepository.save(vocabulary);
         return vocabularyMapper.toResponse(savedVocabulary);
+    }
+
+    private void autoLinkComponents(Vocabulary vocabulary) {
+        String hanzi = vocabulary.getHanzi();
+        if (hanzi == null || hanzi.length() <= 1)
+            return;
+
+        List<VocabComponent> components = new ArrayList<>();
+        // Split handling strict Chinese characters better could be done, but simple
+        // split matches hanzi column usually
+        String[] chars = hanzi.split("");
+
+        int orderIndex = 1;
+        for (String charHanzi : chars) {
+            if (charHanzi == null || charHanzi.trim().isEmpty())
+                continue;
+
+            // Skip non-Hanzi chars (like punctuation) if strict?
+            // Better to try finding everything, if user puts "A B", we try to find "A" and
+            // "B".
+
+            List<Vocabulary> found = vocabularyRepository.findByHanziAndDeletedFalse(charHanzi);
+            if (found.isEmpty()) {
+                throw new ApiException(ErrorCode.E227,
+                        "Auto-link failed: Missing component '" + charHanzi + "'. Please create it first.");
+            }
+
+            // Prefer single vocab if multiple matches
+            Vocabulary componentVocab = found.stream()
+                    .filter(v -> Boolean.TRUE.equals(v.getIsSingleVocab()))
+                    .findFirst()
+                    .orElse(found.get(0));
+
+            if (Boolean.FALSE.equals(componentVocab.getIsSingleVocab())) {
+                throw new ApiException(ErrorCode.E227,
+                        "Auto-link failed: Component '" + charHanzi + "' must be a single vocabulary.");
+            }
+
+            VocabComponent component = VocabComponent.builder()
+                    .parentVocab(vocabulary)
+                    .componentVocab(componentVocab)
+                    .orderIndex(orderIndex++)
+                    .build();
+            components.add(component);
+        }
+
+        if (vocabulary.getSubVocabs() == null) {
+            vocabulary.setSubVocabs(components);
+        } else {
+            vocabulary.getSubVocabs().addAll(components);
+        }
     }
 
     @Override

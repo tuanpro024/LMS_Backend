@@ -80,21 +80,23 @@ public class VocabularyServiceImpl implements VocabularyService {
                 Vocabulary componentVocab;
                 if (cReq.getId() != null) {
                     componentVocab = vocabularyRepository.findById(cReq.getId())
-                            .orElseThrow(() -> new ApiException(ErrorCode.E227, "Component vocabulary not found with id: " + cReq.getId()));
+                            .orElseThrow(() -> new ApiException(ErrorCode.E227,
+                                    "Component vocabulary not found with id: " + cReq.getId()));
                 } else if (cReq.getNewVocabulary() != null) {
                     // Try to find by Hanzi + Pinyin first
                     String cHanzi = cReq.getNewVocabulary().getHanzi();
                     String cPinyin = cReq.getNewVocabulary().getPinyin();
-                    
+
                     componentVocab = vocabularyRepository.findByHanziAndPinyinAndDeletedFalse(cHanzi, cPinyin)
                             .orElse(null);
-                    
+
                     // Fallback: Find by Hanzi only (if pinyin is missing or mismatch)
                     if (componentVocab == null) {
-                         List<Vocabulary> exactHanziMatches = vocabularyRepository.findByHanziAndDeletedFalse(cHanzi);
-                         if (!exactHanziMatches.isEmpty()) {
-                             componentVocab = exactHanziMatches.get(0); // Take the first one (acceptable risk for import)
-                         }
+                        List<Vocabulary> exactHanziMatches = vocabularyRepository.findByHanziAndDeletedFalse(cHanzi);
+                        if (!exactHanziMatches.isEmpty()) {
+                            componentVocab = exactHanziMatches.get(0); // Take the first one (acceptable risk for
+                                                                       // import)
+                        }
                     }
 
                     if (componentVocab == null) {
@@ -102,7 +104,8 @@ public class VocabularyServiceImpl implements VocabularyService {
                         componentVocab = vocabularyRepository.save(componentVocab);
                     }
                 } else {
-                    throw new ApiException(ErrorCode.E227, "Each component must have either an id or a newVocabulary object");
+                    throw new ApiException(ErrorCode.E227,
+                            "Each component must have either an id or a newVocabulary object");
                 }
 
                 VocabComponent component = VocabComponent.builder()
@@ -119,10 +122,12 @@ public class VocabularyServiceImpl implements VocabularyService {
             for (int i = 0; i < request.getComponentIds().size(); i++) {
                 Long componentId = request.getComponentIds().get(i);
                 Vocabulary componentVocab = vocabularyRepository.findById(componentId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.E227, "Component vocabulary not found with id: " + componentId));
-                
+                        .orElseThrow(() -> new ApiException(ErrorCode.E227,
+                                "Component vocabulary not found with id: " + componentId));
+
                 if (!componentVocab.getIsSingleVocab()) {
-                    throw new ApiException(ErrorCode.E227, "Only single vocabularies can be components: " + componentVocab.getHanzi());
+                    throw new ApiException(ErrorCode.E227,
+                            "Only single vocabularies can be components: " + componentVocab.getHanzi());
                 }
 
                 VocabComponent component = VocabComponent.builder()
@@ -134,6 +139,13 @@ public class VocabularyServiceImpl implements VocabularyService {
 
             }
         }
+
+        // Auto-link components if not single vocab and no components provided
+        if (Boolean.FALSE.equals(vocabulary.getIsSingleVocab()) &&
+                (vocabulary.getSubVocabs() == null || vocabulary.getSubVocabs().isEmpty())) {
+            autoLinkComponents(vocabulary);
+        }
+
         return vocabulary;
     }
 
@@ -147,8 +159,8 @@ public class VocabularyServiceImpl implements VocabularyService {
         Vocabulary vocabulary = vocabularyRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Vocabulary not found"));
 
-        if (!vocabulary.getHanzi().equals(request.getHanzi()) && 
-            vocabularyRepository.existsByHanziAndDeletedFalse(request.getHanzi())) {
+        if (!vocabulary.getHanzi().equals(request.getHanzi()) &&
+                vocabularyRepository.existsByHanziAndDeletedFalse(request.getHanzi())) {
             throw new ApiException(ErrorCode.E227, "Hanzi already exists: " + request.getHanzi());
         }
 
@@ -169,7 +181,8 @@ public class VocabularyServiceImpl implements VocabularyService {
                 Vocabulary componentVocab;
                 if (cReq.getId() != null) {
                     componentVocab = vocabularyRepository.findById(cReq.getId())
-                            .orElseThrow(() -> new ApiException(ErrorCode.E227, "Component vocabulary not found with id: " + cReq.getId()));
+                            .orElseThrow(() -> new ApiException(ErrorCode.E227,
+                                    "Component vocabulary not found with id: " + cReq.getId()));
                 } else if (cReq.getNewVocabulary() != null) {
                     // Smart Lookup: Tự động dùng từ đã có nếu trùng Hanzi & Pinyin
                     componentVocab = vocabularyRepository.findByHanziAndPinyinAndDeletedFalse(
@@ -181,11 +194,13 @@ public class VocabularyServiceImpl implements VocabularyService {
                         componentVocab = vocabularyRepository.save(componentVocab);
                     }
                 } else {
-                    throw new ApiException(ErrorCode.E227, "Each component must have either an id or a newVocabulary object");
+                    throw new ApiException(ErrorCode.E227,
+                            "Each component must have either an id or a newVocabulary object");
                 }
 
                 if (Boolean.FALSE.equals(componentVocab.getIsSingleVocab())) {
-                    throw new ApiException(ErrorCode.E227, "Only single vocabularies can be components: " + componentVocab.getHanzi());
+                    throw new ApiException(ErrorCode.E227,
+                            "Only single vocabularies can be components: " + componentVocab.getHanzi());
                 }
 
                 VocabComponent component = VocabComponent.builder()
@@ -201,10 +216,12 @@ public class VocabularyServiceImpl implements VocabularyService {
             for (int i = 0; i < request.getComponentIds().size(); i++) {
                 Long componentId = request.getComponentIds().get(i);
                 Vocabulary componentVocab = vocabularyRepository.findById(componentId)
-                        .orElseThrow(() -> new ApiException(ErrorCode.E227, "Component vocabulary not found with id: " + componentId));
-                
+                        .orElseThrow(() -> new ApiException(ErrorCode.E227,
+                                "Component vocabulary not found with id: " + componentId));
+
                 if (Boolean.FALSE.equals(componentVocab.getIsSingleVocab())) {
-                    throw new ApiException(ErrorCode.E227, "Only single vocabularies can be components: " + componentVocab.getHanzi());
+                    throw new ApiException(ErrorCode.E227,
+                            "Only single vocabularies can be components: " + componentVocab.getHanzi());
                 }
 
                 VocabComponent component = VocabComponent.builder()
@@ -216,9 +233,65 @@ public class VocabularyServiceImpl implements VocabularyService {
             }
         }
 
+        // Auto-link components if not single vocab and no components provided (and
+        // update mode cleared them)
+        if (Boolean.FALSE.equals(vocabulary.getIsSingleVocab()) && vocabulary.getSubVocabs().isEmpty()) {
+            autoLinkComponents(vocabulary);
+        }
 
         Vocabulary savedVocabulary = vocabularyRepository.save(vocabulary);
         return vocabularyMapper.toResponse(savedVocabulary);
+    }
+
+    private void autoLinkComponents(Vocabulary vocabulary) {
+        String hanzi = vocabulary.getHanzi();
+        if (hanzi == null || hanzi.length() <= 1)
+            return;
+
+        List<VocabComponent> components = new ArrayList<>();
+        // Split handling strict Chinese characters better could be done, but simple
+        // split matches hanzi column usually
+        String[] chars = hanzi.split("");
+
+        int orderIndex = 1;
+        for (String charHanzi : chars) {
+            if (charHanzi == null || charHanzi.trim().isEmpty())
+                continue;
+
+            // Skip non-Hanzi chars (like punctuation) if strict?
+            // Better to try finding everything, if user puts "A B", we try to find "A" and
+            // "B".
+
+            List<Vocabulary> found = vocabularyRepository.findByHanziAndDeletedFalse(charHanzi);
+            if (found.isEmpty()) {
+                throw new ApiException(ErrorCode.E227,
+                        "Auto-link failed: Missing component '" + charHanzi + "'. Please create it first.");
+            }
+
+            // Prefer single vocab if multiple matches
+            Vocabulary componentVocab = found.stream()
+                    .filter(v -> Boolean.TRUE.equals(v.getIsSingleVocab()))
+                    .findFirst()
+                    .orElse(found.get(0));
+
+            if (Boolean.FALSE.equals(componentVocab.getIsSingleVocab())) {
+                throw new ApiException(ErrorCode.E227,
+                        "Auto-link failed: Component '" + charHanzi + "' must be a single vocabulary.");
+            }
+
+            VocabComponent component = VocabComponent.builder()
+                    .parentVocab(vocabulary)
+                    .componentVocab(componentVocab)
+                    .orderIndex(orderIndex++)
+                    .build();
+            components.add(component);
+        }
+
+        if (vocabulary.getSubVocabs() == null) {
+            vocabulary.setSubVocabs(components);
+        } else {
+            vocabulary.getSubVocabs().addAll(components);
+        }
     }
 
     @Override
@@ -229,7 +302,8 @@ public class VocabularyServiceImpl implements VocabularyService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Vocabulary not found"));
 
         if (!vocabulary.getParentVocabs().isEmpty()) {
-            throw new ApiException(ErrorCode.E227, "Cannot delete vocabulary because it is used as a component in other vocabularies");
+            throw new ApiException(ErrorCode.E227,
+                    "Cannot delete vocabulary because it is used as a component in other vocabularies");
         }
 
         vocabulary.setDeleted(true);
@@ -242,8 +316,9 @@ public class VocabularyServiceImpl implements VocabularyService {
         log.info("Searching vocabulary with request: {}", request);
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         Page<Vocabulary> vocabPage = vocabularyRepository.searchByQuery(
-                request.getKeySearch(), request.getIsSingleVocab(), pageable);
-        
+                request.getKeySearch(), request.getIsSingleVocab(), request.getHskLevel(), request.getWordType(),
+                pageable);
+
         return PageResponse.<VocabularyBasicResponse>builder()
                 .items(vocabularyMapper.toBasicResponseList(vocabPage.getContent()))
                 .totalElements(vocabPage.getTotalElements())
@@ -259,7 +334,7 @@ public class VocabularyServiceImpl implements VocabularyService {
         log.info("Getting vocabulary suggestions with request: {}", request);
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         Page<Vocabulary> vocabPage = vocabularyRepository.findSuggestions(pageable);
-        
+
         return PageResponse.<VocabularyBasicResponse>builder()
                 .items(vocabularyMapper.toBasicResponseList(vocabPage.getContent()))
                 .totalElements(vocabPage.getTotalElements())
@@ -268,7 +343,6 @@ public class VocabularyServiceImpl implements VocabularyService {
                 .size(vocabPage.getSize())
                 .build();
     }
-
 
     @Override
     @Transactional
@@ -292,7 +366,7 @@ public class VocabularyServiceImpl implements VocabularyService {
                         failureCount++;
                         continue;
                     }
-                    
+
                     Vocabulary vocabulary = processCreateVocabulary(req);
                     vocabularyRepository.save(vocabulary);
                     successCount++;
@@ -311,7 +385,7 @@ public class VocabularyServiceImpl implements VocabularyService {
                     .build();
 
         } catch (java.io.IOException e) {
-             throw new ApiException(ErrorCode.E227, "Fail to parse Excel file: " + e.getMessage());
+            throw new ApiException(ErrorCode.E227, "Fail to parse Excel file: " + e.getMessage());
         }
     }
 

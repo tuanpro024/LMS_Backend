@@ -27,6 +27,7 @@ public class UpdateVocabularyRequest {
     private String pinyin;
 
     private String audioUrl;
+    private String imageUrl;
     private String strokeAnimationUrl;
     private String etymologyStory;
     private String etymologyImage;

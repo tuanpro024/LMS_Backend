@@ -13,7 +13,7 @@ public class VocabularyMeaningResponse {
     private Long id;
     private String meaning;
     private String exampleSentenceCn;
-    private String exampleSentencePinyin;
     private String exampleSentenceVi;
     private String exampleSentenceEn;
+    private String exampleSentencePinyin;
 }

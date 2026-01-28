@@ -35,6 +35,9 @@ public class Vocabulary extends BaseEntityLongId {
     @Column(name = "audio_url", length = 500)
     private String audioUrl;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @Column(name = "stroke_animation_url", length = 500)
     private String strokeAnimationUrl;
 
@@ -45,7 +48,6 @@ public class Vocabulary extends BaseEntityLongId {
     @Column(name = "etymology_image", length = 500)
     private String etymologyImage;
 
-    
     @Column(name = "is_single_vocab", nullable = false)
     @Builder.Default
     private Boolean isSingleVocab = false;
@@ -54,7 +56,6 @@ public class Vocabulary extends BaseEntityLongId {
     @OrderBy("orderIndex ASC")
     @Builder.Default
     private List<VocabComponent> subVocabs = new ArrayList<>();
-
 
     @OneToMany(mappedBy = "componentVocab")
     @Builder.Default

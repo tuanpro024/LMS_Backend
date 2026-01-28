@@ -13,5 +13,6 @@ import lombok.experimental.SuperBuilder;
 public class VocabularySearchRequest extends PaginationRequest {
     private String keySearch;
     private Boolean isSingleVocab;
+    private Integer hskLevel;
+    private String wordType;
 }
-

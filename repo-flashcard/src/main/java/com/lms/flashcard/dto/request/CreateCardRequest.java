@@ -44,6 +44,8 @@ public class CreateCardRequest {
 
     private String imageOrigin;
 
+    private String audio;
+
     private List<CharacterInfo> characters;
 
     @Data

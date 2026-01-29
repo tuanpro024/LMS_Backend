@@ -22,6 +22,9 @@ public class Folder extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(columnDefinition = "TEXT")
+    private String thumbnail;
+
     @Column(nullable = false)
     private boolean isPrivate;
 

@@ -21,4 +21,10 @@ public interface FolderRepository extends JpaRepository<Folder, String> {
 
     @Query("SELECT f FROM Folder f WHERE f.slot.id = :slotId")
     List<Folder> findBySlotId(@Param("slotId") String slotId);
+
+    // Find folders by package entity id (Spring Data JPA naming convention)
+    List<Folder> findByPackageEntityId(String packageId);
+
+    // Find folders by package entity id ordered by creation date
+    List<Folder> findByPackageEntityIdOrderByCreatedAtAsc(String packageId);
 }

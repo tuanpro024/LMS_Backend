@@ -1,117 +1,150 @@
 package com.lms.learningpath.service.impl;
 
 import com.lms.content.common.entity.Folder;
-import com.lms.content.common.repository.FolderRepository;
-import com.lms.learningpath.repository.UserSectionProgressRepository;
-import com.lms.learningpath.service.UnlockService;
+import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.repository.StudySetRepository;
+import com.lms.learningpath.entity.StudySetProgress;
+import com.lms.learningpath.entity.StudySetUnlockRule;
+import com.lms.learningpath.repository.StudySetProgressRepository;
+import com.lms.learningpath.repository.StudySetUnlockRuleRepository;
+import com.lms.learningpath.service.IRealtimeNotificationService;
+import com.lms.learningpath.service.IUnlockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
-/**
- * Implementation of unlock logic for learning sections.
- * Uses folder ordering and completion status to determine unlock state.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UnlockServiceImpl implements UnlockService {
+public class UnlockServiceImpl implements IUnlockService {
 
-    private final FolderRepository folderRepository;
-    private final UserSectionProgressRepository progressRepository;
+    private final StudySetUnlockRuleRepository unlockRuleRepo;
+    private final StudySetProgressRepository progressRepo;
+    private final StudySetRepository studySetRepo;
+    private final IRealtimeNotificationService realtimeService;
 
+    /**
+     * Check if a StudySet is unlocked for user
+     */
     @Override
-    public boolean isSectionUnlocked(String userId, String folderId) {
-        // Get the folder to find its package and order
-        Optional<Folder> folderOpt = folderRepository.findById(folderId);
-        if (folderOpt.isEmpty()) {
-            log.warn("Folder not found: {}", folderId);
-            return false;
-        }
+    @Transactional(readOnly = true)
+    public boolean isStudySetUnlocked(String userId, String studySetId) {
+        // Get unlock rule
+        var ruleOpt = unlockRuleRepo.findByStudySetIdAndIsActive(studySetId, true);
 
-        Folder folder = folderOpt.get();
-        String packageId = folder.getPackageEntity().getId();
-
-        // Get all folders in the package, ordered
-        List<Folder> allFolders = folderRepository.findByPackageEntityIdOrderByCreatedAtAsc(packageId);
-
-        // Find the index of current folder
-        int currentIndex = -1;
-        for (int i = 0; i < allFolders.size(); i++) {
-            if (allFolders.get(i).getId().equals(folderId)) {
-                currentIndex = i;
-                break;
-            }
-        }
-
-        if (currentIndex == -1) {
-            return false;
-        }
-
-        // First section is always unlocked
-        if (currentIndex == 0) {
+        if (ruleOpt.isEmpty()) {
+            // No rule = always unlocked
             return true;
         }
 
-        // Check if previous section is completed
-        Folder previousFolder = allFolders.get(currentIndex - 1);
-        return progressRepository.existsByUserIdAndFolderIdAndIsCompletedTrue(userId, previousFolder.getId());
+        StudySetUnlockRule rule = ruleOpt.get();
+
+        // Check specific required StudySet
+        if (rule.getRequiredStudySetId() != null) {
+            var requiredProgress = progressRepo.findByUserIdAndStudySetId(userId, rule.getRequiredStudySetId());
+            if (requiredProgress.isEmpty() || !requiredProgress.get().canUnlockNext()) {
+                return false;
+            }
+        }
+
+        // Check previous StudySet in same Folder
+        if (rule.getRequirePreviousInFolder()) {
+            StudySet currentSet = studySetRepo.findById(studySetId).orElse(null);
+            if (currentSet == null || currentSet.getFolders().isEmpty()) {
+                return true;
+            }
+
+            Folder folder = currentSet.getFolders().get(0);
+            List<StudySet> allSetsInFolder = folder.getStudySets().stream()
+                    .sorted(Comparator.comparing(StudySet::getCreatedAt))
+                    .collect(Collectors.toList());
+
+            int currentIndex = -1;
+            for (int i = 0; i < allSetsInFolder.size(); i++) {
+                if (allSetsInFolder.get(i).getId().equals(studySetId)) {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            // First set = unlocked
+            if (currentIndex == 0) {
+                return true;
+            }
+
+            // Check previous set
+            if (currentIndex > 0) {
+                StudySet previousSet = allSetsInFolder.get(currentIndex - 1);
+                var previousProgress = progressRepo.findByUserIdAndStudySetId(userId, previousSet.getId());
+                return previousProgress.isPresent() && previousProgress.get().canUnlockNext();
+            }
+        }
+
+        return true;
     }
 
+    /**
+     * Get lock reason for display
+     */
     @Override
-    public String getPrerequisiteSection(String folderId) {
-        Optional<Folder> folderOpt = folderRepository.findById(folderId);
-        if (folderOpt.isEmpty()) {
+    @Transactional(readOnly = true)
+    public String getLockReason(String userId, String studySetId) {
+        var ruleOpt = unlockRuleRepo.findByStudySetIdAndIsActive(studySetId, true);
+
+        if (ruleOpt.isEmpty()) {
             return null;
         }
 
-        Folder folder = folderOpt.get();
-        String packageId = folder.getPackageEntity().getId();
+        StudySetUnlockRule rule = ruleOpt.get();
 
-        List<Folder> allFolders = folderRepository.findByPackageEntityIdOrderByCreatedAtAsc(packageId);
+        if (rule.getRequiredStudySetId() != null) {
+            StudySet requiredSet = studySetRepo.findById(rule.getRequiredStudySetId()).orElse(null);
+            if (requiredSet != null) {
+                return "Requires completion of: " + requiredSet.getTitle();
+            }
+        }
+
+        if (rule.getRequirePreviousInFolder()) {
+            return "Complete the previous StudySet first";
+        }
+
+        return "Locked";
+    }
+
+    /**
+     * Check and unlock next StudySet after completion
+     */
+    @Override
+    @Transactional
+    public void checkAndUnlockNextStudySet(String userId, StudySet completedSet) {
+        if (completedSet.getFolders().isEmpty()) {
+            return;
+        }
+
+        Folder folder = completedSet.getFolders().get(0);
+        List<StudySet> allSets = folder.getStudySets().stream()
+                .sorted(Comparator.comparing(StudySet::getCreatedAt))
+                .collect(Collectors.toList());
 
         int currentIndex = -1;
-        for (int i = 0; i < allFolders.size(); i++) {
-            if (allFolders.get(i).getId().equals(folderId)) {
+        for (int i = 0; i < allSets.size(); i++) {
+            if (allSets.get(i).getId().equals(completedSet.getId())) {
                 currentIndex = i;
                 break;
             }
         }
 
-        if (currentIndex <= 0) {
-            return null; // No prerequisite for first section
-        }
-
-        return allFolders.get(currentIndex - 1).getId();
-    }
-
-    @Override
-    @Transactional
-    public void unlockNextSection(String userId, String packageId, String completedFolderId) {
-        // Get all folders in package
-        List<Folder> allFolders = folderRepository.findByPackageEntityIdOrderByCreatedAtAsc(packageId);
-
-        // Find completed folder index
-        int completedIndex = -1;
-        for (int i = 0; i < allFolders.size(); i++) {
-            if (allFolders.get(i).getId().equals(completedFolderId)) {
-                completedIndex = i;
-                break;
+        // Notify next set unlocked
+        if (currentIndex >= 0 && currentIndex < allSets.size() - 1) {
+            StudySet nextSet = allSets.get(currentIndex + 1);
+            if (isStudySetUnlocked(userId, nextSet.getId())) {
+                realtimeService.notifyStudySetUnlocked(userId, nextSet.getId());
             }
-        }
-
-        if (completedIndex >= 0 && completedIndex < allFolders.size() - 1) {
-            // Next section exists and should be unlocked
-            Folder nextFolder = allFolders.get(completedIndex + 1);
-            log.info("Section {} completed by user {}. Next section {} is now unlocked",
-                    completedFolderId, userId, nextFolder.getId());
-        } else {
-            log.info("Section {} completed by user {}. This was the last section in the learning path",
-                    completedFolderId, userId);
         }
     }
 }

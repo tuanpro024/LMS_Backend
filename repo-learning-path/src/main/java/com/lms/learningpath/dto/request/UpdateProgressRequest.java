@@ -1,6 +1,5 @@
 package com.lms.learningpath.dto.request;
 
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,14 +10,15 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CompleteModuleRequest {
+public class UpdateProgressRequest {
 
     @Min(0)
-    @Max(100)
+    private Integer completedItems;
+
+    @Min(0)
+    private Integer studyTimeSeconds;
+
     private Integer score;
-
-    @Min(0)
-    private Integer totalStudyTimeSeconds;
 
     private String metadata; // JSON
 }

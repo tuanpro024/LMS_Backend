@@ -1,270 +1,344 @@
 package com.lms.learningpath.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lms.content.common.repository.FolderRepository;
-import com.lms.content.common.repository.PackageRepository;
-import com.lms.learningpath.dto.external.StudySetDto;
-import com.lms.learningpath.dto.response.SectionModuleResponse;
-import com.lms.learningpath.entity.SectionModule;
-import com.lms.learningpath.entity.UserLearningProgress;
-import com.lms.learningpath.entity.UserSectionProgress;
-import com.lms.learningpath.repository.SectionModuleRepository;
-import com.lms.learningpath.repository.UserLearningProgressRepository;
-import com.lms.learningpath.repository.UserSectionProgressRepository;
-import com.lms.learningpath.service.ModuleIntegrationService;
-import com.lms.learningpath.service.ProgressTrackingService;
-import com.lms.learningpath.service.UnlockService;
+import com.lms.common.exception.ApiException;
+import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.repository.StudySetRepository;
+import com.lms.learningpath.dto.request.CompleteModuleRequest;
+import com.lms.learningpath.dto.request.UpdateProgressRequest;
+import com.lms.learningpath.dto.response.ModuleProgressDto;
+import com.lms.learningpath.dto.response.StudySetModuleResponse;
+import com.lms.learningpath.dto.response.StudySetProgressDto;
+import com.lms.learningpath.entity.ModuleProgress;
+import com.lms.learningpath.entity.StudySetModule;
+import com.lms.learningpath.entity.StudySetProgress;
+import com.lms.learningpath.entity.enums.ProgressStatus;
+import com.lms.learningpath.repository.ModuleProgressRepository;
+import com.lms.learningpath.repository.StudySetModuleRepository;
+import com.lms.learningpath.repository.StudySetProgressRepository;
+import com.lms.learningpath.service.IModuleIntegrationService;
+import com.lms.learningpath.service.IProgressTrackingService;
+import com.lms.learningpath.service.IRealtimeNotificationService;
+import com.lms.learningpath.service.IUnlockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.time.Instant;
+import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Implementation of ProgressTrackingService.
- * Tracks user completion of modules, sections, and learning paths.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ProgressTrackingServiceImpl implements ProgressTrackingService {
+public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
-    private final SectionModuleRepository moduleRepository;
-    private final UserSectionProgressRepository sectionProgressRepository;
-    private final UserLearningProgressRepository learningProgressRepository;
-    private final FolderRepository folderRepository;
-    private final PackageRepository packageRepository;
-    private final ModuleIntegrationService moduleIntegrationService;
-    private final UnlockService unlockService;
-    private final ObjectMapper objectMapper;
+    private final ModuleProgressRepository moduleProgressRepo;
+    private final StudySetProgressRepository studySetProgressRepo;
+    private final StudySetModuleRepository studySetModuleRepo;
+    private final StudySetRepository studySetRepo;
+    private final IModuleIntegrationService integrationService;
+    private final IRealtimeNotificationService realtimeService;
+    private final IUnlockService unlockService;
 
+    /**
+     * Start a module
+     */
     @Override
     @Transactional
-    public void completeModule(String userId, String moduleId) {
-        Optional<SectionModule> moduleOpt = moduleRepository.findById(moduleId);
-        if (moduleOpt.isEmpty()) {
-            log.warn("Module not found: {}", moduleId);
-            return;
+    public ModuleProgressDto startModule(String userId, String moduleId) {
+        StudySetModule module = studySetModuleRepo.findById(moduleId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Module not found"));
+
+        // Check if StudySet is unlocked
+        if (!unlockService.isStudySetUnlocked(userId, module.getStudySetId())) {
+            throw new ApiException(ErrorCode.E240, "StudySet is locked");
         }
 
-        SectionModule module = moduleOpt.get();
-        String folderId = module.getFolderId();
-
-        // Get or create section progress
-        UserSectionProgress progress = sectionProgressRepository
-                .findByUserIdAndFolderId(userId, folderId)
-                .orElse(UserSectionProgress.builder()
-                        .userId(userId)
-                        .folderId(folderId)
-                        .completedModuleIds("[]")
-                        .completionPercentage(0.0)
-                        .isCompleted(false)
-                        .build());
-
-        // Add module to completed list
-        List<String> completedIds = parseJsonArray(progress.getCompletedModuleIds());
-        if (!completedIds.contains(moduleId)) {
-            completedIds.add(moduleId);
-            progress.setCompletedModuleIds(toJsonArray(completedIds));
-            progress.setLastAccessedAt(LocalDateTime.now());
-
-            // Update progress
-            updateSectionProgress(userId, folderId);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void updateSectionProgress(String userId, String folderId) {
-        UserSectionProgress progress = sectionProgressRepository
-                .findByUserIdAndFolderId(userId, folderId)
-                .orElse(UserSectionProgress.builder()
-                        .userId(userId)
-                        .folderId(folderId)
-                        .completedModuleIds("[]")
-                        .completionPercentage(0.0)
-                        .isCompleted(false)
-                        .build());
-
-        // Calculate completion percentage
-        List<SectionModule> allModules = moduleRepository.findByFolderIdOrderByModuleOrderAsc(folderId);
-        List<SectionModule> requiredModules = allModules.stream()
-                .filter(SectionModule::getIsRequired)
-                .toList();
-
-        if (requiredModules.isEmpty()) {
-            progress.setCompletionPercentage(0.0);
-            sectionProgressRepository.save(progress);
-            return;
-        }
-
-        List<String> completedIds = parseJsonArray(progress.getCompletedModuleIds());
-        long completedRequiredCount = requiredModules.stream()
-                .filter(m -> completedIds.contains(m.getId()))
-                .count();
-
-        double percentage = (completedRequiredCount * 100.0) / requiredModules.size();
-        progress.setCompletionPercentage(percentage);
-
-        // Check if section is completed
-        if (percentage >= 100.0 && !progress.getIsCompleted()) {
-            progress.setIsCompleted(true);
-            progress.setCompletedAt(LocalDateTime.now());
-
-            // Trigger unlock for next section
-            String packageId = folderRepository.findById(folderId)
-                    .map(f -> f.getPackageEntity().getId())
-                    .orElse(null);
-            if (packageId != null) {
-                unlockService.unlockNextSection(userId, packageId, folderId);
-                updateLearningPathProgress(userId, packageId);
-            }
-        }
-
-        sectionProgressRepository.save(progress);
-    }
-
-    @Override
-    public boolean isSectionCompleted(String userId, String folderId) {
-        return sectionProgressRepository.existsByUserIdAndFolderIdAndIsCompletedTrue(userId, folderId);
-    }
-
-    @Override
-    public double getSectionCompletionPercentage(String userId, String folderId) {
-        return sectionProgressRepository.findByUserIdAndFolderId(userId, folderId)
-                .map(UserSectionProgress::getCompletionPercentage)
-                .orElse(0.0);
-    }
-
-    @Override
-    public double getLearningPathCompletionPercentage(String userId, String packageId) {
-        return learningProgressRepository.findByUserIdAndPackageId(userId, packageId)
-                .map(UserLearningProgress::getCompletionPercentage)
-                .orElse(0.0);
-    }
-
-    @Override
-    @Transactional
-    public void initializeLearningPathProgress(String userId, String packageId) {
-        if (learningProgressRepository.findByUserIdAndPackageId(userId, packageId).isEmpty()) {
-            UserLearningProgress progress = UserLearningProgress.builder()
-                    .userId(userId)
-                    .packageId(packageId)
-                    .completedFolderIds("[]")
-                    .completionPercentage(0.0)
-                    .startedAt(LocalDateTime.now())
-                    .lastAccessedAt(LocalDateTime.now())
-                    .build();
-            learningProgressRepository.save(progress);
-            log.info("Initialized learning path progress for user {} on package {}", userId, packageId);
-        }
-    }
-
-    @Override
-    public List<SectionModuleResponse> getModulesWithProgress(String userId, String folderId) {
-        List<SectionModule> modules = moduleRepository.findByFolderIdOrderByModuleOrderAsc(folderId);
-        UserSectionProgress progress = sectionProgressRepository
-                .findByUserIdAndFolderId(userId, folderId)
+        // Check existing progress
+        ModuleProgress existing = moduleProgressRepo
+                .findByUserIdAndStudySetModuleId(userId, moduleId)
                 .orElse(null);
 
-        List<String> completedIds = progress != null
-                ? parseJsonArray(progress.getCompletedModuleIds())
-                : new ArrayList<>();
+        if (existing != null && existing.getStatus() == ProgressStatus.COMPLETED) {
+            throw new ApiException(ErrorCode.E221, "Module already completed");
+        }
+
+        // Get total items from content set
+        int totalItems = integrationService.getContentSetItemCount(
+                module.getModuleType(),
+                module.getContentSetId());
+
+        ModuleProgress progress;
+        if (existing == null) {
+            progress = ModuleProgress.builder()
+                    .userId(userId)
+                    .studySetModuleId(moduleId)
+                    .studySetId(module.getStudySetId())
+                    .status(ProgressStatus.IN_PROGRESS)
+                    .completedItems(0)
+                    .totalItems(totalItems)
+                    .studyTimeSeconds(0)
+                    .startedAt(Instant.now())
+                    .build();
+        } else {
+            existing.setStatus(ProgressStatus.IN_PROGRESS);
+            existing.setStartedAt(Instant.now());
+            existing.setTotalItems(totalItems);
+            progress = existing;
+        }
+
+        progress = moduleProgressRepo.save(progress);
+
+        // Update StudySet progress
+        updateStudySetProgress(userId, module.getStudySetId());
+
+        // Send realtime notification
+        realtimeService.notifyProgressUpdate(userId, toDto(progress));
+
+        return toDto(progress);
+    }
+
+    /**
+     * Update module progress
+     */
+    @Override
+    @Transactional
+    public ModuleProgressDto updateProgress(String userId, String moduleId, UpdateProgressRequest request) {
+        ModuleProgress progress = moduleProgressRepo
+                .findByUserIdAndStudySetModuleId(userId, moduleId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Progress not found. Start module first."));
+
+        if (request.getCompletedItems() != null) {
+            progress.setCompletedItems(request.getCompletedItems());
+        }
+        if (request.getStudyTimeSeconds() != null) {
+            progress.setStudyTimeSeconds(progress.getStudyTimeSeconds() + request.getStudyTimeSeconds());
+        }
+        if (request.getScore() != null) {
+            progress.setScore(request.getScore());
+        }
+        if (request.getMetadata() != null) {
+            progress.setMetadata(request.getMetadata());
+        }
+
+        progress = moduleProgressRepo.save(progress);
+
+        // Send realtime update
+        realtimeService.notifyProgressUpdate(userId, toDto(progress));
+
+        return toDto(progress);
+    }
+
+    /**
+     * Complete a module
+     */
+    @Override
+    @Transactional
+    public ModuleProgressDto completeModule(String userId, String moduleId, CompleteModuleRequest request) {
+        ModuleProgress progress = moduleProgressRepo
+                .findByUserIdAndStudySetModuleId(userId, moduleId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Progress not found"));
+
+        if (progress.getStatus() == ProgressStatus.COMPLETED) {
+            throw new ApiException(ErrorCode.E221, "Module already completed");
+        }
+
+        progress.setStatus(ProgressStatus.COMPLETED);
+        progress.setCompletedItems(progress.getTotalItems());
+        progress.setCompletedAt(Instant.now());
+
+        if (request.getScore() != null) {
+            progress.setScore(request.getScore());
+        }
+        if (request.getTotalStudyTimeSeconds() != null) {
+            progress.setStudyTimeSeconds(request.getTotalStudyTimeSeconds());
+        }
+        if (request.getMetadata() != null) {
+            progress.setMetadata(request.getMetadata());
+        }
+
+        progress = moduleProgressRepo.save(progress);
+
+        // Update StudySet progress
+        StudySetModule module = studySetModuleRepo.findById(moduleId).orElseThrow();
+        StudySetProgress setProgress = updateStudySetProgress(userId, module.getStudySetId());
+
+        // Send realtime notifications
+        realtimeService.notifyModuleCompleted(userId, toDto(progress));
+
+        // If StudySet completed, check unlock
+        if (setProgress.canUnlockNext()) {
+            StudySet studySet = studySetRepo.findById(module.getStudySetId()).orElseThrow();
+            realtimeService.notifyStudySetCompleted(userId, studySet.getId());
+
+            // Check and unlock next StudySet
+            unlockService.checkAndUnlockNextStudySet(userId, studySet);
+        }
+
+        return toDto(progress);
+    }
+
+    /**
+     * Get modules with progress for a StudySet
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudySetModuleResponse> getModulesWithProgress(String userId, String studySetId) {
+        List<StudySetModule> modules = studySetModuleRepo.findByStudySetIdOrderByModuleOrder(studySetId);
+        List<String> moduleIds = modules.stream().map(StudySetModule::getId).collect(Collectors.toList());
+        List<ModuleProgress> progressList = moduleProgressRepo.findByUserIdAndModuleIds(userId, moduleIds);
 
         return modules.stream().map(module -> {
-            SectionModuleResponse response = SectionModuleResponse.builder()
+            var response = StudySetModuleResponse.builder()
                     .id(module.getId())
-                    .folderId(module.getFolderId())
-                    .moduleType(module.getModuleType())
                     .studySetId(module.getStudySetId())
+                    .moduleType(module.getModuleType())
                     .moduleOrder(module.getModuleOrder())
-                    .displayTitle(module.getDisplayTitle())
+                    .title(module.getTitle())
+                    .description(module.getDescription())
+                    .icon(module.getIcon())
+                    .color(module.getColor())
+                    .contentSetId(module.getContentSetId())
+                    .estimatedMinutes(module.getEstimatedMinutes())
                     .isRequired(module.getIsRequired())
-                    .moduleDescription(module.getModuleDescription())
                     .build();
 
-            // Fetch StudySet data from external service
-            Optional<StudySetDto> studySetOpt = moduleIntegrationService.getStudySet(
-                    module.getModuleType(), module.getStudySetId());
-
-            if (studySetOpt.isPresent()) {
-                StudySetDto studySet = studySetOpt.get();
-                response.setStudySetTitle(studySet.getTitle());
-                response.setStudySetDescription(studySet.getDescription());
-                response.setStudySetThumbnail(studySet.getThumbnail());
-                response.setEstimatedMinutes(studySet.getEstimatedMinutes());
-                response.setItemCount(studySet.getItemCount());
-                response.setIsAvailable(true);
-            } else {
-                response.setIsAvailable(false);
-                log.warn("StudySet {} not available from module {}",
-                        module.getStudySetId(), module.getModuleType());
+            // Enrich with content set details
+            if (module.getContentSetId() != null) {
+                integrationService.getStudySet(module.getModuleType(), module.getContentSetId())
+                        .ifPresent(response::setContentSetDetails);
             }
+
+            // Add user progress
+            progressList.stream()
+                    .filter(p -> p.getStudySetModuleId().equals(module.getId()))
+                    .findFirst()
+                    .ifPresent(p -> response.setUserProgress(toDto(p)));
 
             return response;
         }).collect(Collectors.toList());
     }
 
-    private void updateLearningPathProgress(String userId, String packageId) {
-        UserLearningProgress progress = learningProgressRepository
-                .findByUserIdAndPackageId(userId, packageId)
-                .orElse(null);
+    /**
+     * Get StudySet progress with lock status
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public StudySetProgressDto getStudySetProgress(String userId, String studySetId) {
+        StudySet studySet = studySetRepo.findById(studySetId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
 
-        if (progress == null) {
-            return;
-        }
+        StudySetProgress progress = studySetProgressRepo.findByUserIdAndStudySetId(userId, studySetId)
+                .orElse(createDefaultProgress(userId, studySet));
 
-        // Get all folders in package
-        List<String> allFolderIds = folderRepository.findByPackageEntityId(packageId).stream()
-                .map(f -> f.getId())
-                .toList();
+        boolean isLocked = !unlockService.isStudySetUnlocked(userId, studySetId);
+        String lockReason = isLocked ? unlockService.getLockReason(userId, studySetId) : null;
 
-        if (allFolderIds.isEmpty()) {
-            return;
-        }
-
-        // Get completed folders
-        List<String> completedFolderIds = allFolderIds.stream()
-                .filter(folderId -> isSectionCompleted(userId, folderId))
-                .toList();
-
-        // Update progress
-        progress.setCompletedFolderIds(toJsonArray(completedFolderIds));
-        double percentage = (completedFolderIds.size() * 100.0) / allFolderIds.size();
-        progress.setCompletionPercentage(percentage);
-        progress.setLastAccessedAt(LocalDateTime.now());
-
-        if (percentage >= 100.0 && progress.getCompletedAt() == null) {
-            progress.setCompletedAt(LocalDateTime.now());
-            log.info("User {} completed learning path {}", userId, packageId);
-        }
-
-        learningProgressRepository.save(progress);
+        return StudySetProgressDto.builder()
+                .id(progress.getId())
+                .studySetId(progress.getStudySetId())
+                .studySetTitle(studySet.getTitle())
+                .folderId(progress.getFolderId())
+                .status(progress.getStatus())
+                .completedModules(progress.getCompletedModules())
+                .totalModules(progress.getTotalModules())
+                .requiredCompletedModules(progress.getRequiredCompletedModules())
+                .totalRequiredModules(progress.getTotalRequiredModules())
+                .progressPercentage(progress.getProgressPercentage())
+                .isLocked(isLocked)
+                .lockReason(lockReason)
+                .firstStartedAt(progress.getFirstStartedAt())
+                .completedAt(progress.getCompletedAt())
+                .build();
     }
 
-    private List<String> parseJsonArray(String json) {
-        try {
-            if (json == null || json.isBlank()) {
-                return new ArrayList<>();
+    /**
+     * Update StudySet progress based on module completions
+     */
+    private StudySetProgress updateStudySetProgress(String userId, String studySetId) {
+        StudySet studySet = studySetRepo.findById(studySetId).orElseThrow();
+
+        StudySetProgress progress = studySetProgressRepo.findByUserIdAndStudySetId(userId, studySetId)
+                .orElse(createDefaultProgress(userId, studySet));
+
+        // Count modules
+        long totalModules = studySetModuleRepo.countByStudySetIdAndIsActive(studySetId, true);
+        long totalRequired = studySetModuleRepo.countByStudySetIdAndIsRequiredAndIsActive(studySetId, true, true);
+        long completedModules = moduleProgressRepo.countByUserIdAndStudySetIdAndStatus(
+                userId, studySetId, ProgressStatus.COMPLETED);
+
+        // Count completed required modules
+        List<StudySetModule> requiredModules = studySetModuleRepo.findByStudySetIdOrderByModuleOrder(studySetId)
+                .stream()
+                .filter(StudySetModule::getIsRequired)
+                .collect(Collectors.toList());
+
+        List<String> requiredModuleIds = requiredModules.stream()
+                .map(StudySetModule::getId)
+                .collect(Collectors.toList());
+
+        long completedRequired = requiredModuleIds.isEmpty() ? 0
+                : moduleProgressRepo.findByUserIdAndModuleIds(userId, requiredModuleIds)
+                        .stream()
+                        .filter(ModuleProgress::isCompleted)
+                        .count();
+
+        progress.setTotalModules((int) totalModules);
+        progress.setTotalRequiredModules((int) totalRequired);
+        progress.setCompletedModules((int) completedModules);
+        progress.setRequiredCompletedModules((int) completedRequired);
+
+        if (progress.getFirstStartedAt() == null && completedModules > 0) {
+            progress.setFirstStartedAt(Instant.now());
+        }
+
+        if (completedModules > 0 && !progress.canUnlockNext()) {
+            progress.setStatus(ProgressStatus.IN_PROGRESS);
+        } else if (progress.canUnlockNext() && totalRequired > 0) {
+            progress.setStatus(ProgressStatus.COMPLETED);
+            if (progress.getCompletedAt() == null) {
+                progress.setCompletedAt(Instant.now());
             }
-            return objectMapper.readValue(json, objectMapper.getTypeFactory()
-                    .constructCollectionType(List.class, String.class));
-        } catch (JsonProcessingException e) {
-            log.error("Failed to parse JSON array: {}", json, e);
-            return new ArrayList<>();
         }
+
+        return studySetProgressRepo.save(progress);
     }
 
-    private String toJsonArray(List<String> list) {
-        try {
-            return objectMapper.writeValueAsString(list);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to convert list to JSON", e);
-            return "[]";
-        }
+    private StudySetProgress createDefaultProgress(String userId, StudySet studySet) {
+        // Get folder from studySet (via many-to-many)
+        String folderId = studySet.getFolders().isEmpty() ? null : studySet.getFolders().get(0).getId();
+        String packageId = folderId != null && !studySet.getFolders().isEmpty()
+                ? studySet.getFolders().get(0).getPackageEntity().getId()
+                : null;
+
+        return StudySetProgress.builder()
+                .userId(userId)
+                .studySetId(studySet.getId())
+                .folderId(folderId)
+                .packageId(packageId)
+                .status(ProgressStatus.NOT_STARTED)
+                .completedModules(0)
+                .totalModules(0)
+                .requiredCompletedModules(0)
+                .totalRequiredModules(0)
+                .build();
+    }
+
+    private ModuleProgressDto toDto(ModuleProgress progress) {
+        return ModuleProgressDto.builder()
+                .id(progress.getId())
+                .studySetModuleId(progress.getStudySetModuleId())
+                .studySetId(progress.getStudySetId())
+                .status(progress.getStatus())
+                .completedItems(progress.getCompletedItems())
+                .totalItems(progress.getTotalItems())
+                .progressPercentage(progress.getProgressPercentage())
+                .score(progress.getScore())
+                .studyTimeSeconds(progress.getStudyTimeSeconds())
+                .startedAt(progress.getStartedAt())
+                .completedAt(progress.getCompletedAt())
+                .build();
     }
 }

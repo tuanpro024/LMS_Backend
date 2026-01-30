@@ -20,10 +20,6 @@ public class CreateStudySetRequest {
 
     private String thumbnail;
 
-    private String unlockRuleJson;
-
-    private Integer estimatedMinutes;
-
     @NotNull(message = "isPrivate is required")
     private Boolean isPrivate;
 }

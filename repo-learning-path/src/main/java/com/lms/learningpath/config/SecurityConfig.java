@@ -52,17 +52,27 @@ public class SecurityConfig {
                         // Health endpoints
                         .requestMatchers("/health", "/actuator/**").permitAll()
 
-                        // Public GET endpoints
+                        // Public GET endpoints (browse learning paths)
                         .requestMatchers(HttpMethod.GET, "/learning-paths/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/sections/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/folders/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/study-sets/**").permitAll()
 
                         // Admin endpoints require authentication
                         .requestMatchers("/admin/**").authenticated()
+
+                        // User progress requires authentication
+                        .requestMatchers("/user/progress/**").authenticated()
+
+                        // Create/Update/Delete require authentication
+                        .requestMatchers(HttpMethod.POST, "/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/**").authenticated()
 
                         // All other endpoints require authentication
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+
     }
 }

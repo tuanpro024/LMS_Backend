@@ -31,12 +31,6 @@ public class StudySet extends BaseEntity {
     @Column(nullable = false, length = 26)
     private String userId;
 
-    @Column(columnDefinition = "TEXT")
-    private String unlockRuleJson;
-
-    @Column
-    private Integer estimatedMinutes;
-
     // Note: Content items (Cards/Words) relationship handled by BaseContentItem
     // Each specific implementation will have @OneToMany for their content type
 

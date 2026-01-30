@@ -22,9 +22,9 @@ import java.util.List;
  * Delegates to PackageApiDelegate for CRUD operations.
  */
 @RestController
-@RequestMapping("/learning-paths")
+@RequestMapping("/packages")
 @RequiredArgsConstructor
-public class LearningPathController {
+public class PackageController {
 
     private final PackageApiDelegate packageDelegate;
 

@@ -21,4 +21,6 @@ public class CreatePackageRequest {
     private TypeName type;
 
     private String description;
+
+    private String thumbnail;
 }

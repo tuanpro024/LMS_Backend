@@ -26,6 +26,9 @@ public class Package extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(columnDefinition = "TEXT")
+    private String thumbnail;
+
     @Column(nullable = false, length = 26)
     private String userId;
 

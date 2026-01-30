@@ -2,50 +2,100 @@ package com.lms.learningpath.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
-import com.lms.learningpath.dto.response.ModuleResponse;
-import com.lms.learningpath.dto.response.SetProgressResponse;
-import com.lms.learningpath.service.LearningModuleService;
-import com.lms.learningpath.service.ProgressTrackingService;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
+import com.lms.content.common.dto.response.StudySetResponse;
+import com.lms.learningpath.dto.external.StudySetDto;
+import com.lms.learningpath.entity.enums.ModuleType;
+import com.lms.learningpath.service.ModuleIntegrationService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+/**
+ * Controller for admin/teacher interface to browse and select StudySets from
+ * different modules.
+ * Provides APIs to list available StudySets across all modules for adding to
+ * learning sections.
+ */
 @RestController
-@RequestMapping("/study-sets")
+@RequestMapping("/admin/study-sets")
 @RequiredArgsConstructor
-@Slf4j
 public class StudySetController {
 
-    private final LearningModuleService moduleService;
-    private final ProgressTrackingService progressTrackingService;
+    private final ModuleIntegrationService moduleIntegrationService;
+    private final StudySetApiDelegate studySetDelegate;
 
     /**
-     * Get all modules of a study set (with user progress)
+     * Get all available StudySets grouped by module type
      */
-    @GetMapping("/{studySetId}/modules")
-    public ResponseEntity<ApiResponse<List<ModuleResponse>>> getModulesByStudySet(
-            @PathVariable String studySetId,
-            Authentication authentication
-    ) {
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        List<ModuleResponse> response = moduleService.getModulesByStudySetId(studySetId, principal.userId());
-        return ResponseEntity.ok(ApiResponse.ok(response));
+    @GetMapping("/available")
+    public ResponseEntity<ApiResponse<Map<String, List<StudySetDto>>>> getAllAvailableStudySets(
+            Authentication authentication) {
+
+        Map<String, List<StudySetDto>> studySetsByModule = new HashMap<>();
+
+        // Fetch from each module
+        for (ModuleType moduleType : ModuleType.values()) {
+            try {
+                List<StudySetDto> studySets = moduleIntegrationService.getAllStudySets(moduleType);
+                studySetsByModule.put(moduleType.name(), studySets);
+            } catch (Exception e) {
+                studySetsByModule.put(moduleType.name(), new ArrayList<>());
+            }
+        }
+
+        return ResponseEntity.ok(ApiResponse.ok(studySetsByModule));
     }
 
     /**
-     * Get user progress on a study set
+     * Get StudySets from a specific module
      */
-    @GetMapping("/{studySetId}/progress")
-    public ResponseEntity<ApiResponse<SetProgressResponse>> getSetProgress(
+    @GetMapping("/module/{moduleType}")
+    public ResponseEntity<ApiResponse<List<StudySetDto>>> getStudySetsByModule(
+            @PathVariable ModuleType moduleType,
+            @RequestParam(required = false) String q,
+            Authentication authentication) {
+
+        List<StudySetDto> studySets = q != null && !q.isBlank()
+                ? moduleIntegrationService.searchStudySets(moduleType, q)
+                : moduleIntegrationService.getAllStudySets(moduleType);
+
+        return ResponseEntity.ok(ApiResponse.ok(studySets));
+    }
+
+    /**
+     * Get local StudySets (from this service's own study sets if any)
+     */
+    @GetMapping("/local")
+    public ResponseEntity<ApiResponse<List<StudySetResponse>>> getLocalStudySets(
+            @RequestParam(required = false) String q,
+            Authentication authentication) {
+
+        List<StudySetResponse> studySets = q != null && !q.isBlank()
+                ? studySetDelegate.searchStudySets(q)
+                : studySetDelegate.getAllStudySets();
+
+        return ResponseEntity.ok(ApiResponse.ok(studySets));
+    }
+
+    /**
+     * Get StudySet details from a specific module
+     */
+    @GetMapping("/module/{moduleType}/{studySetId}")
+    public ResponseEntity<ApiResponse<StudySetDto>> getStudySetDetails(
+            @PathVariable ModuleType moduleType,
             @PathVariable String studySetId,
-            Authentication authentication
-    ) {
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        SetProgressResponse response = progressTrackingService.getSetProgress(principal.userId(), studySetId);
-        return ResponseEntity.ok(ApiResponse.ok(response));
+            Authentication authentication) {
+
+        StudySetDto studySet = moduleIntegrationService.getStudySet(moduleType, studySetId)
+                .orElseThrow(() -> new RuntimeException("StudySet not found"));
+
+        return ResponseEntity.ok(ApiResponse.ok(studySet));
     }
 }

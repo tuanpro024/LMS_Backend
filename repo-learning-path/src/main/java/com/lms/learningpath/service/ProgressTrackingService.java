@@ -1,22 +1,46 @@
 package com.lms.learningpath.service;
 
-import com.lms.learningpath.dto.response.SetCompletionResult;
-import com.lms.learningpath.dto.response.SetProgressResponse;
+import com.lms.learningpath.dto.response.SectionModuleResponse;
 
+import java.util.List;
+
+/**
+ * Service for tracking and updating user progress through learning paths.
+ */
 public interface ProgressTrackingService {
 
     /**
-     * Lấy tiến độ học của user trên study set
+     * Mark a module as completed for a user
      */
-    SetProgressResponse getSetProgress(String userId, String studySetId);
+    void completeModule(String userId, String moduleId);
 
     /**
-     * Cập nhật tiến độ học study set sau khi hoàn thành module
+     * Update progress for a section based on completed modules
      */
-    SetProgressResponse updateSetProgress(String userId, String studySetId);
+    void updateSectionProgress(String userId, String folderId);
 
     /**
-     * Đánh dấu study set hoàn thành
+     * Check if a section is completed (all required modules done)
      */
-    SetCompletionResult completeSet(String userId, String studySetId);
+    boolean isSectionCompleted(String userId, String folderId);
+
+    /**
+     * Get completion percentage for a section
+     */
+    double getSectionCompletionPercentage(String userId, String folderId);
+
+    /**
+     * Get completion percentage for entire learning path
+     */
+    double getLearningPathCompletionPercentage(String userId, String packageId);
+
+    /**
+     * Initialize progress tracking for a user starting a learning path
+     */
+    void initializeLearningPathProgress(String userId, String packageId);
+
+    /**
+     * Get enriched module data with progress information
+     */
+    List<SectionModuleResponse> getModulesWithProgress(String userId, String folderId);
 }

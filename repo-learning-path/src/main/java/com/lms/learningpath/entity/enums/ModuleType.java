@@ -1,24 +1,29 @@
 package com.lms.learningpath.entity.enums;
 
+/**
+ * Enum representing different module types in the LMS system.
+ * Each type corresponds to a microservice that manages StudySets.
+ */
 public enum ModuleType {
-    // Học nội dung
-    VOCABULARY_FLASHCARD,
-    WRITING_PRACTICE,
-    KANJI_ORIGIN,
-    LISTENING,
-    PRONUNCIATION,
-    READING,
-    CONVERSATION,
-    GRAMMAR,
+    FLASHCARD("repo-flashcard", "Flashcard"),
+    KANJI_ORIGIN("repo-kanji-origin", "Kanji Origin"),
+    WRITING("repo-writing", "Writing"),
+    DICTIONARY("repo-dictionary", "Dictionary"),
+    PRONUNCIATION("repo-pronunciation", "Pronunciation");
 
-    // Kiểm tra
-    QUIZ_MULTIPLE_CHOICE,
-    QUIZ_DUOLINGO_STYLE,
-    QUIZ_FILL_BLANK,
-    QUIZ_MATCHING,
+    private final String serviceName;
+    private final String displayName;
 
-    // Đặc biệt
-    BOSS_TEST,
-    VIDEO_LESSON,
-    INTERACTIVE_STORY
+    ModuleType(String serviceName, String displayName) {
+        this.serviceName = serviceName;
+        this.displayName = displayName;
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
 }

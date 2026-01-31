@@ -6,8 +6,9 @@ package com.lms.learningpath.entity.enums;
  */
 public enum ModuleType {
     FLASHCARD, // Học flashcard
-    KANJI, // Học Kanji/Hán tự
+    KANJI, // Học nguồn gốc hán tự
     WRITING, // Luyện viết
+    PRONUNCIATION, // Luyện phát âm từ repo-pronunciation
     QUIZ, // Quiz kiểm tra (như Duolingo)
     VIDEO, // Xem video bài giảng
     READING, // Đọc hiểu

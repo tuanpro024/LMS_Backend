@@ -8,24 +8,25 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = {
-                "com.lms.learningpath",
-                "com.lms.content.common",
-                "com.lms.common"
+        "com.lms.learningpath",
+        "com.lms.content.common",
+        "com.lms.common"
 })
 @EnableJpaRepositories(basePackages = {
-                "com.lms.learningpath.repository"
+        "com.lms.learningpath.repository",
+        "com.lms.content.common.repository"
 })
 @EntityScan(basePackages = {
-                "com.lms.learningpath.entity",
-                "com.lms.content.common.entity",
-                "com.lms.common.jpa"
+        "com.lms.learningpath.entity",
+        "com.lms.content.common.entity",
+        "com.lms.common.jpa"
 })
 @EnableFeignClients
 @EnableDiscoveryClient
 public class RepoLearningPathApplication {
 
-        public static void main(String[] args) {
-                SpringApplication.run(RepoLearningPathApplication.class, args);
-        }
+    public static void main(String[] args) {
+        SpringApplication.run(RepoLearningPathApplication.class, args);
+    }
 
 }

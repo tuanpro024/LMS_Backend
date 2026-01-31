@@ -8,26 +8,23 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-/**
- * DTO for module progress tracking (step modules).
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ModuleProgressDto {
+public class StepProgressResponse {
+
     private String id;
-    private String stepModuleId; // Changed from studySetModuleId
-    private String stepId; // Changed from studySetId
+    private String userId;
+    private String stepId;
+    private String learningPathId;
     private ProgressStatus status;
-    private Integer completedItems;
-    private Integer totalItems;
+    private Integer completedModules;
+    private Integer totalModules;
+    private Integer requiredCompletedModules;
+    private Integer totalRequiredModules;
     private Double progressPercentage;
-    private Integer score;
-    private Integer totalAttempts;
-    private Integer studyTimeSeconds;
+    private Boolean canUnlockNext;
     private Instant firstStartedAt;
-    private Instant lastAttemptAt;
-    private Instant startedAt;
     private Instant completedAt;
 }

@@ -3,7 +3,7 @@ spring:
     name: repo-writing
   datasource:
     url: jdbc:mysql://localhost:3306/lms_writing_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: sa
+    username: root
     password: 123
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:

@@ -1,0 +1,619 @@
+﻿INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< com.lms:repo-learning-path >---------------------
+[INFO] Building repo-learning-path 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ repo-learning-path ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ repo-learning-path ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 48 source files with javac [debug parameters release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/impl/ModuleIntegrationServiceImpl.java:[23,54] interface expected here
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/impl/ProgressTrackingServiceImpl.java:[34,53] interface expected here
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/impl/UnlockServiceImpl.java:[22,43] interface expected here
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[42,45] cannot find symbol
+  symbol:   method builder()
+  location: class com.lms.learningpath.entity.SectionModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[44,36] cannot find symbol
+  symbol:   method getModuleType()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[45,36] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[46,37] cannot find symbol
+  symbol:   method getModuleOrder()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[47,38] cannot find symbol
+  symbol:   method getDisplayTitle()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[48,36] cannot find symbol
+  symbol:   method getIsRequired()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[49,43] cannot find symbol
+  symbol:   method getModuleDescription()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[66,40] incompatible types: java.util.List<com.lms.learningpath.dto.response.StudySetModuleResponse> cannot be converted to java.util.List<com.lms.learningpath.dto.response.SectionModuleResponse>
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[96,38] cannot find symbol
+  symbol:   method getModuleOrder()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[97,39] cannot find symbol
+  symbol:   method getDisplayTitle()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[98,37] cannot find symbol
+  symbol:   method getIsRequired()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[99,44] cannot find symbol
+  symbol:   method getModuleDescription()
+  location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[49,61] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[50,45] cannot find symbol
+  symbol:   variable E403
+  location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[58,41] cannot find symbol
+  symbol:   method getStatus()
+  location: variable existing of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[59,45] cannot find symbol
+  symbol:   variable E400
+  location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[64,23] cannot find symbol
+  symbol:   method getModuleType()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[65,23] cannot find symbol
+  symbol:   method getContentSetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[69,38] cannot find symbol
+  symbol:   method builder()
+  location: class com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[72,39] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[80,21] cannot find symbol
+  symbol:   method setStatus(com.lms.learningpath.entity.enums.ProgressStatus)
+  location: variable existing of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[81,21] cannot find symbol
+  symbol:   method setStartedAt(java.time.Instant)
+  location: variable existing of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[82,21] cannot find symbol
+  symbol:   method setTotalItems(int)
+  location: variable existing of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[89,46] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[91,9] cannot find symbol
+  symbol:   variable log
+  location: class com.lms.learningpath.service.ProgressTrackingService
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[103,62] cannot find symbol
+  symbol:   variable E404
+  location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[105,20] cannot find symbol
+  symbol:   method getCompletedItems()
+  location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[106,47] cannot find symbol
+  symbol:   method getCompletedItems()
+  location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[108,20] cannot find symbol
+  symbol:   method getStudyTimeSeconds()
+  location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[109,50] cannot find symbol
+  symbol:   method getStudyTimeSeconds()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[109,82] cannot find symbol
+  symbol:   method getStudyTimeSeconds()
+  location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[111,20] cannot find symbol
+  symbol:   method getScore()
+  location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[112,38] cannot find symbol
+  symbol:   method getScore()
+  location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[114,20] cannot find symbol
+  symbol:   method getMetadata()
+  location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[115,41] cannot find symbol
+  symbol:   method getMetadata()
+  location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[130,62] cannot find symbol
+  symbol:   variable E404
+  location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[132,21] cannot find symbol
+  symbol:   method getStatus()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[133,45] cannot find symbol
+  symbol:   variable E400
+  location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[136,17] cannot find symbol
+  symbol:   method setStatus(com.lms.learningpath.entity.enums.ProgressStatus)
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[137,44] cannot find symbol
+  symbol:   method getTotalItems()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[138,17] cannot find symbol
+  symbol:   method setCompletedAt(java.time.Instant)
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[140,20] cannot find symbol
+  symbol:   method getScore()
+  location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[141,38] cannot find symbol
+  symbol:   method getScore()
+  location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[143,20] cannot find symbol
+  symbol:   method getTotalStudyTimeSeconds()
+  location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[144,49] cannot find symbol
+  symbol:   method getTotalStudyTimeSeconds()
+  location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[146,20] cannot find symbol
+  symbol:   method getMetadata()
+  location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[147,41] cannot find symbol
+  symbol:   method getMetadata()
+  location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[154,77] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[156,9] cannot find symbol
+  symbol:   variable log
+  location: class com.lms.learningpath.service.ProgressTrackingService
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[160,61] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[161,13] cannot find symbol
+  symbol:   variable log
+  location: class com.lms.learningpath.service.ProgressTrackingService
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[180,50] cannot find symbol
+  symbol:   method builder()
+  location: class com.lms.learningpath.dto.response.StudySetModuleResponse
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[182,39] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[183,39] cannot find symbol
+  symbol:   method getModuleType()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[184,40] cannot find symbol
+  symbol:   method getModuleOrder()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[185,34] cannot find symbol
+  symbol:   method getTitle()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[186,40] cannot find symbol
+  symbol:   method getDescription()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[187,33] cannot find symbol
+  symbol:   method getIcon()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[188,34] cannot find symbol
+  symbol:   method getColor()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[189,41] cannot find symbol
+  symbol:   method getContentSetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[190,45] cannot find symbol
+  symbol:   method getEstimatedMinutes()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[191,39] cannot find symbol
+  symbol:   method getIsRequired()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[195,23] cannot find symbol
+  symbol:   method getContentSetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[196,54] cannot find symbol
+  symbol:   method getModuleType()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[196,78] cannot find symbol
+  symbol:   method getContentSetId()
+  location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[202,35] cannot find symbol
+  symbol:   method getStudySetModuleId()
+  location: variable p of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[207,19] incompatible types: inference variable T has incompatible bounds
+    equality constraints: com.lms.learningpath.dto.response.StudySetModuleResponse
+    lower bounds: java.lang.Object
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[224,35] cannot find symbol
+  symbol:   method builder()
+  location: class com.lms.learningpath.dto.response.StudySetProgressDto
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[226,37] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[228,35] cannot find symbol
+  symbol:   method getFolderId()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[229,33] cannot find symbol
+  symbol:   method getStatus()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[230,43] cannot find symbol
+  symbol:   method getCompletedModules()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[231,39] cannot find symbol
+  symbol:   method getTotalModules()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[232,51] cannot find symbol
+  symbol:   method getRequiredCompletedModules()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[233,47] cannot find symbol
+  symbol:   method getTotalRequiredModules()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[237,41] cannot find symbol
+  symbol:   method getFirstStartedAt()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[238,38] cannot find symbol
+  symbol:   method getCompletedAt()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[260,25] invalid method reference
+  cannot find symbol
+    symbol:   method getIsRequired(T)
+    location: class com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[273,17] cannot find symbol
+  symbol:   method setTotalModules(int)
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[274,17] cannot find symbol
+  symbol:   method setTotalRequiredModules(int)
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[275,17] cannot find symbol
+  symbol:   method setCompletedModules(int)
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[276,17] cannot find symbol
+  symbol:   method setRequiredCompletedModules(int)
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[278,21] cannot find symbol
+  symbol:   method getFirstStartedAt()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[279,21] cannot find symbol
+  symbol:   method setFirstStartedAt(java.time.Instant)
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[283,21] cannot find symbol
+  symbol:   method setStatus(com.lms.learningpath.entity.enums.ProgressStatus)
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[285,21] cannot find symbol
+  symbol:   method setStatus(com.lms.learningpath.entity.enums.ProgressStatus)
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[286,25] cannot find symbol
+  symbol:   method getCompletedAt()
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[287,25] cannot find symbol
+  symbol:   method setCompletedAt(java.time.Instant)
+  location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[301,32] cannot find symbol
+  symbol:   method builder()
+  location: class com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[315,33] cannot find symbol
+  symbol:   method builder()
+  location: class com.lms.learningpath.dto.response.ModuleProgressDto
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[317,43] cannot find symbol
+  symbol:   method getStudySetModuleId()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[318,37] cannot find symbol
+  symbol:   method getStudySetId()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[319,33] cannot find symbol
+  symbol:   method getStatus()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[320,41] cannot find symbol
+  symbol:   method getCompletedItems()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[321,37] cannot find symbol
+  symbol:   method getTotalItems()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[323,32] cannot find symbol
+  symbol:   method getScore()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[324,43] cannot find symbol
+  symbol:   method getStudyTimeSeconds()
+  location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  7.370 s
+[INFO] Finished at: 2026-01-30T15:25:05+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project repo-learning-path: Compilation failure: Compilation failure: 
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/impl/ModuleIntegrationServiceImpl.java:[23,54] interface expected here
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/impl/ProgressTrackingServiceImpl.java:[34,53] interface expected here
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/impl/UnlockServiceImpl.java:[22,43] interface expected here
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[42,45] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.lms.learningpath.entity.SectionModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[44,36] cannot find symbol
+[ERROR]   symbol:   method getModuleType()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[45,36] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[46,37] cannot find symbol
+[ERROR]   symbol:   method getModuleOrder()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[47,38] cannot find symbol
+[ERROR]   symbol:   method getDisplayTitle()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[48,36] cannot find symbol
+[ERROR]   symbol:   method getIsRequired()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[49,43] cannot find symbol
+[ERROR]   symbol:   method getModuleDescription()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[66,40] incompatible types: java.util.List<com.lms.learningpath.dto.response.StudySetModuleResponse> cannot be converted to java.util.List<com.lms.learningpath.dto.response.SectionModuleResponse>
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[96,38] cannot find symbol
+[ERROR]   symbol:   method getModuleOrder()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[97,39] cannot find symbol
+[ERROR]   symbol:   method getDisplayTitle()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[98,37] cannot find symbol
+[ERROR]   symbol:   method getIsRequired()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/controller/SectionModuleController.java:[99,44] cannot find symbol
+[ERROR]   symbol:   method getModuleDescription()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.AddModuleToSectionRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[49,61] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[50,45] cannot find symbol
+[ERROR]   symbol:   variable E403
+[ERROR]   location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[58,41] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable existing of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[59,45] cannot find symbol
+[ERROR]   symbol:   variable E400
+[ERROR]   location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[64,23] cannot find symbol
+[ERROR]   symbol:   method getModuleType()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[65,23] cannot find symbol
+[ERROR]   symbol:   method getContentSetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[69,38] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[72,39] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[80,21] cannot find symbol
+[ERROR]   symbol:   method setStatus(com.lms.learningpath.entity.enums.ProgressStatus)
+[ERROR]   location: variable existing of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[81,21] cannot find symbol
+[ERROR]   symbol:   method setStartedAt(java.time.Instant)
+[ERROR]   location: variable existing of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[82,21] cannot find symbol
+[ERROR]   symbol:   method setTotalItems(int)
+[ERROR]   location: variable existing of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[89,46] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[91,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.lms.learningpath.service.ProgressTrackingService
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[103,62] cannot find symbol
+[ERROR]   symbol:   variable E404
+[ERROR]   location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[105,20] cannot find symbol
+[ERROR]   symbol:   method getCompletedItems()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[106,47] cannot find symbol
+[ERROR]   symbol:   method getCompletedItems()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[108,20] cannot find symbol
+[ERROR]   symbol:   method getStudyTimeSeconds()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[109,50] cannot find symbol
+[ERROR]   symbol:   method getStudyTimeSeconds()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[109,82] cannot find symbol
+[ERROR]   symbol:   method getStudyTimeSeconds()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[111,20] cannot find symbol
+[ERROR]   symbol:   method getScore()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[112,38] cannot find symbol
+[ERROR]   symbol:   method getScore()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[114,20] cannot find symbol
+[ERROR]   symbol:   method getMetadata()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[115,41] cannot find symbol
+[ERROR]   symbol:   method getMetadata()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.UpdateProgressRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[130,62] cannot find symbol
+[ERROR]   symbol:   variable E404
+[ERROR]   location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[132,21] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[133,45] cannot find symbol
+[ERROR]   symbol:   variable E400
+[ERROR]   location: class com.lms.common.exception.ErrorCode
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[136,17] cannot find symbol
+[ERROR]   symbol:   method setStatus(com.lms.learningpath.entity.enums.ProgressStatus)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[137,44] cannot find symbol
+[ERROR]   symbol:   method getTotalItems()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[138,17] cannot find symbol
+[ERROR]   symbol:   method setCompletedAt(java.time.Instant)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[140,20] cannot find symbol
+[ERROR]   symbol:   method getScore()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[141,38] cannot find symbol
+[ERROR]   symbol:   method getScore()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[143,20] cannot find symbol
+[ERROR]   symbol:   method getTotalStudyTimeSeconds()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[144,49] cannot find symbol
+[ERROR]   symbol:   method getTotalStudyTimeSeconds()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[146,20] cannot find symbol
+[ERROR]   symbol:   method getMetadata()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[147,41] cannot find symbol
+[ERROR]   symbol:   method getMetadata()
+[ERROR]   location: variable request of type com.lms.learningpath.dto.request.CompleteModuleRequest
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[154,77] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[156,9] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.lms.learningpath.service.ProgressTrackingService
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[160,61] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[161,13] cannot find symbol
+[ERROR]   symbol:   variable log
+[ERROR]   location: class com.lms.learningpath.service.ProgressTrackingService
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[180,50] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.lms.learningpath.dto.response.StudySetModuleResponse
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[182,39] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[183,39] cannot find symbol
+[ERROR]   symbol:   method getModuleType()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[184,40] cannot find symbol
+[ERROR]   symbol:   method getModuleOrder()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[185,34] cannot find symbol
+[ERROR]   symbol:   method getTitle()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[186,40] cannot find symbol
+[ERROR]   symbol:   method getDescription()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[187,33] cannot find symbol
+[ERROR]   symbol:   method getIcon()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[188,34] cannot find symbol
+[ERROR]   symbol:   method getColor()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[189,41] cannot find symbol
+[ERROR]   symbol:   method getContentSetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[190,45] cannot find symbol
+[ERROR]   symbol:   method getEstimatedMinutes()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[191,39] cannot find symbol
+[ERROR]   symbol:   method getIsRequired()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[195,23] cannot find symbol
+[ERROR]   symbol:   method getContentSetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[196,54] cannot find symbol
+[ERROR]   symbol:   method getModuleType()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[196,78] cannot find symbol
+[ERROR]   symbol:   method getContentSetId()
+[ERROR]   location: variable module of type com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[202,35] cannot find symbol
+[ERROR]   symbol:   method getStudySetModuleId()
+[ERROR]   location: variable p of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[207,19] incompatible types: inference variable T has incompatible bounds
+[ERROR]     equality constraints: com.lms.learningpath.dto.response.StudySetModuleResponse
+[ERROR]     lower bounds: java.lang.Object
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[224,35] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.lms.learningpath.dto.response.StudySetProgressDto
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[226,37] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[228,35] cannot find symbol
+[ERROR]   symbol:   method getFolderId()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[229,33] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[230,43] cannot find symbol
+[ERROR]   symbol:   method getCompletedModules()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[231,39] cannot find symbol
+[ERROR]   symbol:   method getTotalModules()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[232,51] cannot find symbol
+[ERROR]   symbol:   method getRequiredCompletedModules()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[233,47] cannot find symbol
+[ERROR]   symbol:   method getTotalRequiredModules()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[237,41] cannot find symbol
+[ERROR]   symbol:   method getFirstStartedAt()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[238,38] cannot find symbol
+[ERROR]   symbol:   method getCompletedAt()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[260,25] invalid method reference
+[ERROR]   cannot find symbol
+[ERROR]     symbol:   method getIsRequired(T)
+[ERROR]     location: class com.lms.learningpath.entity.StudySetModule
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[273,17] cannot find symbol
+[ERROR]   symbol:   method setTotalModules(int)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[274,17] cannot find symbol
+[ERROR]   symbol:   method setTotalRequiredModules(int)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[275,17] cannot find symbol
+[ERROR]   symbol:   method setCompletedModules(int)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[276,17] cannot find symbol
+[ERROR]   symbol:   method setRequiredCompletedModules(int)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[278,21] cannot find symbol
+[ERROR]   symbol:   method getFirstStartedAt()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[279,21] cannot find symbol
+[ERROR]   symbol:   method setFirstStartedAt(java.time.Instant)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[283,21] cannot find symbol
+[ERROR]   symbol:   method setStatus(com.lms.learningpath.entity.enums.ProgressStatus)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[285,21] cannot find symbol
+[ERROR]   symbol:   method setStatus(com.lms.learningpath.entity.enums.ProgressStatus)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[286,25] cannot find symbol
+[ERROR]   symbol:   method getCompletedAt()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[287,25] cannot find symbol
+[ERROR]   symbol:   method setCompletedAt(java.time.Instant)
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[301,32] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.lms.learningpath.entity.StudySetProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[315,33] cannot find symbol
+[ERROR]   symbol:   method builder()
+[ERROR]   location: class com.lms.learningpath.dto.response.ModuleProgressDto
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[317,43] cannot find symbol
+[ERROR]   symbol:   method getStudySetModuleId()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[318,37] cannot find symbol
+[ERROR]   symbol:   method getStudySetId()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[319,33] cannot find symbol
+[ERROR]   symbol:   method getStatus()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[320,41] cannot find symbol
+[ERROR]   symbol:   method getCompletedItems()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[321,37] cannot find symbol
+[ERROR]   symbol:   method getTotalItems()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[323,32] cannot find symbol
+[ERROR]   symbol:   method getScore()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] /E:/DO_AN/BE_LMS/repo-learning-path/src/main/java/com/lms/learningpath/service/ProgressTrackingService.java:[324,43] cannot find symbol
+[ERROR]   symbol:   method getStudyTimeSeconds()
+[ERROR]   location: variable progress of type com.lms.learningpath.entity.ModuleProgress
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

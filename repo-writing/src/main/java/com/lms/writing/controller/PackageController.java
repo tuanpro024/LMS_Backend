@@ -2,33 +2,34 @@ package com.lms.writing.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
-import com.lms.writing.dto.request.CreatePackageRequest;
-import com.lms.writing.dto.request.UpdatePackageRequest;
-import com.lms.writing.dto.response.PackageResponse;
-import com.lms.writing.entity.TypeName;
-import com.lms.writing.service.PackageService;
+import com.lms.content.common.delegate.api.PackageApiDelegate;
+import com.lms.content.common.dto.excel.HierarchicalImportResult;
+import com.lms.content.common.dto.request.CreatePackageRequest;
+import com.lms.content.common.dto.request.UpdatePackageRequest;
+import com.lms.content.common.dto.response.PackageResponse;
+import com.lms.content.common.entity.TypeName;
+import com.lms.writing.service.ExcelImportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Arrays;
 import java.util.List;
 
 @RestController
 @RequestMapping("/packages")
 @RequiredArgsConstructor
-@Slf4j
 public class PackageController {
 
-    private final PackageService packageService;
+    private final PackageApiDelegate delegate;
+    private final ExcelImportService excelImportService;
 
     @GetMapping("/types")
     public ResponseEntity<ApiResponse<List<TypeName>>> getPackageTypes() {
-        List<TypeName> types = Arrays.asList(TypeName.values());
+        List<TypeName> types = delegate.getPackageTypes();
         return ResponseEntity.ok(ApiResponse.ok(types));
     }
 
@@ -36,34 +37,23 @@ public class PackageController {
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
             @RequestBody @Valid CreatePackageRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        PackageResponse response = packageService.createPackage(request, principal.userId());
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
+        PackageResponse response = delegate.createPackage(request, principal.userId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PackageResponse>> getPackage(
-            @PathVariable String id) {
-
-        PackageResponse response = packageService.getPackageById(id);
+    public ResponseEntity<ApiResponse<PackageResponse>> getPackageById(@PathVariable String id) {
+        PackageResponse response = delegate.getPackageById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllPackages() {
-
-        List<PackageResponse> response = packageService.getAllPackages();
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
-    @GetMapping("/type/{type}")
-    public ResponseEntity<ApiResponse<List<PackageResponse>>> getPackagesByType(
-            @PathVariable TypeName type) {
-
-        List<PackageResponse> response = packageService.getPackagesByType(type);
+    public ResponseEntity<ApiResponse<List<PackageResponse>>> getPackages(
+            @RequestParam(required = false) TypeName type) {
+        List<PackageResponse> response = (type != null)
+                ? delegate.getPackagesByType(type)
+                : delegate.getAllPackages();
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -72,10 +62,8 @@ public class PackageController {
             @PathVariable String id,
             @RequestBody @Valid UpdatePackageRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        PackageResponse response = packageService.updatePackage(id, request, principal.userId());
-
+        PackageResponse response = delegate.updatePackage(id, request, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -83,10 +71,8 @@ public class PackageController {
     public ResponseEntity<ApiResponse<Void>> deletePackage(
             @PathVariable String id,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        packageService.deletePackage(id, principal.userId());
-
+        delegate.deletePackage(id, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
@@ -95,10 +81,8 @@ public class PackageController {
             @PathVariable String packageId,
             @PathVariable String folderId,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        PackageResponse response = packageService.addFolderToPackage(packageId, folderId, principal.userId());
-
+        PackageResponse response = delegate.addFolderToPackage(packageId, folderId, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -107,10 +91,18 @@ public class PackageController {
             @PathVariable String packageId,
             @PathVariable String folderId,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        PackageResponse response = packageService.removeFolderFromPackage(packageId, folderId, principal.userId());
+        PackageResponse response = delegate.removeFolderFromPackage(packageId, folderId, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
 
+    @PostMapping("/import-excel")
+    public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("packageTypeId") String packageTypeId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, packageTypeId, principal.userId(), false);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

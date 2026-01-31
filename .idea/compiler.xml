@@ -8,7 +8,36 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
       </profile>
-      <profile name="Annotation profile for repo-writing" enabled="true">
+      <profile name="Annotation profile for Content Common Module" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.32/lombok-1.18.32.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.5.5.Final/mapstruct-processor-1.5.5.Final.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct/1.5.5.Final/mapstruct-1.5.5.Final.jar" />
+        </processorPath>
+        <module name="repo-content-common" />
+      </profile>
+      <profile name="Annotation profile for repo-kanji-origin" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.5.5.Final/mapstruct-processor-1.5.5.Final.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct/1.5.5.Final/mapstruct-1.5.5.Final.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.32/lombok-1.18.32.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.5.5.Final/mapstruct-processor-1.5.5.Final.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct/1.5.5.Final/mapstruct-1.5.5.Final.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.32/lombok-1.18.32.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" />
+        </processorPath>
+        <module name="notification" />
+        <module name="repo-kanji-origin" />
+        <module name="repo-api-gateway" />
+      </profile>
+      <profile name="Annotation profile for repo-learning-path" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -22,21 +51,31 @@
         <module name="repo-flashcard" />
         <module name="repo-common-framework" />
         <module name="repo-writing" />
-        <module name="repo-api-gateway" />
+        <module name="repo-pronunciation" />
         <module name="repo-eureka" />
+        <module name="repo-dictionary" />
         <module name="repo-notification" />
+        <module name="repo-multimedia" />
         <module name="repo-identity" />
+        <module name="repo-learning-path" />
       </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="notification" options="-parameters" />
       <module name="repo-api-gateway" options="-parameters" />
       <module name="repo-common-framework" options="-parameters" />
+      <module name="repo-content-common" options="-parameters" />
+      <module name="repo-dictionary" options="-parameters" />
       <module name="repo-eureka" options="-parameters" />
       <module name="repo-flashcard" options="-parameters" />
       <module name="repo-identity" options="-parameters" />
+      <module name="repo-kanji-origin" options="-parameters" />
+      <module name="repo-learning-path" options="-parameters" />
+      <module name="repo-multimedia" options="-parameters" />
       <module name="repo-notification" options="-parameters" />
+      <module name="repo-pronunciation" options="-parameters" />
       <module name="repo-realtime" options="-parameters" />
       <module name="repo-writing" options="-parameters" />
     </option>

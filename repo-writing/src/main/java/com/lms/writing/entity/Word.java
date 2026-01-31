@@ -1,10 +1,14 @@
 package com.lms.writing.entity;
 
-import com.lms.common.jpa.BaseEntity;
-import com.lms.writing.entity.enums.WordStatus;
+import com.lms.content.common.dto.excel.ImportableContentItem;
+import com.lms.content.common.entity.BaseContentItem;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Word entity - extends BaseContentItem which contains common fields:
+ * - studySet relationship
+ */
 @Entity
 @Table(name = "words")
 @Getter
@@ -12,8 +16,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Word extends BaseEntity {
+public class Word extends BaseContentItem implements ImportableContentItem {
 
+    // Word-specific fields
     @Column(nullable = false)
     private String word;
 
@@ -23,7 +28,8 @@ public class Word extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String meaning;
 
-    private int wordIndex;
+    @Column(columnDefinition = "TEXT")
+    private String example;
 
     private String sinoVn;
 
@@ -44,18 +50,24 @@ public class Word extends BaseEntity {
 
     private String imageOrigin;
 
-    @Column(columnDefinition = "TEXT")
-    private String example;
+    private String audio;
 
-    @Column(nullable = false, columnDefinition = "JSON")
+    @Column(columnDefinition = "TEXT")
     private String characters;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_set_id", nullable = false)
-    private StudySet studySet;
+    // Override ImportableContentItem methods to map to Word-specific fields
+    @Override
+    public void setTerm(String term) {
+        this.word = term;
+    }
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private WordStatus status = WordStatus.NOT_LEARNED;
+    @Override
+    public void setDefinition(String definition) {
+        this.meaning = definition;
+    }
+
+    @Override
+    public void setExampleSentence(String exampleSentence) {
+        this.example = exampleSentence;
+    }
 }

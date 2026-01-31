@@ -13,9 +13,7 @@ public interface WordRepository extends JpaRepository<Word, String> {
 
     List<Word> findByStudySetIdOrderByIdAsc(String studySetId);
 
-    List<Word> findByStudySetIdAndStatus(String studySetId, WordStatus status);
-
-    long countByStudySetIdAndStatus(String studySetId, WordStatus status);
+    long countByStudySetId(String studySetId);
 
     void deleteByStudySetId(String studySetId);
 }

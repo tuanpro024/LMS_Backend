@@ -2,74 +2,70 @@ package com.lms.writing.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
-import com.lms.writing.dto.request.CreateFolderRequest;
-import com.lms.writing.dto.request.UpdateFolderRequest;
-import com.lms.writing.dto.response.ExcelImportResponse;
-import com.lms.writing.dto.response.FolderResponse;
-import com.lms.writing.service.ExcelImportService;
-import com.lms.writing.service.FolderService;
+import com.lms.content.common.delegate.api.FolderApiDelegate;
+import com.lms.content.common.dto.request.CreateFolderRequest;
+import com.lms.content.common.dto.request.UpdateFolderRequest;
+import com.lms.content.common.dto.response.FolderResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/folders")
 @RequiredArgsConstructor
-@Slf4j
 public class FolderController {
 
-    private final FolderService folderService;
-    private final ExcelImportService excelImportService;
+    private final FolderApiDelegate delegate;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @RequestBody @Valid CreateFolderRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.createFolder(request, principal.userId());
-
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
+        FolderResponse response = delegate.createFolder(request, principal.userId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<FolderResponse>> getFolderById(
-            @PathVariable String id,
-            Authentication authentication) {
-
-        String userId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        FolderResponse response = folderService.getFolderById(id, userId);
+    public ResponseEntity<ApiResponse<FolderResponse>> getFolderById(@PathVariable String id) {
+        FolderResponse response = delegate.getFolderById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFolders(
-            @RequestParam(required = false) String userId,
-            Authentication authentication) {
-
-        String currentUserId = authentication != null && authentication.getPrincipal() instanceof AuthPrincipal
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
-
-        List<FolderResponse> response;
-
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getAllFolders(
+            @RequestParam(required = false) String userId) {
         if (userId != null) {
-            response = folderService.getFoldersByUserId(userId, currentUserId);
-        } else {
-            response = folderService.getAllFolders(currentUserId);
+            List<FolderResponse> response = delegate.getFoldersByUserId(userId);
+            return ResponseEntity.ok(ApiResponse.ok(response));
         }
+        List<FolderResponse> response = delegate.getAllFolders();
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
 
+    @GetMapping("/package/{packageId}")
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFoldersByPackageId(
+            @PathVariable String packageId) {
+        List<FolderResponse> response = delegate.getFoldersByPackageId(packageId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/subject/{subjectId}")
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFoldersBySubjectId(
+            @PathVariable String subjectId) {
+        List<FolderResponse> response = delegate.getFoldersBySubjectId(subjectId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/slot/{slotId}")
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFoldersBySlotId(
+            @PathVariable String slotId) {
+        List<FolderResponse> response = delegate.getFoldersBySlotId(slotId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -78,45 +74,8 @@ public class FolderController {
             @PathVariable String id,
             @RequestBody @Valid UpdateFolderRequest request,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.updateFolder(id, request, principal.userId());
-
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteFolder(
-            @PathVariable String id,
-            Authentication authentication) {
-
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        folderService.deleteFolder(id, principal.userId());
-
-        return ResponseEntity.ok(ApiResponse.ok(null));
-    }
-
-    @PostMapping("/{folderId}/study-sets/{studySetId}")
-    public ResponseEntity<ApiResponse<FolderResponse>> addStudySetToFolder(
-            @PathVariable String folderId,
-            @PathVariable String studySetId,
-            Authentication authentication) {
-
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.addStudySetToFolder(folderId, studySetId, principal.userId());
-
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
-    @DeleteMapping("/{folderId}/study-sets/{studySetId}")
-    public ResponseEntity<ApiResponse<FolderResponse>> removeStudySetFromFolder(
-            @PathVariable String folderId,
-            @PathVariable String studySetId,
-            Authentication authentication) {
-
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        FolderResponse response = folderService.removeStudySetFromFolder(folderId, studySetId, principal.userId());
-
+        FolderResponse response = delegate.updateFolder(id, request, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -125,30 +84,37 @@ public class FolderController {
             @PathVariable String id,
             @RequestParam boolean isPrivate,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        folderService.updateFolderPrivacy(id, isPrivate, principal.userId());
-
+        delegate.updateFolderPrivacy(id, isPrivate, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
-    @PostMapping("/import-excel")
-    public ResponseEntity<ApiResponse<ExcelImportResponse>> importFromExcel(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("folderName") String folderName,
-            @RequestParam(required = false) String description,
-            @RequestParam(defaultValue = "true") boolean isPrivate,
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteFolder(
+            @PathVariable String id,
             Authentication authentication) {
-
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        ExcelImportResponse response = excelImportService.importFromExcel(
-                file,
-                folderName,
-                description,
-                isPrivate,
-                principal.userId());
+        delegate.deleteFolder(id, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
 
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
+    @PostMapping("/{folderId}/study-sets/{studySetId}")
+    public ResponseEntity<ApiResponse<FolderResponse>> addStudySetToFolder(
+            @PathVariable String folderId,
+            @PathVariable String studySetId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        FolderResponse response = delegate.addStudySetToFolder(folderId, studySetId, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @DeleteMapping("/{folderId}/study-sets/{studySetId}")
+    public ResponseEntity<ApiResponse<FolderResponse>> removeStudySetFromFolder(
+            @PathVariable String folderId,
+            @PathVariable String studySetId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        FolderResponse response = delegate.removeStudySetFromFolder(folderId, studySetId, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

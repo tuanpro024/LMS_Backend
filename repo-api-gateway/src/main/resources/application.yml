@@ -74,6 +74,25 @@ spring:
             - Path=${config.api-prefix}/writing/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: multimedia
+          uri: lb://REPO-MULTIMEDIA
+          predicates:
+            - Path=${config.api-prefix}/videos/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
+
+        - id: dictionary
+          uri: lb://REPO-DICTIONARY
+          predicates:
+            - Path=${config.api-prefix}/dictionary/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
+        - id: learning-path
+          uri: lb://REPO-LEARNING-PATH
+          predicates:
+            - Path=${config.api-prefix}/learning-path/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

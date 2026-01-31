@@ -1,10 +1,14 @@
 package com.lms.flashcard.entity;
 
-import com.lms.common.jpa.BaseEntity;
-import com.lms.flashcard.entity.enums.CardStatus;
+import com.lms.content.common.dto.excel.ImportableContentItem;
+import com.lms.content.common.entity.BaseContentItem;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Card entity - extends BaseContentItem which contains common fields:
+ * - studySet relationship
+ */
 @Entity
 @Table(name = "cards")
 @Getter
@@ -12,16 +16,17 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Card extends BaseEntity {
+public class Card extends BaseContentItem implements ImportableContentItem {
+
+    // Card-specific fields
+    @Column(nullable = false)
+    private int cardIndex;
 
     @Column(nullable = false)
     private String term;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String definition;
-
-    @Column(nullable = false)
-    private int cardIndex;
 
     @Column(columnDefinition = "TEXT")
     private String pinyin;
@@ -48,16 +53,8 @@ public class Card extends BaseEntity {
 
     private String imageOrigin;
 
-    @Column(columnDefinition = "JSON")
+    private String audio;
+
+    @Column(columnDefinition = "TEXT")
     private String characters;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "study_set_id", nullable = false)
-    private StudySet studySet;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    @Builder.Default
-    private CardStatus status = CardStatus.NOT_LEARNED;
-
 }

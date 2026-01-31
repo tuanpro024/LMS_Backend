@@ -18,8 +18,6 @@ public class UpdateWordRequest {
 
     private String meaning;
 
-    private Integer wordIndex;
-
     private String sinoVn;
 
     private String wordType;
@@ -37,6 +35,8 @@ public class UpdateWordRequest {
     private String imageWord;
 
     private String imageOrigin;
+
+    private String audio;
 
     private WordStatus status;
 }

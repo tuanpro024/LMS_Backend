@@ -72,6 +72,41 @@ public class OtpServiceImpl implements OtpService {
 
     @Transactional
     @Override
+    public String generateAndSendDeviceOtp(User user) {
+        // Check rate limiting
+        checkRateLimit(user.getEmail());
+
+        // Delete old OTP if exists
+        otpTokenRepository.deleteByUserId(user.getId());
+
+        // Generate 6-digit OTP
+        String otp = String.format("%06d", random.nextInt(1000000));
+
+        // Calculate expiration
+        Instant expiresAt = Instant.now().plus(OTP_TTL);
+        long ttlSeconds = Math.max(1, Duration.between(Instant.now(), expiresAt).getSeconds());
+
+        // Save OTP token
+        OtpVerificationToken token = OtpVerificationToken.builder()
+                .id(UUID.randomUUID().toString())
+                .otp(otp)
+                .userId(user.getId())
+                .expiresAt(expiresAt)
+                .used(false)
+                .ttlSeconds(ttlSeconds)
+                .build();
+        otpTokenRepository.save(token);
+
+        // Send Device Verification OTP email
+        String userName = user.getFullName() != null ? user.getFullName() : user.getEmail();
+        emailService.sendDeviceVerificationEmail(user.getEmail(), userName, otp);
+
+        log.info("Device verification OTP sent to user: {}", user.getEmail());
+        return otp;
+    }
+
+    @Transactional
+    @Override
     public User verifyOtp(String email, String otp) {
         // Find user
         User user = userRepository.findByEmail(email)

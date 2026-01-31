@@ -1,16 +1,14 @@
 package com.lms.identity.service;
 
-import com.lms.identity.dto.request.MobileSignupRequest;
-import com.lms.identity.dto.request.VerifyOtpRequest;
+import com.lms.identity.dto.request.*;
 import com.lms.identity.dto.response.AuthResponse;
-import com.lms.identity.dto.request.LoginRequest;
-import com.lms.identity.dto.request.SignupRequest;
 import com.lms.identity.dto.response.OtpVerificationResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface AuthService {
     AuthResponse signup(SignupRequest request);
 
-    AuthResponse login(LoginRequest request);
+    AuthResponse login(LoginRequest request, HttpServletRequest servletRequest);
 
     AuthResponse refresh(String refreshToken);
 
@@ -30,4 +28,5 @@ public interface AuthService {
     OtpVerificationResponse mobileSignup(MobileSignupRequest request);
 
     AuthResponse verifyOtp(VerifyOtpRequest request);
+    AuthResponse verifyDeviceOtp(DeviceVerificationRequest request, HttpServletRequest servletRequest);
 }

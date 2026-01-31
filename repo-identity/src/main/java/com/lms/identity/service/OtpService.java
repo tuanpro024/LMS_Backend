@@ -12,6 +12,14 @@ public interface OtpService {
     String generateAndSendOtp(User user);
 
     /**
+     * Generate và gửi OTP xác thực thiết bị (vượt quá số lượng thiết bị)
+     *
+     * @param user User cần gửi OTP
+     * @return OTP token value
+     */
+    String generateAndSendDeviceOtp(User user);
+
+    /**
      * Verify OTP và set emailVerified = true
      * 
      * @param email Email của user

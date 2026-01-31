@@ -87,6 +87,12 @@ spring:
             - Path=${config.api-prefix}/dictionary/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: learning-path
+          uri: lb://REPO-LEARNING-PATH
+          predicates:
+            - Path=${config.api-prefix}/learning-path/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

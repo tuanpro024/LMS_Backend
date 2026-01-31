@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác Thực Thiết Bị - LMS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fa;
+            padding: 20px;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Giữ nguyên màu gradient tím xanh như bạn thích */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            font-size: 15px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .otp-container {
+            text-align: center;
+            margin: 40px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+            border-radius: 12px;
+            border: 2px dashed #667eea;
+        }
+
+        .otp-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .otp-code {
+            font-size: 48px;
+            font-weight: 700;
+            color: #667eea;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+
+        .otp-expiry {
+            font-size: 13px;
+            color: #999;
+            margin-top: 15px;
+        }
+
+        .instructions {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .instructions h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #555;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .warning {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #fff3cd; /* Màu vàng cảnh báo giữ nguyên */
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .footer {
+            padding: 30px;
+            text-align: center;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .footer p {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .logo {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #ddd, transparent);
+            margin: 30px 0;
+        }
+    </style>
+</head>
+
+<body>
+<div class="email-container">
+    <div class="header">
+        <div class="logo">🛡️ Húli Chinese Security</div>
+        <h1>Xác Thực Thiết Bị</h1>
+        <p>Phát hiện đăng nhập mới</p>
+    </div>
+
+    <div class="content">
+        <div class="greeting">
+            Xin chào <strong th:text="${userName}">User</strong>! 👋
+        </div>
+
+        <div class="message">
+            <p>Hệ thống LMS phát hiện tài khoản của bạn đang cố gắng đăng nhập trên một <strong>thiết bị mới</strong> (hoặc trình duyệt mới) và đã vượt quá giới hạn cho phép.</p>
+            <p>Để tiếp tục đăng nhập và thay thế thiết bị cũ, vui lòng nhập mã xác thực dưới đây:</p>
+        </div>
+
+        <div class="otp-container">
+            <div class="otp-label">Mã Xác Thực Thiết Bị</div>
+            <div class="otp-code" th:text="${otp}">123456</div>
+            <div class="otp-expiry">⏱️ Mã này sẽ hết hạn sau <strong>5 phút</strong></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="instructions">
+            <h3>📱 Hướng Dẫn Tiếp Theo:</h3>
+            <ol>
+                <li>Quay lại màn hình đăng nhập trên thiết bị bạn đang dùng.</li>
+                <li>Nhập mã OTP <strong>6 chữ số</strong> phía trên vào ô xác thực.</li>
+                <li>Hệ thống sẽ <strong>tự động đăng xuất thiết bị cũ nhất</strong> để cấp quyền cho thiết bị này.</li>
+            </ol>
+        </div>
+
+        <div class="message">
+            <p>Nếu bạn đã đăng nhập đủ số lượng thiết bị (Ví dụ: 2 Máy tính), thiết bị cũ nhất sẽ bị xóa khỏi hệ thống.</p>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Cảnh Báo Bảo Mật:</strong>
+            <ul style="margin: 10px 0 0 20px;">
+                <li>Nếu bạn <strong>KHÔNG</strong> thực hiện yêu cầu đăng nhập này, vui lòng <strong>đổi mật khẩu ngay lập tức</strong>.</li>
+                <li>Có thể ai đó đã biết mật khẩu của bạn.</li>
+                <li>Tuyệt đối không chia sẻ mã này cho người khác.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Húli Chinese - Hệ thống học tiếng Trung trực tuyến cho công ty Phong Linh</strong></p>
+        <p>Email này được gửi tự động từ hệ thống bảo mật.</p>
+        <p>© 2026 Húli Chinese. All rights reserved.</p>
+    </div>
+</div>
+</body>
+
+</html>

@@ -15,5 +15,11 @@ public class UpdateStudySetRequest {
 
     private String description;
 
+    private String thumbnail;
+
+    private String unlockRuleJson;
+
+    private Integer estimatedMinutes;
+
     private Boolean isPrivate;
 }

@@ -3,7 +3,7 @@ spring:
     name: repo-flashcard
   datasource:
     url: jdbc:mysql://localhost:3306/lms_flashcard_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
+    username: sa
     password: 123
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
@@ -27,7 +27,7 @@ server:
 
 security:
   jwt:
-    public-key-path: file:../secrets/jwt-public.pem
+    public-key-path: file:secrets/jwt-public.pem
 
 management:
   endpoints:
@@ -47,8 +47,8 @@ logging:
 
 eureka:
   client:
-    register-with-eureka: false
-    fetch-registry: false
+    register-with-eureka: true
+    fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka
   instance:

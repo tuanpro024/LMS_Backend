@@ -5,22 +5,18 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "kanji_lesson_questions")
+@Table(name = "kanji_question_wrong_options")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class KanjiLessonQuestion extends BaseEntity {
+public class KanjiQuestionWrongOption extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "kanji_lesson_id", nullable = false)
-    private KanjiLesson kanjiLesson;
+    @Column(nullable = false)
+    private String wrongOption;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "kanji_question_id", nullable = false)
     private KanjiQuestion kanjiQuestion;
-
-    @Column(nullable = false)
-    private Integer contentIndex;
 }

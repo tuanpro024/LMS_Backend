@@ -1,6 +1,5 @@
 package com.lms.kanjiorigin.dto.request;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -12,16 +11,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateKanjiLessonRequest {
+public class AssignQuestionToLessonRequest {
 
-    @NotBlank(message = "Title is required")
-    private String title;
+    @NotBlank(message = "Lesson ID is required")
+    private String kanjiLessonId;
 
-    private String description;
+    @NotBlank(message = "Question ID is required")
+    private String kanjiQuestionId;
 
-    @NotNull(message = "StudySet ID is required")
-    private String studySetId;
-
-    @Min(value = 0, message = "Content index must be non-negative")
+    @NotNull(message = "Content index is required")
     private Integer contentIndex;
 }

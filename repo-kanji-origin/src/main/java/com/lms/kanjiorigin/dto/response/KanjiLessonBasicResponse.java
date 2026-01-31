@@ -13,6 +13,7 @@ public class KanjiLessonBasicResponse {
     private String id;
     private String title;
     private String description;
+    private Integer contentIndex;
     private int kanjiCount;
     private int questionCount;
 }

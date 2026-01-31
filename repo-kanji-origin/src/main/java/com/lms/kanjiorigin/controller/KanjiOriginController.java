@@ -1,7 +1,9 @@
 package com.lms.kanjiorigin.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.dto.PageResponse;
 import com.lms.kanjiorigin.dto.request.CreateKanjiOriginRequest;
+import com.lms.kanjiorigin.dto.request.KanjiOriginSearchRequest;
 import com.lms.kanjiorigin.dto.request.UpdateKanjiOriginRequest;
 import com.lms.kanjiorigin.dto.response.KanjiOriginResponse;
 import com.lms.kanjiorigin.service.KanjiOriginService;
@@ -42,7 +44,12 @@ public class KanjiOriginController {
     }
 
     @GetMapping
-    public ApiResponse<List<KanjiOriginResponse>> getOriginsByLesson(@RequestParam String lessonId) {
-        return ApiResponse.ok(kanjiOriginService.getOriginsByLesson(lessonId));
+    public ApiResponse<List<KanjiOriginResponse>> search(KanjiOriginSearchRequest request) {
+        return ApiResponse.ok(kanjiOriginService.search(request));
+    }
+
+    @GetMapping("/paged")
+    public ApiResponse<PageResponse<KanjiOriginResponse>> searchPaged(KanjiOriginSearchRequest request) {
+        return ApiResponse.ok(kanjiOriginService.searchPaged(request));
     }
 }

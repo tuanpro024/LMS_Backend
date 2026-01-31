@@ -15,6 +15,8 @@ public class UpdateKanjiOriginRequest {
     @NotBlank(message = "Term is required")
     private String term;
 
+    private Integer contentIndex;
+
     @NotBlank(message = "Pinyin is required")
     private String pinyin;
 

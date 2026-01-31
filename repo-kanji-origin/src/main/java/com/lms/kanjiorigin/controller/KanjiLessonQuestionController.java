@@ -1,9 +1,8 @@
 package com.lms.kanjiorigin.controller;
 
 import com.lms.common.dto.ApiResponse;
-import com.lms.kanjiorigin.dto.request.CreateQuestionRequest;
-import com.lms.kanjiorigin.dto.request.UpdateQuestionRequest;
-import com.lms.kanjiorigin.dto.response.QuestionResponse;
+import com.lms.kanjiorigin.dto.request.AssignQuestionToMultipleLessonsRequest;
+import com.lms.kanjiorigin.dto.response.LessonQuestionAssignmentResponse;
 import com.lms.kanjiorigin.service.KanjiLessonQuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,32 +11,22 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/kanji-questions")
+@RequestMapping("/kanji-lesson-questions")
 @RequiredArgsConstructor
 public class KanjiLessonQuestionController {
 
-    private final KanjiLessonQuestionService questionService;
+    private final KanjiLessonQuestionService lessonQuestionService;
 
     @PostMapping
-    public ApiResponse<QuestionResponse> createQuestion(@Valid @RequestBody CreateQuestionRequest request) {
-        return ApiResponse.ok(questionService.createQuestion(request));
-    }
-
-    @PutMapping("/{id}")
-    public ApiResponse<QuestionResponse> updateQuestion(
-            @PathVariable String id,
-            @Valid @RequestBody UpdateQuestionRequest request) {
-        return ApiResponse.ok(questionService.updateQuestion(id, request));
+    public ApiResponse<List<LessonQuestionAssignmentResponse>> assignQuestionToLessons(
+            @Valid @RequestBody AssignQuestionToMultipleLessonsRequest request) {
+        return ApiResponse.ok(lessonQuestionService.assignQuestionToMultipleLessons(request));
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> deleteQuestion(@PathVariable String id) {
-        questionService.deleteQuestion(id);
+    public ApiResponse<Void> removeAssignment(@PathVariable String id) {
+        lessonQuestionService.removeQuestionFromLesson(id);
         return ApiResponse.ok(null);
     }
-
-    @GetMapping
-    public ApiResponse<List<QuestionResponse>> getQuestionsByLesson(@RequestParam String lessonId) {
-        return ApiResponse.ok(questionService.getQuestionsByLesson(lessonId));
-    }
 }
+

@@ -1,5 +1,6 @@
 package com.lms.kanjiorigin.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -14,17 +15,13 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateQuestionRequest {
+public class AssignQuestionToMultipleLessonsRequest {
 
-    @NotBlank(message = "Content is required")
-    private String content;
+    @NotBlank(message = "Question ID is required")
+    private String kanjiQuestionId;
 
-    @NotBlank(message = "Correct answer is required")
-    private String correctAnswer;
-
-    @NotEmpty(message = "At least one wrong option is required")
-    private List<String> wrongOptions;
-
+    @NotEmpty(message = "At least one lesson assignment is required")
+    @Valid
     private List<LessonAssignment> lessonAssignments;
 
     @Data
@@ -39,4 +36,3 @@ public class CreateQuestionRequest {
         private Integer contentIndex;
     }
 }
-

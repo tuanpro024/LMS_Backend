@@ -18,6 +18,9 @@ public class KanjiOrigin extends BaseEntity {
     private KanjiLesson kanjiLesson;
 
     @Column(nullable = false)
+    private Integer contentIndex;
+
+    @Column(nullable = false)
     private String term;
 
     @Column(columnDefinition = "TEXT")

@@ -8,13 +8,13 @@ import lombok.*;
 import java.time.Instant;
 
 /**
- * Tracks user progress on individual modules.
- * Users can learn modules in any order within a StudySet.
+ * Tracks user progress on individual step modules.
+ * Each module within a step can be tracked separately.
  */
 @Entity
 @Table(name = "module_progress", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id",
-        "module_id" }), indexes = {
-                @Index(name = "idx_user_studyset", columnList = "user_id, study_set_id"),
+        "step_module_id" }), indexes = {
+                @Index(name = "idx_user_step", columnList = "user_id, step_id"),
                 @Index(name = "idx_user_status", columnList = "user_id, status")
         })
 @Getter
@@ -27,11 +27,11 @@ public class ModuleProgress extends BaseEntity {
     @Column(nullable = false, length = 26)
     private String userId;
 
-    @Column(nullable = false, length = 26, name = "module_id")
-    private String studySetModuleId; // FK to StudySetModule
+    @Column(nullable = false, length = 26)
+    private String stepModuleId; // FK to StepModule
 
     @Column(nullable = false, length = 26)
-    private String studySetId; // Denormalized for easier querying
+    private String stepId; // Denormalized for easier querying
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -49,8 +49,14 @@ public class ModuleProgress extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
+    private Integer totalAttempts = 0; // Số lần thử
+
+    @Column(nullable = false)
+    @Builder.Default
     private Integer studyTimeSeconds = 0; // Tổng thời gian học (giây)
 
+    private Instant firstStartedAt;
+    private Instant lastAttemptAt;
     private Instant startedAt;
     private Instant completedAt;
 

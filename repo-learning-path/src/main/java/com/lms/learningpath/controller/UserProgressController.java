@@ -4,8 +4,7 @@ import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.learningpath.dto.request.CompleteModuleRequest;
 import com.lms.learningpath.dto.request.UpdateProgressRequest;
-import com.lms.learningpath.dto.response.ModuleProgressDto;
-import com.lms.learningpath.dto.response.StudySetProgressDto;
+import com.lms.learningpath.dto.response.*;
 import com.lms.learningpath.service.IProgressTrackingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,12 +13,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
+/**
+ * Controller for user progress tracking on modules, steps, and learning paths.
+ */
 @RestController
 @RequestMapping("/user/progress")
 @RequiredArgsConstructor
 public class UserProgressController {
 
     private final IProgressTrackingService progressService;
+
+    // ============ Module Progress ============
 
     @PostMapping("/module/{moduleId}/start")
     public ResponseEntity<ApiResponse<ModuleProgressDto>> startModule(
@@ -55,13 +61,38 @@ public class UserProgressController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @GetMapping("/study-set/{studySetId}")
-    public ResponseEntity<ApiResponse<StudySetProgressDto>> getStudySetProgress(
+    // ============ Step Progress ============
+
+    @GetMapping("/step/{stepId}")
+    public ResponseEntity<ApiResponse<StepProgressResponse>> getStepProgress(
+            @PathVariable String stepId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        StepProgressResponse response = progressService.getStepProgress(principal.userId(), stepId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    // ============ Learning Path Progress ============
+
+    @GetMapping("/learning-path/{learningPathId}")
+    public ResponseEntity<ApiResponse<LearningPathProgressResponse>> getLearningPathProgress(
+            @PathVariable String learningPathId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        LearningPathProgressResponse response = progressService.getLearningPathProgress(
+                principal.userId(), learningPathId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/study-set/{studySetId}/learning-paths")
+    public ResponseEntity<ApiResponse<List<LearningPathProgressResponse>>> getAllLearningPathProgress(
             @PathVariable String studySetId,
             Authentication authentication) {
 
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        StudySetProgressDto response = progressService.getStudySetProgress(
+        List<LearningPathProgressResponse> response = progressService.getAllLearningPathProgress(
                 principal.userId(), studySetId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

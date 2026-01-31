@@ -16,11 +16,7 @@ import jakarta.validation.Valid;
 
 import java.util.List;
 
-/**
- * Controller for Learning Path management (using Package entity from
- * repo-content-common).
- * Delegates to PackageApiDelegate for CRUD operations.
- */
+
 @RestController
 @RequestMapping("/packages")
 @RequiredArgsConstructor
@@ -28,11 +24,9 @@ public class PackageController {
 
     private final PackageApiDelegate packageDelegate;
 
-    /**
-     * Create a new learning path
-     */
+
     @PostMapping
-    public ResponseEntity<ApiResponse<PackageResponse>> createLearningPath(
+    public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
             @RequestBody @Valid CreatePackageRequest request,
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
@@ -44,7 +38,7 @@ public class PackageController {
      * Get learning path by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PackageResponse>> getLearningPath(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<PackageResponse>> getPackage(@PathVariable String id) {
         PackageResponse response = packageDelegate.getPackageById(id);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
@@ -53,7 +47,7 @@ public class PackageController {
      * Get all learning paths
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllLearningPaths(
+    public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllPackages(
             @RequestParam(required = false) TypeName type) {
         List<PackageResponse> response = (type != null)
                 ? packageDelegate.getPackagesByType(type)
@@ -65,7 +59,7 @@ public class PackageController {
      * Update learning path
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<PackageResponse>> updateLearningPath(
+    public ResponseEntity<ApiResponse<PackageResponse>> updatePackage(
             @PathVariable String id,
             @RequestBody @Valid UpdatePackageRequest request,
             Authentication authentication) {
@@ -78,7 +72,7 @@ public class PackageController {
      * Delete learning path
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteLearningPath(
+    public ResponseEntity<ApiResponse<Void>> deletePackage(
             @PathVariable String id,
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();

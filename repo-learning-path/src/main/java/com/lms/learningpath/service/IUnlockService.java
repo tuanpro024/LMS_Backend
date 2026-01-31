@@ -1,35 +1,26 @@
 package com.lms.learningpath.service;
 
-import com.lms.content.common.entity.StudySet;
-
 /**
- * Service interface for managing StudySet unlock logic.
+ * Service interface for managing Step unlock logic in the new step-based
+ * hierarchy.
  */
 public interface IUnlockService {
 
     /**
-     * Check if a StudySet is unlocked for a user.
+     * Check if a Step is unlocked for a user based on previous step completion.
      *
-     * @param userId     the user ID
-     * @param studySetId the StudySet ID
+     * @param userId the user ID
+     * @param stepId the Step ID
      * @return true if unlocked, false otherwise
      */
-    boolean isStudySetUnlocked(String userId, String studySetId);
+    boolean isStepUnlocked(String userId, String stepId);
 
     /**
-     * Get the lock reason for a StudySet.
+     * Get the lock reason for a Step.
      *
-     * @param userId     the user ID
-     * @param studySetId the StudySet ID
+     * @param userId the user ID
+     * @param stepId the Step ID
      * @return lock reason message, or null if unlocked
      */
-    String getLockReason(String userId, String studySetId);
-
-    /**
-     * Check and unlock the next StudySet after a user completes one.
-     *
-     * @param userId       the user ID
-     * @param completedSet the completed StudySet
-     */
-    void checkAndUnlockNextStudySet(String userId, StudySet completedSet);
+    String getLockReason(String userId, String stepId);
 }

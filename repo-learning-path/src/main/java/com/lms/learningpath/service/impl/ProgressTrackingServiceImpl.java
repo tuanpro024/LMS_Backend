@@ -1,25 +1,17 @@
 package com.lms.learningpath.service.impl;
 
-import com.lms.common.exception.ApiException;
-import com.lms.common.exception.ErrorCode;
-import com.lms.content.common.entity.StudySet;
-import com.lms.content.common.repository.StudySetRepository;
 import com.lms.learningpath.dto.request.CompleteModuleRequest;
 import com.lms.learningpath.dto.request.UpdateProgressRequest;
+import com.lms.learningpath.dto.response.LearningPathProgressResponse;
 import com.lms.learningpath.dto.response.ModuleProgressDto;
-import com.lms.learningpath.dto.response.StudySetModuleResponse;
-import com.lms.learningpath.dto.response.StudySetProgressDto;
-import com.lms.learningpath.entity.ModuleProgress;
-import com.lms.learningpath.entity.StudySetModule;
-import com.lms.learningpath.entity.StudySetProgress;
+import com.lms.learningpath.dto.response.StepProgressResponse;
+import com.lms.learningpath.entity.*;
 import com.lms.learningpath.entity.enums.ProgressStatus;
-import com.lms.learningpath.repository.ModuleProgressRepository;
-import com.lms.learningpath.repository.StudySetModuleRepository;
-import com.lms.learningpath.repository.StudySetProgressRepository;
-import com.lms.learningpath.service.IModuleIntegrationService;
+import com.lms.learningpath.exception.ResourceNotFoundException;
+import com.lms.learningpath.mapper.LearningPathProgressMapper;
+import com.lms.learningpath.mapper.StepProgressMapper;
+import com.lms.learningpath.repository.*;
 import com.lms.learningpath.service.IProgressTrackingService;
-import com.lms.learningpath.service.IRealtimeNotificationService;
-import com.lms.learningpath.service.IUnlockService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,315 +21,282 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of progress tracking service for step-based hierarchy.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
-    private final ModuleProgressRepository moduleProgressRepo;
-    private final StudySetProgressRepository studySetProgressRepo;
-    private final StudySetModuleRepository studySetModuleRepo;
-    private final StudySetRepository studySetRepo;
-    private final IModuleIntegrationService integrationService;
-    private final IRealtimeNotificationService realtimeService;
-    private final IUnlockService unlockService;
+    private final StepModuleRepository stepModuleRepository;
+    private final ModuleProgressRepository moduleProgressRepository;
+    private final StepProgressRepository stepProgressRepository;
+    private final LearningPathProgressRepository learningPathProgressRepository;
+    private final StepRepository stepRepository;
+    private final LearningPathRepository learningPathRepository;
+    private final StepProgressMapper stepProgressMapper;
+    private final LearningPathProgressMapper learningPathProgressMapper;
 
-    /**
-     * Start a module
-     */
     @Override
     @Transactional
     public ModuleProgressDto startModule(String userId, String moduleId) {
-        StudySetModule module = studySetModuleRepo.findById(moduleId)
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Module not found"));
+        log.info("User {} starting module {}", userId, moduleId);
 
-        // Check if StudySet is unlocked
-        if (!unlockService.isStudySetUnlocked(userId, module.getStudySetId())) {
-            throw new ApiException(ErrorCode.E240, "StudySet is locked");
-        }
+        StepModule module = stepModuleRepository.findById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Step module not found: " + moduleId));
 
-        // Check existing progress
-        ModuleProgress existing = moduleProgressRepo
-                .findByUserIdAndStudySetModuleId(userId, moduleId)
-                .orElse(null);
+        ModuleProgress progress = moduleProgressRepository
+                .findByUserIdAndStepModuleId(userId, moduleId)
+                .orElseGet(() -> {
+                    ModuleProgress newProgress = ModuleProgress.builder()
+                            .userId(userId)
+                            .stepModuleId(moduleId)
+                            .stepId(module.getStepId())
+                            .status(ProgressStatus.IN_PROGRESS)
+                            .score(0)
+                            .totalAttempts(0)
+                            .firstStartedAt(Instant.now())
+                            .build();
+                    return moduleProgressRepository.save(newProgress);
+                });
 
-        if (existing != null && existing.getStatus() == ProgressStatus.COMPLETED) {
-            throw new ApiException(ErrorCode.E221, "Module already completed");
-        }
+        // Update step progress
+        updateStepProgress(userId, module.getStepId());
 
-        // Get total items from content set
-        int totalItems = integrationService.getContentSetItemCount(
-                module.getModuleType(),
-                module.getContentSetId());
-
-        ModuleProgress progress;
-        if (existing == null) {
-            progress = ModuleProgress.builder()
-                    .userId(userId)
-                    .studySetModuleId(moduleId)
-                    .studySetId(module.getStudySetId())
-                    .status(ProgressStatus.IN_PROGRESS)
-                    .completedItems(0)
-                    .totalItems(totalItems)
-                    .studyTimeSeconds(0)
-                    .startedAt(Instant.now())
-                    .build();
-        } else {
-            existing.setStatus(ProgressStatus.IN_PROGRESS);
-            existing.setStartedAt(Instant.now());
-            existing.setTotalItems(totalItems);
-            progress = existing;
-        }
-
-        progress = moduleProgressRepo.save(progress);
-
-        // Update StudySet progress
-        updateStudySetProgress(userId, module.getStudySetId());
-
-        // Send realtime notification
-        realtimeService.notifyProgressUpdate(userId, toDto(progress));
-
-        return toDto(progress);
+        return mapToDto(progress);
     }
 
-    /**
-     * Update module progress
-     */
     @Override
     @Transactional
     public ModuleProgressDto updateProgress(String userId, String moduleId, UpdateProgressRequest request) {
-        ModuleProgress progress = moduleProgressRepo
-                .findByUserIdAndStudySetModuleId(userId, moduleId)
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Progress not found. Start module first."));
+        log.info("Updating progress for user {} on module {}", userId, moduleId);
 
-        if (request.getCompletedItems() != null) {
-            progress.setCompletedItems(request.getCompletedItems());
-        }
-        if (request.getStudyTimeSeconds() != null) {
-            progress.setStudyTimeSeconds(progress.getStudyTimeSeconds() + request.getStudyTimeSeconds());
-        }
-        if (request.getScore() != null) {
-            progress.setScore(request.getScore());
-        }
-        if (request.getMetadata() != null) {
-            progress.setMetadata(request.getMetadata());
-        }
+        ModuleProgress progress = moduleProgressRepository
+                .findByUserIdAndStepModuleId(userId, moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module progress not found"));
 
-        progress = moduleProgressRepo.save(progress);
+        progress.setScore(request.getScore() != null ? request.getScore().intValue() : null);
+        progress.setTotalAttempts(progress.getTotalAttempts() + 1);
+        progress.setLastAttemptAt(Instant.now());
 
-        // Send realtime update
-        realtimeService.notifyProgressUpdate(userId, toDto(progress));
+        progress = moduleProgressRepository.save(progress);
 
-        return toDto(progress);
+        return mapToDto(progress);
     }
 
-    /**
-     * Complete a module
-     */
     @Override
     @Transactional
     public ModuleProgressDto completeModule(String userId, String moduleId, CompleteModuleRequest request) {
-        ModuleProgress progress = moduleProgressRepo
-                .findByUserIdAndStudySetModuleId(userId, moduleId)
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Progress not found"));
+        log.info("User {} completing module {}", userId, moduleId);
 
-        if (progress.getStatus() == ProgressStatus.COMPLETED) {
-            throw new ApiException(ErrorCode.E221, "Module already completed");
-        }
+        StepModule module = stepModuleRepository.findById(moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Step module not found: " + moduleId));
+
+        ModuleProgress progress = moduleProgressRepository
+                .findByUserIdAndStepModuleId(userId, moduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Module progress not found"));
 
         progress.setStatus(ProgressStatus.COMPLETED);
-        progress.setCompletedItems(progress.getTotalItems());
+        progress.setScore(request.getScore() != null ? request.getScore().intValue() : null);
+        progress.setTotalAttempts(progress.getTotalAttempts() + 1);
         progress.setCompletedAt(Instant.now());
+        progress.setLastAttemptAt(Instant.now());
 
-        if (request.getScore() != null) {
-            progress.setScore(request.getScore());
-        }
-        if (request.getTotalStudyTimeSeconds() != null) {
-            progress.setStudyTimeSeconds(request.getTotalStudyTimeSeconds());
-        }
-        if (request.getMetadata() != null) {
-            progress.setMetadata(request.getMetadata());
-        }
+        progress = moduleProgressRepository.save(progress);
 
-        progress = moduleProgressRepo.save(progress);
+        // Update step progress
+        updateStepProgress(userId, module.getStepId());
 
-        // Update StudySet progress
-        StudySetModule module = studySetModuleRepo.findById(moduleId).orElseThrow();
-        StudySetProgress setProgress = updateStudySetProgress(userId, module.getStudySetId());
+        // Update learning path progress
+        Step step = stepRepository.findById(module.getStepId()).orElseThrow();
+        updateLearningPathProgress(userId, step.getLearningPathId());
 
-        // Send realtime notifications
-        realtimeService.notifyModuleCompleted(userId, toDto(progress));
-
-        // If StudySet completed, check unlock
-        if (setProgress.canUnlockNext()) {
-            StudySet studySet = studySetRepo.findById(module.getStudySetId()).orElseThrow();
-            realtimeService.notifyStudySetCompleted(userId, studySet.getId());
-
-            // Check and unlock next StudySet
-            unlockService.checkAndUnlockNextStudySet(userId, studySet);
-        }
-
-        return toDto(progress);
+        return mapToDto(progress);
     }
 
-    /**
-     * Get modules with progress for a StudySet
-     */
     @Override
-    @Transactional(readOnly = true)
-    public List<StudySetModuleResponse> getModulesWithProgress(String userId, String studySetId) {
-        List<StudySetModule> modules = studySetModuleRepo.findByStudySetIdOrderByModuleOrder(studySetId);
-        List<String> moduleIds = modules.stream().map(StudySetModule::getId).collect(Collectors.toList());
-        List<ModuleProgress> progressList = moduleProgressRepo.findByUserIdAndModuleIds(userId, moduleIds);
-
-        return modules.stream().map(module -> {
-            var response = StudySetModuleResponse.builder()
-                    .id(module.getId())
-                    .studySetId(module.getStudySetId())
-                    .moduleType(module.getModuleType())
-                    .moduleOrder(module.getModuleOrder())
-                    .title(module.getTitle())
-                    .description(module.getDescription())
-                    .icon(module.getIcon())
-                    .color(module.getColor())
-                    .contentSetId(module.getContentSetId())
-                    .estimatedMinutes(module.getEstimatedMinutes())
-                    .isRequired(module.getIsRequired())
-                    .build();
-
-            // Enrich with content set details
-            if (module.getContentSetId() != null) {
-                integrationService.getStudySet(module.getModuleType(), module.getContentSetId())
-                        .ifPresent(response::setContentSetDetails);
-            }
-
-            // Add user progress
-            progressList.stream()
-                    .filter(p -> p.getStudySetModuleId().equals(module.getId()))
-                    .findFirst()
-                    .ifPresent(p -> response.setUserProgress(toDto(p)));
-
-            return response;
-        }).collect(Collectors.toList());
+    public StepProgressResponse getStepProgress(String userId, String stepId) {
+        return stepProgressRepository.findByUserIdAndStepId(userId, stepId)
+                .map(stepProgressMapper::toResponse)
+                .orElse(null);
     }
 
-    /**
-     * Get StudySet progress with lock status
-     */
     @Override
-    @Transactional(readOnly = true)
-    public StudySetProgressDto getStudySetProgress(String userId, String studySetId) {
-        StudySet studySet = studySetRepo.findById(studySetId)
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
-
-        StudySetProgress progress = studySetProgressRepo.findByUserIdAndStudySetId(userId, studySetId)
-                .orElse(createDefaultProgress(userId, studySet));
-
-        boolean isLocked = !unlockService.isStudySetUnlocked(userId, studySetId);
-        String lockReason = isLocked ? unlockService.getLockReason(userId, studySetId) : null;
-
-        return StudySetProgressDto.builder()
-                .id(progress.getId())
-                .studySetId(progress.getStudySetId())
-                .studySetTitle(studySet.getTitle())
-                .folderId(progress.getFolderId())
-                .status(progress.getStatus())
-                .completedModules(progress.getCompletedModules())
-                .totalModules(progress.getTotalModules())
-                .requiredCompletedModules(progress.getRequiredCompletedModules())
-                .totalRequiredModules(progress.getTotalRequiredModules())
-                .progressPercentage(progress.getProgressPercentage())
-                .isLocked(isLocked)
-                .lockReason(lockReason)
-                .firstStartedAt(progress.getFirstStartedAt())
-                .completedAt(progress.getCompletedAt())
-                .build();
+    public LearningPathProgressResponse getLearningPathProgress(String userId, String learningPathId) {
+        return learningPathProgressRepository.findByUserIdAndLearningPathId(userId, learningPathId)
+                .map(learningPathProgressMapper::toResponse)
+                .orElse(null);
     }
 
-    /**
-     * Update StudySet progress based on module completions
-     */
-    private StudySetProgress updateStudySetProgress(String userId, String studySetId) {
-        StudySet studySet = studySetRepo.findById(studySetId).orElseThrow();
+    @Override
+    public List<LearningPathProgressResponse> getAllLearningPathProgress(String userId, String studySetId) {
+        List<LearningPath> learningPaths = learningPathRepository
+                .findByStudySetIdAndIsActiveTrueOrderByDisplayOrderAsc(studySetId);
 
-        StudySetProgress progress = studySetProgressRepo.findByUserIdAndStudySetId(userId, studySetId)
-                .orElse(createDefaultProgress(userId, studySet));
+        return learningPaths.stream()
+                .map(lp -> learningPathProgressRepository
+                        .findByUserIdAndLearningPathId(userId, lp.getId())
+                        .map(learningPathProgressMapper::toResponse)
+                        .orElse(null))
+                .filter(p -> p != null)
+                .collect(Collectors.toList());
+    }
 
-        // Count modules
-        long totalModules = studySetModuleRepo.countByStudySetIdAndIsActive(studySetId, true);
-        long totalRequired = studySetModuleRepo.countByStudySetIdAndIsRequiredAndIsActive(studySetId, true, true);
-        long completedModules = moduleProgressRepo.countByUserIdAndStudySetIdAndStatus(
-                userId, studySetId, ProgressStatus.COMPLETED);
+    // ============ Private Helper Methods ============
 
-        // Count completed required modules
-        List<StudySetModule> requiredModules = studySetModuleRepo.findByStudySetIdOrderByModuleOrder(studySetId)
-                .stream()
-                .filter(StudySetModule::getIsRequired)
+    private void updateStepProgress(String userId, String stepId) {
+        Step step = stepRepository.findById(stepId)
+                .orElseThrow(() -> new ResourceNotFoundException("Step not found: " + stepId));
+
+        // Get all modules for this step
+        List<StepModule> allModules = stepModuleRepository
+                .findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(stepId);
+
+        int totalModules = allModules.size();
+        long totalRequired = allModules.stream().filter(StepModule::getIsRequired).count();
+
+        // Get completed modules
+        List<String> moduleIds = allModules.stream()
+                .map(StepModule::getId)
                 .collect(Collectors.toList());
 
-        List<String> requiredModuleIds = requiredModules.stream()
-                .map(StudySetModule::getId)
+        List<ModuleProgress> completedModules = moduleProgressRepository
+                .findByUserIdAndStepModuleIdIn(userId, moduleIds).stream()
+                .filter(p -> p.getStatus() == ProgressStatus.COMPLETED)
                 .collect(Collectors.toList());
 
-        long completedRequired = requiredModuleIds.isEmpty() ? 0
-                : moduleProgressRepo.findByUserIdAndModuleIds(userId, requiredModuleIds)
-                        .stream()
-                        .filter(ModuleProgress::isCompleted)
-                        .count();
+        int completedCount = completedModules.size();
+        long completedRequiredCount = completedModules.stream()
+                .filter(mp -> {
+                    StepModule sm = stepModuleRepository.findById(mp.getStepModuleId()).orElse(null);
+                    return sm != null && sm.getIsRequired();
+                })
+                .count();
 
-        progress.setTotalModules((int) totalModules);
+        // Calculate status
+        ProgressStatus status;
+        if (completedCount == 0) {
+            status = ProgressStatus.NOT_STARTED;
+        } else if (completedRequiredCount >= totalRequired) {
+            status = ProgressStatus.COMPLETED;
+        } else {
+            status = ProgressStatus.IN_PROGRESS;
+        }
+
+        // Find or create progress
+        StepProgress progress = stepProgressRepository
+                .findByUserIdAndStepId(userId, stepId)
+                .orElseGet(() -> StepProgress.builder()
+                        .userId(userId)
+                        .stepId(stepId)
+                        .learningPathId(step.getLearningPathId())
+                        .status(ProgressStatus.NOT_STARTED)
+                        .completedModules(0)
+                        .totalModules(totalModules)
+                        .requiredCompletedModules(0)
+                        .totalRequiredModules((int) totalRequired)
+                        .firstStartedAt(null)
+                        .build());
+
+        // Update progress
+        progress.setStatus(status);
+        progress.setCompletedModules(completedCount);
+        progress.setTotalModules(totalModules);
+        progress.setRequiredCompletedModules((int) completedRequiredCount);
         progress.setTotalRequiredModules((int) totalRequired);
-        progress.setCompletedModules((int) completedModules);
-        progress.setRequiredCompletedModules((int) completedRequired);
 
-        if (progress.getFirstStartedAt() == null && completedModules > 0) {
+        if (progress.getFirstStartedAt() == null && completedCount > 0) {
             progress.setFirstStartedAt(Instant.now());
         }
 
-        if (completedModules > 0 && !progress.canUnlockNext()) {
-            progress.setStatus(ProgressStatus.IN_PROGRESS);
-        } else if (progress.canUnlockNext() && totalRequired > 0) {
-            progress.setStatus(ProgressStatus.COMPLETED);
-            if (progress.getCompletedAt() == null) {
-                progress.setCompletedAt(Instant.now());
-            }
+        if (status == ProgressStatus.COMPLETED && progress.getCompletedAt() == null) {
+            progress.setCompletedAt(Instant.now());
         }
 
-        return studySetProgressRepo.save(progress);
+        stepProgressRepository.save(progress);
     }
 
-    private StudySetProgress createDefaultProgress(String userId, StudySet studySet) {
-        // Get folder from studySet (via many-to-many)
-        String folderId = studySet.getFolders().isEmpty() ? null : studySet.getFolders().get(0).getId();
-        String packageId = folderId != null && !studySet.getFolders().isEmpty()
-                ? studySet.getFolders().get(0).getPackageEntity().getId()
-                : null;
+    private void updateLearningPathProgress(String userId, String learningPathId) {
+        LearningPath learningPath = learningPathRepository.findById(learningPathId)
+                .orElseThrow(() -> new ResourceNotFoundException("Learning path not found: " + learningPathId));
 
-        return StudySetProgress.builder()
-                .userId(userId)
-                .studySetId(studySet.getId())
-                .folderId(folderId)
-                .packageId(packageId)
-                .status(ProgressStatus.NOT_STARTED)
-                .completedModules(0)
-                .totalModules(0)
-                .requiredCompletedModules(0)
-                .totalRequiredModules(0)
-                .build();
+        // Get all steps
+        List<Step> allSteps = stepRepository
+                .findByLearningPathIdAndIsActiveTrueOrderByStepOrderAsc(learningPathId);
+
+        int totalSteps = allSteps.size();
+
+        // Get completed steps
+        List<String> stepIds = allSteps.stream()
+                .map(Step::getId)
+                .collect(Collectors.toList());
+
+        long completedSteps = stepProgressRepository.findByUserIdAndStepIdIn(userId, stepIds).stream()
+                .filter(p -> p.getStatus() == ProgressStatus.COMPLETED)
+                .count();
+
+        // Determine status
+        ProgressStatus status;
+        if (completedSteps == 0) {
+            status = ProgressStatus.NOT_STARTED;
+        } else if (completedSteps >= totalSteps) {
+            status = ProgressStatus.COMPLETED;
+        } else {
+            status = ProgressStatus.IN_PROGRESS;
+        }
+
+        // Get current step (first incomplete)
+        String currentStepId = allSteps.stream()
+                .filter(s -> {
+                    return stepProgressRepository.findByUserIdAndStepId(userId, s.getId())
+                            .map(p -> p.getStatus() != ProgressStatus.COMPLETED)
+                            .orElse(true);
+                })
+                .findFirst()
+                .map(Step::getId)
+                .orElse(null);
+
+        // Find or create progress
+        LearningPathProgress progress = learningPathProgressRepository
+                .findByUserIdAndLearningPathId(userId, learningPathId)
+                .orElseGet(() -> LearningPathProgress.builder()
+                        .userId(userId)
+                        .learningPathId(learningPathId)
+                        .studySetId(learningPath.getStudySetId())
+                        .status(ProgressStatus.NOT_STARTED)
+                        .completedSteps(0)
+                        .totalSteps(totalSteps)
+                        .currentStepId(null)
+                        .build());
+
+        // Update progress
+        progress.setStatus(status);
+        progress.setCompletedSteps((int) completedSteps);
+        progress.setTotalSteps(totalSteps);
+        progress.setCurrentStepId(currentStepId);
+
+        if (progress.getFirstStartedAt() == null && completedSteps > 0) {
+            progress.setFirstStartedAt(Instant.now());
+        }
+
+        if (status == ProgressStatus.COMPLETED && progress.getCompletedAt() == null) {
+            progress.setCompletedAt(Instant.now());
+        }
+
+        learningPathProgressRepository.save(progress);
     }
 
-    private ModuleProgressDto toDto(ModuleProgress progress) {
+    private ModuleProgressDto mapToDto(ModuleProgress progress) {
         return ModuleProgressDto.builder()
                 .id(progress.getId())
-                .studySetModuleId(progress.getStudySetModuleId())
-                .studySetId(progress.getStudySetId())
+                .stepModuleId(progress.getStepModuleId())
+                .stepId(progress.getStepId())
                 .status(progress.getStatus())
-                .completedItems(progress.getCompletedItems())
-                .totalItems(progress.getTotalItems())
-                .progressPercentage(progress.getProgressPercentage())
                 .score(progress.getScore())
-                .studyTimeSeconds(progress.getStudyTimeSeconds())
-                .startedAt(progress.getStartedAt())
+                .totalAttempts(progress.getTotalAttempts())
+                .firstStartedAt(progress.getFirstStartedAt())
+                .lastAttemptAt(progress.getLastAttemptAt())
                 .completedAt(progress.getCompletedAt())
                 .build();
     }

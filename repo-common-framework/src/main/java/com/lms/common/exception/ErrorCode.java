@@ -44,6 +44,8 @@ public enum ErrorCode {
     // Not found / Data integrity
     E223("223", HttpStatus.NOT_FOUND,"No master data"), // No master data
     E227("227", HttpStatus.NOT_FOUND,"No data found"), // No data found
+    USER_NOT_EXISTED("USER_NOT_EXISTED", HttpStatus.NOT_FOUND, "User not found"),
+    RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", HttpStatus.NOT_FOUND, "Resource not found"),
 
     // System / External
     E235("235", HttpStatus.SERVICE_UNAVAILABLE,"Service not available"), // Service not available
@@ -62,8 +64,9 @@ public enum ErrorCode {
     CONFLICT("CONFLICT", HttpStatus.CONFLICT,"CONFLICT"),
     TOO_MANY_REQUESTS("TOO_MANY_REQUESTS", HttpStatus.TOO_MANY_REQUESTS,"TOO_MANY_REQUESTS"),
     SERVICE_UNAVAILABLE("SERVICE_UNAVAILABLE", HttpStatus.SERVICE_UNAVAILABLE,"SERVICE_UNAVAILABLE"),
-    DEPENDENCY_TIMEOUT("DEPENDENCY_TIMEOUT", HttpStatus.GATEWAY_TIMEOUT,"DEPENDENCY_TIMEOUT");
+    DEPENDENCY_TIMEOUT("DEPENDENCY_TIMEOUT", HttpStatus.GATEWAY_TIMEOUT,"DEPENDENCY_TIMEOUT"),
 
+    DEVICE_LIMIT_EXCEEDED("DEVICE_LIMIT_EXCEEDED", HttpStatus.NOT_ACCEPTABLE, "The device access limit has been reached. Please authenticate with the OTP..");
     private final String code;
     private final HttpStatus status;
     private final String message;

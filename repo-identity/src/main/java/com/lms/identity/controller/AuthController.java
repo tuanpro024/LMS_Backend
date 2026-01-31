@@ -5,6 +5,7 @@ import com.lms.identity.dto.request.*;
 import com.lms.identity.dto.response.AuthResponse;
 import com.lms.identity.service.AuthService;
 import com.lms.identity.service.GoogleOAuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,13 +29,15 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ApiResponse.ok(authService.login(request));
+    public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
+        return ApiResponse.ok(authService.login(request, servletRequest));
     }
 
     @PostMapping("/google")
-    public ApiResponse<AuthResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
-        return ApiResponse.ok(googleOAuthService.authenticateWithGoogle(request.getIdToken()));
+    public ApiResponse<AuthResponse> googleLogin(@RequestBody GoogleLoginRequest loginRequest,
+                                                 HttpServletRequest request) {
+        var result = googleOAuthService.authenticateWithGoogle(loginRequest.getIdToken(), request);
+        return ApiResponse.ok(result);
     }
 
     @PostMapping("/refresh")
@@ -90,5 +93,13 @@ public class AuthController {
     public ApiResponse<AuthResponse> verifyOtp(
             @Valid @RequestBody VerifyOtpRequest request) {
         return ApiResponse.ok(authService.verifyOtp(request));
+    }
+
+    @PostMapping("/device/verify-otp")
+    public ApiResponse<AuthResponse> verifyDeviceOtp(
+            @Valid @RequestBody DeviceVerificationRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ApiResponse.ok(authService.verifyDeviceOtp(request, servletRequest));
     }
 }

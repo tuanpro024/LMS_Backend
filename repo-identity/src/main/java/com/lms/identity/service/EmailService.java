@@ -27,4 +27,7 @@ public interface EmailService {
      * @param otp      6-digit OTP code
      */
     void sendOtpEmail(String toEmail, String userName, String otp);
+
+
+    void sendDeviceVerificationEmail(String toEmail, String userName, String otp);
 }

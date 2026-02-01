@@ -35,13 +35,6 @@ public class LearningPathServiceImpl implements ILearningPathService {
     public LearningPathResponse createLearningPath(CreateLearningPathRequest request, String userId) {
         log.info("Creating learning path: {} for study set: {}", request.getTitle(), request.getStudySetId());
 
-        // Check if display order already exists
-        if (learningPathRepository.existsByStudySetIdAndDisplayOrder(
-                request.getStudySetId(), request.getDisplayOrder())) {
-            throw new ResourceAlreadyExistsException(
-                    "Learning path with display order " + request.getDisplayOrder() + " already exists");
-        }
-
         LearningPath learningPath = learningPathMapper.toEntity(request, userId);
         learningPath = learningPathRepository.save(learningPath);
 
@@ -83,7 +76,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     @Override
     public List<LearningPathResponse> getLearningPathsByStudySetId(String studySetId) {
         List<LearningPath> learningPaths = learningPathRepository
-                .findByStudySetIdAndIsActiveTrueOrderByDisplayOrderAsc(studySetId);
+                .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
 
         return learningPaths.stream()
                 .map(lp -> {
@@ -98,7 +91,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     @Override
     public List<LearningPathResponse> getLearningPathsByStudySetIdWithProgress(String studySetId, String userId) {
         List<LearningPath> learningPaths = learningPathRepository
-                .findByStudySetIdAndIsActiveTrueOrderByDisplayOrderAsc(studySetId);
+                .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
 
         return learningPaths.stream()
                 .map(lp -> {
@@ -143,19 +136,6 @@ public class LearningPathServiceImpl implements ILearningPathService {
         log.info("Successfully soft-deleted learning path: {}", id);
     }
 
-    @Override
-    @Transactional
-    public void reorderLearningPaths(String studySetId, ReorderItemsRequest request) {
-        log.info("Reordering learning paths for study set: {}", studySetId);
-
-        for (ReorderItemsRequest.ReorderItem item : request.getItems()) {
-            LearningPath learningPath = findLearningPathById(item.getId());
-            learningPath.setDisplayOrder(item.getNewOrder());
-            learningPathRepository.save(learningPath);
-        }
-
-        log.info("Successfully reordered {} learning paths", request.getItems().size());
-    }
 
     private LearningPath findLearningPathById(String id) {
         return learningPathRepository.findById(id)

@@ -15,9 +15,7 @@ public class LearningPathMapper {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .thumbnail(request.getThumbnail())
-                .displayOrder(request.getDisplayOrder())
                 .estimatedHours(request.getEstimatedHours())
-                .level(request.getLevel())
                 .isActive(true)
                 .createdBy(userId)
                 .build();
@@ -33,15 +31,11 @@ public class LearningPathMapper {
         if (request.getThumbnail() != null) {
             entity.setThumbnail(request.getThumbnail());
         }
-        if (request.getDisplayOrder() != null) {
-            entity.setDisplayOrder(request.getDisplayOrder());
-        }
+
         if (request.getEstimatedHours() != null) {
             entity.setEstimatedHours(request.getEstimatedHours());
         }
-        if (request.getLevel() != null) {
-            entity.setLevel(request.getLevel());
-        }
+
         if (request.getIsActive() != null) {
             entity.setIsActive(request.getIsActive());
         }
@@ -54,9 +48,7 @@ public class LearningPathMapper {
                 .title(entity.getTitle())
                 .description(entity.getDescription())
                 .thumbnail(entity.getThumbnail())
-                .displayOrder(entity.getDisplayOrder())
                 .estimatedHours(entity.getEstimatedHours())
-                .level(entity.getLevel())
                 .isActive(entity.getIsActive())
                 .createdBy(entity.getCreatedBy())
                 .createdDate(entity.getCreatedAt())

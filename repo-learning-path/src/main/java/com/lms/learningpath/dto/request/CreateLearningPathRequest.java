@@ -27,12 +27,6 @@ public class CreateLearningPathRequest {
 
     private String thumbnail;
 
-    @NotNull(message = "Display order is required")
-    @Min(value = 1, message = "Display order must be at least 1")
-    private Integer displayOrder;
-
     private Integer estimatedHours;
 
-    @Size(max = 20)
-    private String level; // BEGINNER, INTERMEDIATE, ADVANCED
 }

@@ -10,13 +10,11 @@ import java.util.Optional;
 @Repository
 public interface LearningPathRepository extends JpaRepository<LearningPath, String> {
 
-    List<LearningPath> findByStudySetIdOrderByDisplayOrderAsc(String studySetId);
+    List<LearningPath> findByStudySetIdOrderByCreatedAtAsc(String studySetId);
 
     Optional<LearningPath> findByIdAndIsActiveTrue(String id);
 
-    List<LearningPath> findByStudySetIdAndIsActiveTrueOrderByDisplayOrderAsc(String studySetId);
-
-    boolean existsByStudySetIdAndDisplayOrder(String studySetId, Integer displayOrder);
+    List<LearningPath> findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(String studySetId);
 
     List<LearningPath> findByCreatedBy(String userId);
 

@@ -11,8 +11,7 @@ import lombok.*;
  */
 @Entity
 @Table(name = "learning_paths", indexes = {
-        @Index(name = "idx_study_set", columnList = "study_set_id"),
-        @Index(name = "idx_study_set_order", columnList = "study_set_id, display_order")
+        @Index(name = "idx_study_set", columnList = "study_set_id")
 })
 @Getter
 @Setter
@@ -33,13 +32,7 @@ public class LearningPath extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String thumbnail;
 
-    @Column(nullable = false)
-    private Integer displayOrder; // Order within the StudySet (1, 2, 3, ...)
-
     private Integer estimatedHours; // Estimated time to complete
-
-    @Column(length = 20)
-    private String level; // BEGINNER, INTERMEDIATE, ADVANCED
 
     @Column(nullable = false)
     @Builder.Default
@@ -48,8 +41,4 @@ public class LearningPath extends BaseEntity {
     @Column(nullable = false, length = 26)
     private String createdBy; // User ID of creator (Admin/Teacher)
 
-    // Helper method
-    public String getLevelDisplay() {
-        return level != null ? level.toUpperCase() : "BEGINNER";
-    }
 }

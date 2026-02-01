@@ -18,9 +18,7 @@ public class LearningPathResponse {
     private String title;
     private String description;
     private String thumbnail;
-    private Integer displayOrder;
     private Integer estimatedHours;
-    private String level;
     private Boolean isActive;
     private String createdBy;
     private Instant createdDate;

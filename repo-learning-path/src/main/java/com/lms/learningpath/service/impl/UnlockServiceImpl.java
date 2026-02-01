@@ -1,8 +1,6 @@
 package com.lms.learningpath.service.impl;
 
 import com.lms.learningpath.entity.Step;
-import com.lms.learningpath.entity.StepProgress;
-import com.lms.learningpath.entity.StepUnlockRule;
 import com.lms.learningpath.entity.enums.ProgressStatus;
 import com.lms.learningpath.exception.ResourceNotFoundException;
 import com.lms.learningpath.repository.StepProgressRepository;

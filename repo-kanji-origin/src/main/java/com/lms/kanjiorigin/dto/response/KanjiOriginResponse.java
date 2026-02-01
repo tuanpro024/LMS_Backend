@@ -14,6 +14,7 @@ import java.time.Instant;
 public class KanjiOriginResponse {
     private String id;
     private String kanjiLessonId;
+    private Integer contentIndex;
     private String term;
     private String pinyin;
     private String sinoVn;

@@ -132,4 +132,37 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException("Unexpected error sending OTP email", e);
         }
     }
+
+    @Async
+    @Override
+    public void sendDeviceVerificationEmail(String toEmail, String userName, String otp) {
+        try {
+            log.info("Sending Device Verification OTP email to: {}", toEmail);
+
+            Context context = new Context();
+            context.setVariable("userName", userName);
+            context.setVariable("otp", otp);
+            context.setVariable("frontendUrl", frontendUrl);
+
+            String htmlContent = templateEngine.process("device-verification-email", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(emailFrom, emailFromName);
+            helper.setTo(toEmail);
+            helper.setSubject("Cảnh Báo Đăng Nhập Thiết Bị Mới - HúLi Chinese");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+
+            log.info("Device Verification email sent successfully to: {}", toEmail);
+        } catch (MessagingException e) {
+            log.error("Failed to send Device Verification email to: {}", toEmail, e);
+            throw new RuntimeException("Could not send Device Verification email", e);
+        } catch (Exception e) {
+            log.error("Unexpected error sending email to: {}", toEmail, e);
+            throw new RuntimeException("Unexpected error sending email", e);
+        }
+    }
 }

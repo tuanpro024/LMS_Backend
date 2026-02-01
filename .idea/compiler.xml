@@ -35,9 +35,8 @@
         </processorPath>
         <module name="notification" />
         <module name="repo-kanji-origin" />
-        <module name="repo-api-gateway" />
       </profile>
-      <profile name="Annotation profile for repo-learning-path" enabled="true">
+      <profile name="Annotation profile for repo-identity-api" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -51,6 +50,7 @@
         <module name="repo-flashcard" />
         <module name="repo-common-framework" />
         <module name="repo-writing" />
+        <module name="repo-api-gateway" />
         <module name="repo-pronunciation" />
         <module name="repo-eureka" />
         <module name="repo-dictionary" />

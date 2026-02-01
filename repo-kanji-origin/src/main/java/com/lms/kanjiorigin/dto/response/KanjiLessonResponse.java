@@ -15,6 +15,7 @@ public class KanjiLessonResponse {
     private String id;
     private String title;
     private String description;
+    private Integer contentIndex;
     private String studySetId;
     private int kanjiCount;
     private int questionCount;

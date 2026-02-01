@@ -1,5 +1,6 @@
 package com.lms.kanjiorigin.dto.request;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,4 +17,7 @@ public class UpdateKanjiLessonRequest {
     private String title;
 
     private String description;
+
+    @Min(value = 0, message = "Content index must be non-negative")
+    private Integer contentIndex;
 }

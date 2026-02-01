@@ -16,9 +16,6 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateQuestionRequest {
 
-    @NotNull(message = "Kanji Lesson ID is required")
-    private String kanjiLessonId;
-
     @NotBlank(message = "Content is required")
     private String content;
 
@@ -27,4 +24,19 @@ public class CreateQuestionRequest {
 
     @NotEmpty(message = "At least one wrong option is required")
     private List<String> wrongOptions;
+
+    private List<LessonAssignment> lessonAssignments;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LessonAssignment {
+        @NotBlank(message = "Lesson ID is required")
+        private String kanjiLessonId;
+
+        @NotNull(message = "Content index is required")
+        private Integer contentIndex;
+    }
 }
+

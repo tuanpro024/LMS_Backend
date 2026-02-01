@@ -16,8 +16,11 @@ public class StudySetResponse {
     private String id;
     private String title;
     private String description;
+    private String thumbnail;
     private boolean isPrivate;
     private String userId;
+    private String unlockRuleJson;
+    private Integer estimatedMinutes;
     private int totalItems;
     private Instant createdAt;
     private Instant updatedAt;

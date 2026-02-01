@@ -19,6 +19,7 @@ public class PackageResponse {
     private String name;
     private TypeName type;
     private String description;
+    private String thumbnail;
     private String userId;
     private List<SubjectResponse> subjects;
     private List<FolderResponse> folders;

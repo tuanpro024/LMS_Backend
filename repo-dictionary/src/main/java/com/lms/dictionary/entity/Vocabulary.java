@@ -1,6 +1,8 @@
 package com.lms.dictionary.entity;
 
 import com.lms.common.jpa.BaseEntityLongId;
+import com.lms.dictionary.converter.WordTypeListConverter;
+import com.lms.dictionary.enums.WordType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,8 +21,10 @@ public class Vocabulary extends BaseEntityLongId {
     @Column(name = "hsk_level")
     private Integer hskLevel;
 
-    @Column(name = "word_type", length = 50)
-    private String wordType;
+    @Convert(converter = WordTypeListConverter.class)
+    @Column(name = "word_types", length = 500)
+    @Builder.Default
+    private List<WordType> wordTypes = new ArrayList<>();
 
     @Column(nullable = false, length = 50)
     private String hanzi;

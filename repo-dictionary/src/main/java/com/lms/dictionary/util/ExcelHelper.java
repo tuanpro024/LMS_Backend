@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collections;
+
 import java.util.Iterator;
 import java.util.List;
 
@@ -21,6 +21,7 @@ import java.util.List;
 public class ExcelHelper {
     public static String TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     static String SHEET = "Vocabularies";
+    public static final String SPLIT_CHAR = "\\|";
 
     public static boolean hasExcelFormat(MultipartFile file) {
         if (!TYPE.equals(file.getContentType())) {
@@ -34,7 +35,6 @@ public class ExcelHelper {
             Workbook workbook = new XSSFWorkbook(is);
             Sheet sheet = workbook.getSheet(SHEET);
             if (sheet == null) {
-                // Try getting the first sheet if "Vocabularies" doesn't exist
                 sheet = workbook.getSheetAt(0);
             }
 
@@ -46,7 +46,6 @@ public class ExcelHelper {
             while (rows.hasNext()) {
                 Row currentRow = rows.next();
 
-                // skip header
                 if (rowNumber == 0) {
                     rowNumber++;
                     continue;
@@ -62,64 +61,87 @@ public class ExcelHelper {
                 vocabulary.setPinyin(getCellValueAsString(currentRow.getCell(1)));
 
                 List<VocabularyMeaningRequest> meanings = new ArrayList<>();
-                String meaningVi = getCellValueAsString(currentRow.getCell(2)); // Meaning(Vi)
+                String meaningViStr = getCellValueAsString(currentRow.getCell(2)); 
                 
-                String exampleCn = getCellValueAsString(currentRow.getCell(3));
-                String exampleVi = getCellValueAsString(currentRow.getCell(4));
+                String exampleCnStr = getCellValueAsString(currentRow.getCell(3));
+                String exampleViStr = getCellValueAsString(currentRow.getCell(4));
                 
-                // HSK Level
                 String hskStr = getCellValueAsString(currentRow.getCell(5));
                 if (!hskStr.isEmpty()) {
                     try {
                         vocabulary.setHskLevel((int) Double.parseDouble(hskStr));
                     } catch (NumberFormatException e) {
-                        // ignore or default
                     }
                 }
 
-                // IsSingle
                 String isSingleStr = getCellValueAsString(currentRow.getCell(6));
                 vocabulary.setIsSingleVocab(Boolean.parseBoolean(isSingleStr) || "TRUE".equalsIgnoreCase(isSingleStr));
 
-                // Components: Hanzi:Pinyin;Hanzi:Pinyin
                 String componentsStr = getCellValueAsString(currentRow.getCell(7));
                 if (componentsStr != null && !componentsStr.isEmpty()) {
                     List<VocabComponentRequest> components = new ArrayList<>();
-                    String[] comps = componentsStr.split(";");
+                    String[] comps = componentsStr.split(SPLIT_CHAR);
                     int order = 1;
                     for (String comp : comps) {
                         String[] parts = comp.split(":");
                         String cHanzi = parts[0].trim();
                         String cPinyin = parts.length > 1 ? parts[1].trim() : "";
                         
-                        // use newVocabulary to specify the component to link/create
-                        // Since we don't assume ID is known.
                         CreateVocabularyRequest compReq = new CreateVocabularyRequest();
                         compReq.setHanzi(cHanzi);
                         compReq.setPinyin(cPinyin);
-                        compReq.setIsSingleVocab(true); // Components are usually single
+                        compReq.setIsSingleVocab(true); 
 
                         components.add(VocabComponentRequest.builder()
-                                .newVocabulary(compReq) // Service will lookup by Hanzi/Pinyin match
+                                .newVocabulary(compReq) 
                                 .orderIndex(order++)
                                 .build());
                     }
                     vocabulary.setComponents(components);
                 }
 
-                // URLs & Extra
                 vocabulary.setAudioUrl(getCellValueAsString(currentRow.getCell(8)));
                 vocabulary.setStrokeAnimationUrl(getCellValueAsString(currentRow.getCell(9)));
                 vocabulary.setEtymologyStory(getCellValueAsString(currentRow.getCell(10)));
                 vocabulary.setEtymologyImage(getCellValueAsString(currentRow.getCell(11)));
 
-                if (meaningVi != null && !meaningVi.isEmpty()) {
-                    String[] meaningParts = meaningVi.split(";");
-                    for (String part : meaningParts) {
+                String wordTypeStr = getCellValueAsString(currentRow.getCell(12));
+                String examplePinyinStr = getCellValueAsString(currentRow.getCell(13));
+                String exampleEnStr = getCellValueAsString(currentRow.getCell(14));
+
+                if (meaningViStr != null && !meaningViStr.isEmpty()) {
+                    String[] meaningParts = meaningViStr.split(SPLIT_CHAR);
+                    String[] wordTypeParts = wordTypeStr.split(SPLIT_CHAR);
+                    String[] exCnParts = exampleCnStr.split(SPLIT_CHAR);
+                    String[] exViParts = exampleViStr.split(SPLIT_CHAR);
+                    String[] exPinyinParts = examplePinyinStr.split(SPLIT_CHAR);
+                    String[] exEnParts = exampleEnStr.split(SPLIT_CHAR);
+                    
+                    List<String> collectedWordTypes = new ArrayList<>();
+                    if (wordTypeParts != null && wordTypeParts.length > 0) {
+                        for(String wt : wordTypeParts) {
+                            if(!wt.trim().isEmpty()) {
+                                collectedWordTypes.add(wt.trim());
+                            }
+                        }
+                    }
+                    List<String> distinctWordTypes = new ArrayList<>();
+                    for(String wt : collectedWordTypes) {
+                        if(!distinctWordTypes.contains(wt)) {
+                            distinctWordTypes.add(wt);
+                        }
+                    }
+                    vocabulary.setWordTypes(distinctWordTypes);
+
+                    for (int i = 0; i < meaningParts.length; i++) {
                         VocabularyMeaningRequest meaningReq = new VocabularyMeaningRequest();
-                        meaningReq.setMeaning(part.trim());
-                        meaningReq.setExampleSentenceCn(exampleCn);
-                        meaningReq.setExampleSentenceVi(exampleVi);
+                        meaningReq.setMeaning(meaningParts[i].trim());
+
+                        meaningReq.setExampleSentenceCn(getValueAtIndexOrFirst(exCnParts, i));
+                        meaningReq.setExampleSentenceVi(getValueAtIndexOrFirst(exViParts, i));
+                        meaningReq.setExampleSentencePinyin(getValueAtIndexOrFirst(exPinyinParts, i));
+                        meaningReq.setExampleSentenceEn(getValueAtIndexOrFirst(exEnParts, i));
+                        
                         meanings.add(meaningReq);
                     }
                 }
@@ -138,6 +160,19 @@ public class ExcelHelper {
         } catch (IOException e) {
             throw new ApiException(ErrorCode.E227, "fail to parse Excel file: " + e.getMessage());
         }
+    }
+
+    private static String getValueAtIndexOrFirst(String[] parts, int index) {
+        if (parts == null || parts.length == 0) {
+            return "";
+        }
+        if (index < parts.length) {
+            return parts[index].trim();
+        }
+        if (parts.length == 1) {
+            return parts[0].trim();
+        }
+        return "";
     }
     
     private static String getCellValueAsString(Cell cell) {

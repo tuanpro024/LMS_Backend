@@ -2,12 +2,23 @@ package com.lms.kanjiorigin;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@EnableDiscoveryClient
-@ComponentScan(basePackages = {"com.lms.kanjiorigin", "com.lms.common"})
+@ComponentScan(basePackages = {
+        "com.lms.kanjiorigin",
+        "com.lms.content.common",
+        "com.lms.common"
+})
+@EntityScan(basePackages = {
+        "com.lms.kanjiorigin.entity",
+        "com.lms.content.common.entity"
+})
+@EnableJpaRepositories(basePackages = {
+        "com.lms.kanjiorigin.repository"
+})
 public class RepoKanjiOriginApplication {
 
     public static void main(String[] args) {

@@ -20,13 +20,7 @@ public class UpdateLearningPathRequest {
 
     private String thumbnail;
 
-    @Min(value = 1, message = "Display order must be at least 1")
-    private Integer displayOrder;
-
     private Integer estimatedHours;
-
-    @Size(max = 20)
-    private String level;
 
     private Boolean isActive;
 }

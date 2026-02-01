@@ -16,14 +16,12 @@ import jakarta.validation.Valid;
 
 import java.util.List;
 
-
 @RestController
 @RequestMapping("/packages")
 @RequiredArgsConstructor
 public class PackageController {
 
     private final PackageApiDelegate packageDelegate;
-
 
     @PostMapping
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
@@ -78,5 +76,33 @@ public class PackageController {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         packageDelegate.deletePackage(id, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    /**
+     * Add a Folder to a Package
+     */
+    @PostMapping("/{packageId}/folders/{folderId}")
+    public ResponseEntity<ApiResponse<PackageResponse>> addFolderToPackage(
+            @PathVariable String packageId,
+            @PathVariable String folderId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        PackageResponse response = packageDelegate.addFolderToPackage(packageId, folderId, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    /**
+     * Remove a Folder from a Package
+     */
+    @DeleteMapping("/{packageId}/folders/{folderId}")
+    public ResponseEntity<ApiResponse<PackageResponse>> removeFolderFromPackage(
+            @PathVariable String packageId,
+            @PathVariable String folderId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        PackageResponse response = packageDelegate.removeFolderFromPackage(packageId, folderId, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

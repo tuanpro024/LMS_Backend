@@ -54,10 +54,6 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
 
         KanjiLesson lesson = kanjiLessonMapper.toEntity(request);
         lesson.setStudySet(studySet);
-==== BASE ====
-        lesson.setContentIndex(0);
-
-==== BASE ====
         KanjiLesson savedLesson = kanjiLessonRepository.save(lesson);
         return kanjiLessonMapper.toResponse(savedLesson);
     }

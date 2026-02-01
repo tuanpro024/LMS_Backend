@@ -108,16 +108,4 @@ public class LearningPathController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
-    /**
-     * Reorder learning paths within a study set (Admin/Teacher only)
-     */
-    @PutMapping("/study-set/{studySetId}/reorder")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
-    public ResponseEntity<ApiResponse<Void>> reorderLearningPaths(
-            @PathVariable String studySetId,
-            @RequestBody @Valid ReorderItemsRequest request) {
-
-        learningPathService.reorderLearningPaths(studySetId, request);
-        return ResponseEntity.ok(ApiResponse.ok(null));
-    }
 }

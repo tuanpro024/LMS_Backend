@@ -13,8 +13,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.lms.common"
 })
 @EnableJpaRepositories(basePackages = {
-        "com.lms.learningpath.repository",
-        "com.lms.content.common.repository"
+        "com.lms.learningpath.repository"
 })
 @EntityScan(basePackages = {
         "com.lms.learningpath.entity",

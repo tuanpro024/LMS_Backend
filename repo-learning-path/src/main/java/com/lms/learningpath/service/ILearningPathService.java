@@ -47,8 +47,4 @@ public interface ILearningPathService {
      */
     void deleteLearningPath(String id, String userId);
 
-    /**
-     * Reorder learning paths within a study set
-     */
-    void reorderLearningPaths(String studySetId, ReorderItemsRequest request);
 }

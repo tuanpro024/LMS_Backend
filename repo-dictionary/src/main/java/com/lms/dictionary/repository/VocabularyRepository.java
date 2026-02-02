@@ -23,7 +23,7 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
                         "AND (:isSingleVocab IS NULL OR v.isSingleVocab = :isSingleVocab) " +
                         "AND v.deleted = false " +
                         "AND (:hskLevel IS NULL OR v.hskLevel = :hskLevel) " +
-                        "AND (:wordType IS NULL OR :wordType = '' OR v.wordType = :wordType)")
+                        "AND (:wordType IS NULL OR :wordType = '' OR v.wordTypes LIKE CONCAT('%', :wordType, '%'))")
         Page<Vocabulary> searchByQuery(@Param("keySearch") String keySearch,
                         @Param("isSingleVocab") Boolean isSingleVocab,
                         @Param("hskLevel") Integer hskLevel,

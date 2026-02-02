@@ -18,4 +18,7 @@ public abstract class BaseContentItem extends BaseEntity {
     @JoinColumn(name = "study_set_id", nullable = false)
     private StudySet studySet;
 
+    @Column(name = "content_index")
+    private Integer contentIndex;
+
 }

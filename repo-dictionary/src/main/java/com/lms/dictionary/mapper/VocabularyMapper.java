@@ -4,60 +4,84 @@ import com.lms.dictionary.dto.request.CreateVocabularyRequest;
 import com.lms.dictionary.dto.request.UpdateVocabularyRequest;
 import com.lms.dictionary.dto.response.VocabularyBasicResponse;
 import com.lms.dictionary.dto.response.VocabularyResponse;
+import com.lms.dictionary.entity.VocabComponent;
 import com.lms.dictionary.entity.Vocabulary;
 import com.lms.dictionary.enums.WordType;
-
-import org.mapstruct.Builder;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.mapstruct.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring", uses = {VocabularyMeaningMapper.class}, builder = @Builder(disableBuilder = true))
+@Mapper(componentModel = "spring", uses = { VocabularyMeaningMapper.class }, builder = @Builder(disableBuilder = true))
 public interface VocabularyMapper {
 
-    @Mapping(target = "wordTypes", expression = "java(mapStringListToEnumList(request.getWordTypes()))")
+    @Mapping(target = "wordTypes", source = "wordTypes", qualifiedByName = "stringToEnum")
+    @Mapping(target = "meanings", ignore = true)
+    @Mapping(target = "subVocabs", ignore = true)
+    @Mapping(target = "parentVocabs", ignore = true)
     Vocabulary toEntity(CreateVocabularyRequest request);
 
-    @Mapping(target = "wordTypes", expression = "java(mapStringListToEnumList(request.getWordTypes()))")
+    @Mapping(target = "wordTypes", source = "wordTypes", qualifiedByName = "stringToEnum")
+    @Mapping(target = "meanings", ignore = true)
+    @Mapping(target = "subVocabs", ignore = true)
+    @Mapping(target = "parentVocabs", ignore = true)
     void partialUpdate(@MappingTarget Vocabulary vocabulary, UpdateVocabularyRequest request);
 
-    @Mapping(target = "componentVocabs", expression = "java(toResponseList(vocabulary.getSubVocabs().stream().map(c -> c.getComponentVocab()).toList()))")
-    @Mapping(target = "wordTypes", expression = "java(mapEnumListToStringList(vocabulary.getWordTypes()))")
+    @Mapping(target = "componentVocabs", source = "subVocabs")
+    @Mapping(target = "wordTypes", source = "wordTypes", qualifiedByName = "enumToString")
     VocabularyResponse toResponse(Vocabulary vocabulary);
+
+    @Mapping(target = "id", source = "componentVocab.id")
+    @Mapping(target = "hskLevel", source = "componentVocab.hskLevel")
+    @Mapping(target = "wordTypes", source = "componentVocab.wordTypes", qualifiedByName = "enumToString")
+    @Mapping(target = "hanzi", source = "componentVocab.hanzi")
+    @Mapping(target = "pinyin", source = "componentVocab.pinyin")
+    @Mapping(target = "audioUrl", source = "componentVocab.audioUrl")
+    @Mapping(target = "imageUrl", source = "componentVocab.imageUrl")
+    @Mapping(target = "strokeAnimationUrl", source = "componentVocab.strokeAnimationUrl")
+    @Mapping(target = "etymologyStory", source = "componentVocab.etymologyStory")
+    @Mapping(target = "etymologyImage", source = "componentVocab.etymologyImage")
+    @Mapping(target = "isSingleVocab", source = "componentVocab.isSingleVocab")
+    @Mapping(target = "meanings", source = "componentVocab.meanings")
+    @Mapping(target = "componentVocabs", ignore = true)
+    VocabularyResponse toResponse(VocabComponent component);
 
     List<VocabularyResponse> toResponseList(List<Vocabulary> vocabularies);
 
-    @Mapping(target = "meanings", expression = "java(vocabulary.getMeanings().stream().map(m -> m.getMeaning()).collect(java.util.stream.Collectors.toList()))")
-    @Mapping(target = "wordTypes", expression = "java(mapEnumListToStringList(vocabulary.getWordTypes()))")
+    @Mapping(target = "wordTypes", source = "wordTypes", qualifiedByName = "enumToString")
     VocabularyBasicResponse toBasicResponse(Vocabulary vocabulary);
 
     List<VocabularyBasicResponse> toBasicResponseList(List<Vocabulary> vocabularies);
-    
+
+    @Named("enumToString")
+    default List<String> mapEnumListToStringList(List<WordType> types) {
+        if (types == null)
+            return new ArrayList<>();
+        return types.stream().map(WordType::getValue).collect(Collectors.toList());
+    }
+
+    // mapMeanings removed - VocabularyMeaningMapper handles List<VocabularyMeaning>
+    // -> List<VocabularyMeaningResponse>
+
+    @Named("stringToEnum")
     default List<WordType> mapStringListToEnumList(List<String> types) {
-        if (types == null) return new ArrayList<>();
+        if (types == null)
+            return new ArrayList<>();
         return types.stream()
                 .map(t -> {
                     try {
                         return WordType.fromValue(t);
                     } catch (Exception e) {
                         try {
-                           return WordType.valueOf(t.toUpperCase());
-                        } catch(Exception ex) {
-                           return null;
+                            return WordType.valueOf(t.toUpperCase());
+                        } catch (Exception ex) {
+                            return null;
                         }
                     }
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-    }
-
-    default List<String> mapEnumListToStringList(List<WordType> types) {
-        if (types == null) return new ArrayList<>();
-        return types.stream().map(WordType::getValue).collect(Collectors.toList());
     }
 }

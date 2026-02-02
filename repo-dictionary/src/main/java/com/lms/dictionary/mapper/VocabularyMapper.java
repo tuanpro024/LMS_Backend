@@ -4,7 +4,6 @@ import com.lms.dictionary.dto.request.CreateVocabularyRequest;
 import com.lms.dictionary.dto.request.UpdateVocabularyRequest;
 import com.lms.dictionary.dto.response.VocabularyBasicResponse;
 import com.lms.dictionary.dto.response.VocabularyResponse;
-import com.lms.dictionary.dto.response.VocabularyMeaningResponse;
 import com.lms.dictionary.entity.VocabComponent;
 import com.lms.dictionary.entity.Vocabulary;
 import com.lms.dictionary.entity.VocabularyMeaning;

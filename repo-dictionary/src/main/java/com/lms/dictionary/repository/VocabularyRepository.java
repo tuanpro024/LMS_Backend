@@ -17,13 +17,13 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
         @Query("SELECT DISTINCT v FROM Vocabulary v " +
                         "LEFT JOIN v.meanings m " +
                         "WHERE ((:keySearch IS NULL OR :keySearch = '') " +
-                        "OR (v.hanzi LIKE %:keySearch% " +
-                        "OR v.pinyin LIKE %:keySearch% " +
-                        "OR m.meaning LIKE %:keySearch%)) " +
+                        "OR (v.hanzi LIKE CONCAT('%', :keySearch, '%') " +
+                        "OR v.pinyin LIKE CONCAT('%', :keySearch, '%') " +
+                        "OR m.meaning LIKE CONCAT('%', :keySearch, '%'))) " +
                         "AND (:isSingleVocab IS NULL OR v.isSingleVocab = :isSingleVocab) " +
                         "AND v.deleted = false " +
                         "AND (:hskLevel IS NULL OR v.hskLevel = :hskLevel) " +
-                        "AND (:wordType IS NULL OR :wordType = '' OR v.wordType = :wordType)")
+                        "AND (:wordType IS NULL OR :wordType = '' OR v.wordTypes LIKE CONCAT('%', :wordType, '%'))")
         Page<Vocabulary> searchByQuery(@Param("keySearch") String keySearch,
                         @Param("isSingleVocab") Boolean isSingleVocab,
                         @Param("hskLevel") Integer hskLevel,

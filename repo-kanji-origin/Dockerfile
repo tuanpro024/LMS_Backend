@@ -10,6 +10,10 @@ COPY repo-common-framework ./repo-common-framework
 RUN mvn -f repo-common-parent/pom.xml clean install -DskipTests
 RUN mvn -f repo-common-framework/pom.xml clean install -DskipTests
 
+# Copy and install content common module
+COPY repo-content-common ./repo-content-common
+RUN mvn -f repo-content-common/pom.xml clean install -DskipTests
+
 # Copy and build kanji-origin
 COPY repo-kanji-origin ./repo-kanji-origin
 RUN mvn -f repo-kanji-origin/pom.xml clean package -DskipTests

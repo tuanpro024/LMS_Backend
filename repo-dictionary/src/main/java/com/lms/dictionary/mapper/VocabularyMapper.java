@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring", uses = {VocabularyMeaningMapper.class}, builder = @Builder(disableBuilder = true))
+@Mapper(componentModel = "spring", uses = { VocabularyMeaningMapper.class }, builder = @Builder(disableBuilder = true))
 public interface VocabularyMapper {
 
     @Mapping(target = "wordTypes", expression = "java(mapStringListToEnumList(request.getWordTypes()))")
@@ -32,23 +32,24 @@ public interface VocabularyMapper {
 
     List<VocabularyResponse> toResponseList(List<Vocabulary> vocabularies);
 
-    @Mapping(target = "meanings", expression = "java(vocabulary.getMeanings().stream().map(m -> m.getMeaning()).collect(java.util.stream.Collectors.toList()))")
+    @Mapping(target = "meanings", source = "meanings")
     @Mapping(target = "wordTypes", expression = "java(mapEnumListToStringList(vocabulary.getWordTypes()))")
     VocabularyBasicResponse toBasicResponse(Vocabulary vocabulary);
 
     List<VocabularyBasicResponse> toBasicResponseList(List<Vocabulary> vocabularies);
-    
+
     default List<WordType> mapStringListToEnumList(List<String> types) {
-        if (types == null) return new ArrayList<>();
+        if (types == null)
+            return new ArrayList<>();
         return types.stream()
                 .map(t -> {
                     try {
                         return WordType.fromValue(t);
                     } catch (Exception e) {
                         try {
-                           return WordType.valueOf(t.toUpperCase());
-                        } catch(Exception ex) {
-                           return null;
+                            return WordType.valueOf(t.toUpperCase());
+                        } catch (Exception ex) {
+                            return null;
                         }
                     }
                 })
@@ -57,7 +58,8 @@ public interface VocabularyMapper {
     }
 
     default List<String> mapEnumListToStringList(List<WordType> types) {
-        if (types == null) return new ArrayList<>();
+        if (types == null)
+            return new ArrayList<>();
         return types.stream().map(WordType::getValue).collect(Collectors.toList());
     }
 }

@@ -1,12 +1,9 @@
-package com.lms.content.common.entity;
+package com.lms.multimedia.entity;
 
 import com.lms.common.jpa.BaseEntity;
-import com.lms.content.common.entity.enums.VideoStatus;
+import com.lms.multimedia.entity.enums.VideoStatus;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "videos")
@@ -26,9 +23,6 @@ public class Video extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, length = 26)
-    private String userId;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VideoStatus status;
@@ -39,7 +33,12 @@ public class Video extends BaseEntity {
 
     private String karaokePath; // MinIO path to karaoke JSON
 
-    @ManyToMany(mappedBy = "videos")
+    // Unidirectional relationship: Video belongs to one StudySet
+    @Column(length = 26)
+    private String studySetId; // Nullable - can be set later
+
+    // Track if video has any subtitles
+    @Column(nullable = false)
     @Builder.Default
-    private List<StudySet> studySets = new ArrayList<>();
+    private Boolean hasSubtitle = false;
 }

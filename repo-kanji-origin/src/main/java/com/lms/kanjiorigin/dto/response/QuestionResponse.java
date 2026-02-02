@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 public class QuestionResponse {
     private String id;
+    private String kanjiLessonId;
     private String content;
     private String correctAnswer;
     private List<String> wrongOptions;

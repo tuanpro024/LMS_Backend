@@ -1,16 +1,22 @@
 # Maven build artifacts
 target/
 **/target/
+bin/
+**/bin/
+out/
+**/out/
 *.class
 *.jar
 *.war
 *.ear
+dependency-reduced-pom.xml
 
 # IntelliJ IDEA
 .idea/
 *.iml
 *.iws
 *.ipr
+out/
 
 # Eclipse
 .classpath
@@ -25,6 +31,7 @@ target/
 
 # Logs
 logs/
+**/logs/
 *.log
 
 # OS System Files
@@ -39,7 +46,6 @@ mvnw.cmd
 # Gradle
 .gradle/
 build/
-
 
 # Environment files
 *.env
@@ -59,3 +65,4 @@ dump.rdb
 
 # Docker
 docker-compose.override.yml
+.docker/

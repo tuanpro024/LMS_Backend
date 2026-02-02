@@ -11,8 +11,11 @@ import com.lms.identity.entity.User;
 import com.lms.identity.entity.UserStatus;
 import com.lms.identity.repository.RoleRepository;
 import com.lms.identity.repository.UserRepository;
+import com.lms.identity.service.DeviceService;
 import com.lms.identity.service.GoogleOAuthService;
 import com.lms.identity.service.JwtTokenService;
+import com.lms.identity.service.OtpService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,9 +30,12 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final JwtTokenService jwtTokenService;
+    private final DeviceService deviceService;
+    private final OtpService otpService;
+
     @Transactional
     @Override
-    public AuthResponse authenticateWithGoogle(String idToken) {
+    public AuthResponse authenticateWithGoogle(String idToken, HttpServletRequest servletRequest) {
         try {
             // 1. Verify Google ID token
             GoogleIdToken googleToken = googleIdTokenVerifier.verify(idToken);
@@ -53,6 +59,19 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
             } else {
                 // 5. Update existing user
                 user = updateExistingUser(user, googleId, name, pictureUrl, emailVerified);
+            }
+
+            String deviceId = servletRequest.getHeader("X-Device-ID");
+
+            if (deviceId != null && !deviceId.isBlank()) {
+                boolean isAllowed = deviceService.checkDeviceLogin(user, deviceId, servletRequest);
+
+                if (!isAllowed) {
+                    otpService.generateAndSendDeviceOtp(user);
+
+                    // Chặn đăng nhập, ném lỗi để Frontend hiển thị Popup OTP
+                    throw new ApiException(ErrorCode.DEVICE_LIMIT_EXCEEDED);
+                }
             }
             // 6. Issue JWT tokens
             return jwtTokenService.issueTokens(user);

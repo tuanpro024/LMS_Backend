@@ -2,12 +2,14 @@ package com.lms.identity.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.identity.dto.request.DeviceVerificationRequest;
 import com.lms.identity.dto.response.AuthResponse;
 import com.lms.identity.dto.request.LoginRequest;
 import com.lms.identity.dto.request.SignupRequest;
 import com.lms.identity.entity.*;
 import com.lms.identity.repository.RoleRepository;
 import com.lms.identity.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,7 +28,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordResetService passwordResetService;
     private final EmailVerificationService emailVerificationService;
     private final OtpService otpService;
-
+    private final DeviceService deviceService;
     @Transactional
     @Override
     public AuthResponse signup(SignupRequest request) {
@@ -54,7 +56,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, HttpServletRequest servletRequest) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ApiException(ErrorCode.E238));
         if (user.getStatus() == UserStatus.BLOCKED) {
@@ -69,6 +71,18 @@ public class AuthServiceImpl implements AuthService {
         }
         if (!user.isEmailVerified()) {
             throw new ApiException(ErrorCode.E233);
+        }
+
+        String deviceId = servletRequest.getHeader("X-Device-ID");
+
+        if (deviceId != null && !deviceId.isEmpty()) {
+            boolean isAllowed = deviceService.checkDeviceLogin(user, deviceId, servletRequest);
+
+            if (!isAllowed) {
+                otpService.generateAndSendDeviceOtp(user);
+
+                throw new ApiException(ErrorCode.DEVICE_LIMIT_EXCEEDED);
+            }
         }
         return jwtTokenService.issueTokens(user);
     }
@@ -153,6 +167,17 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse verifyOtp(com.lms.identity.dto.request.VerifyOtpRequest request) {
         User user = otpService.verifyOtp(request.getEmail(), request.getOtp());
+        return jwtTokenService.issueTokens(user);
+    }
+
+    @Override
+    @Transactional
+    public AuthResponse verifyDeviceOtp(DeviceVerificationRequest request, HttpServletRequest servletRequest) {
+        User user = otpService.verifyOtp(request.getEmail(), request.getOtp());
+
+        String deviceId = servletRequest.getHeader("X-Device-ID");
+        deviceService.replaceOldestDevice(user, deviceId, servletRequest);
+
         return jwtTokenService.issueTokens(user);
     }
 }

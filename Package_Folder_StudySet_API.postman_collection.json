@@ -1,0 +1,760 @@
+{
+	"info": {
+		"_postman_id": "package-folder-studyset-api",
+		"name": "Package, Folder & StudySet API Collection",
+		"description": "Collection for testing Package (Learning Path), Folder, and StudySet APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/api/v1/learning-path",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "package_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "folder_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "studyset_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Package APIs",
+			"item": [
+				{
+					"name": "Create Package",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.id) {",
+									"        pm.collectionVariables.set('package_id', jsonData.data.id);",
+									"        console.log('Package ID saved: ' + jsonData.data.id);",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has success status', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('success');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"HSK Learning Path\",\n    \"description\": \"Complete HSK learning path from level 1 to 6\",\n    \"type\": \"LEARNING_PATH\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/packages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"packages"
+							]
+						},
+						"description": "Create a new package (learning path)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Package by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has package data', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('name');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/packages/{{package_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"packages",
+								"{{package_id}}"
+							]
+						},
+						"description": "Get package details by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Packages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is array', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/packages",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"packages"
+							]
+						},
+						"description": "Get all packages"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Packages by Type",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/packages?type=LEARNING_PATH",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"packages"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": "LEARNING_PATH",
+									"description": "Filter by type: LEARNING_PATH, VOCABULARY, GRAMMAR, etc."
+								}
+							]
+						},
+						"description": "Get packages filtered by type"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Package",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"HSK Learning Path - Updated\",\n    \"description\": \"Updated description for HSK learning path\",\n    \"type\": \"LEARNING_PATH\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/packages/{{package_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"packages",
+								"{{package_id}}"
+							]
+						},
+						"description": "Update package information"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Folder to Package",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/packages/{{package_id}}/folders/{{folder_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"packages",
+								"{{package_id}}",
+								"folders",
+								"{{folder_id}}"
+							]
+						},
+						"description": "Add a folder to a package"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Folder from Package",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/packages/{{package_id}}/folders/{{folder_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"packages",
+								"{{package_id}}",
+								"folders",
+								"{{folder_id}}"
+							]
+						},
+						"description": "Remove a folder from a package"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Package",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/packages/{{package_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"packages",
+								"{{package_id}}"
+							]
+						},
+						"description": "Delete a package"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Folder APIs",
+			"item": [
+				{
+					"name": "Create Folder",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.id) {",
+									"        pm.collectionVariables.set('folder_id', jsonData.data.id);",
+									"        console.log('Folder ID saved: ' + jsonData.data.id);",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has success status', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('success');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"HSK 1 Folder\",\n    \"description\": \"Folder containing HSK 1 study sets\",\n    \"isPrivate\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/folders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"folders"
+							]
+						},
+						"description": "Create a new folder"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Folder by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has folder data', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('name');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/folders/{{folder_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"folders",
+								"{{folder_id}}"
+							]
+						},
+						"description": "Get folder details by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Folders by Package ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/folders/package/{{package_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"folders",
+								"package",
+								"{{package_id}}"
+							]
+						},
+						"description": "Get all folders in a package"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Folders",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/folders/my-folders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"folders",
+								"my-folders"
+							]
+						},
+						"description": "Get all folders created by current user"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Folder",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"HSK 1 Folder - Updated\",\n    \"description\": \"Updated folder description\",\n    \"isPrivate\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/folders/{{folder_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"folders",
+								"{{folder_id}}"
+							]
+						},
+						"description": "Update folder information"
+					},
+					"response": []
+				},
+				{
+					"name": "Add StudySet to Folder",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/folders/{{folder_id}}/study-sets/{{studyset_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"folders",
+								"{{folder_id}}",
+								"study-sets",
+								"{{studyset_id}}"
+							]
+						},
+						"description": "Add a study set to a folder"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove StudySet from Folder",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/folders/{{folder_id}}/study-sets/{{studyset_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"folders",
+								"{{folder_id}}",
+								"study-sets",
+								"{{studyset_id}}"
+							]
+						},
+						"description": "Remove a study set from a folder"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Folder",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/folders/{{folder_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"folders",
+								"{{folder_id}}"
+							]
+						},
+						"description": "Delete a folder"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "StudySet APIs",
+			"item": [
+				{
+					"name": "Create StudySet",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data && jsonData.data.id) {",
+									"        pm.collectionVariables.set('studyset_id', jsonData.data.id);",
+									"        console.log('StudySet ID saved: ' + jsonData.data.id);",
+									"    }",
+									"}",
+									"",
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has success status', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('success');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"HSK 1 - Lesson 1\",\n    \"description\": \"Basic vocabulary and grammar for HSK 1 Lesson 1\",\n    \"isPrivate\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/study-sets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"study-sets"
+							]
+						},
+						"description": "Create a new study set"
+					},
+					"response": []
+				},
+				{
+					"name": "Get StudySet by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has studyset data', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('name');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/study-sets/{{studyset_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"study-sets",
+								"{{studyset_id}}"
+							]
+						},
+						"description": "Get study set details by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All StudySets",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response is array', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/study-sets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"study-sets"
+							]
+						},
+						"description": "Get all study sets"
+					},
+					"response": []
+				},
+				{
+					"name": "Search StudySets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/study-sets?q=HSK",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"study-sets"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "HSK",
+									"description": "Search query"
+								}
+							]
+						},
+						"description": "Search study sets by keyword"
+					},
+					"response": []
+				},
+				{
+					"name": "Get StudySets by Folder ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/study-sets/folder/{{folder_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"study-sets",
+								"folder",
+								"{{folder_id}}"
+							]
+						},
+						"description": "Get all study sets in a folder"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My StudySets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/study-sets/my-sets",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"study-sets",
+								"my-sets"
+							]
+						},
+						"description": "Get all study sets created by current user"
+					},
+					"response": []
+				},
+				{
+					"name": "Update StudySet",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"HSK 1 - Lesson 1 - Updated\",\n    \"description\": \"Updated description for HSK 1 Lesson 1\",\n    \"isPrivate\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/study-sets/{{studyset_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"study-sets",
+								"{{studyset_id}}"
+							]
+						},
+						"description": "Update study set information"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete StudySet",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/study-sets/{{studyset_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"study-sets",
+								"{{studyset_id}}"
+							]
+						},
+						"description": "Delete a study set"
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

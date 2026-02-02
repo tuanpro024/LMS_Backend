@@ -10,4 +10,6 @@ import java.util.Optional;
 @Repository
 public interface TypeRepository extends JpaRepository<Type, String> {
     Optional<Type> findByName(TypeName name);
+
+    boolean existsByName(TypeName typeName);
 }

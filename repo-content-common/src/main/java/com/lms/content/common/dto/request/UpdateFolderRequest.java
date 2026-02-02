@@ -15,5 +15,7 @@ public class UpdateFolderRequest {
 
     private String description;
 
+    private String thumbnail;
+
     private Boolean isPrivate;
 }

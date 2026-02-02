@@ -16,6 +16,8 @@ public class CreateKanjiOriginRequest {
     @NotNull(message = "Kanji Lesson ID is required")
     private String kanjiLessonId;
 
+    private Integer contentIndex;
+
     @NotBlank(message = "Term is required")
     private String term;
 

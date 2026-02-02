@@ -11,7 +11,7 @@ import org.mapstruct.MappingTarget;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {KanjiOriginMapper.class, KanjiLessonQuestionMapper.class})
+@Mapper(componentModel = "spring", uses = {KanjiOriginMapper.class})
 public interface KanjiLessonMapper {
 
     KanjiLesson toEntity(CreateKanjiLessonRequest request);

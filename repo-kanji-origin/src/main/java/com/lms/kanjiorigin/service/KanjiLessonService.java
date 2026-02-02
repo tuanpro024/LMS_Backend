@@ -1,6 +1,8 @@
 package com.lms.kanjiorigin.service;
 
+import com.lms.common.dto.PageResponse;
 import com.lms.kanjiorigin.dto.request.CreateKanjiLessonRequest;
+import com.lms.kanjiorigin.dto.request.KanjiLessonSearchRequest;
 import com.lms.kanjiorigin.dto.request.UpdateKanjiLessonRequest;
 import com.lms.kanjiorigin.dto.response.KanjiLessonBasicResponse;
 import com.lms.kanjiorigin.dto.response.KanjiLessonResponse;
@@ -13,4 +15,7 @@ public interface KanjiLessonService {
     void deleteLesson(String id);
     KanjiLessonResponse getLesson(String id);
     List<KanjiLessonBasicResponse> getAllLessons();
+    List<KanjiLessonBasicResponse> getLessonsByStudySetId(String studySetId);
+    List<KanjiLessonBasicResponse> search(KanjiLessonSearchRequest request);
+    PageResponse<KanjiLessonBasicResponse> searchPaged(KanjiLessonSearchRequest request);
 }

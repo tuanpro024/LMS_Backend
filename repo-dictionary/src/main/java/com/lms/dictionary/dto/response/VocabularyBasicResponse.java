@@ -15,6 +15,13 @@ public class VocabularyBasicResponse {
     private Long id;
     private String hanzi;
     private String pinyin;
+    private Integer hskLevel;
+    private Boolean isSingleVocab;
     private List<String> wordTypes;
-    private List<String> meanings;
+    private List<VocabularyMeaningResponse> meanings;
+    private String audioUrl;
+    private String imageUrl;
+    private String strokeAnimationUrl;
+    private String etymologyStory;
+    private String etymologyImage;
 }

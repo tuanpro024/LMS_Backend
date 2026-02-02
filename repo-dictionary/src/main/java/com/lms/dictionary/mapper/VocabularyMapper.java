@@ -6,7 +6,6 @@ import com.lms.dictionary.dto.response.VocabularyBasicResponse;
 import com.lms.dictionary.dto.response.VocabularyResponse;
 import com.lms.dictionary.entity.VocabComponent;
 import com.lms.dictionary.entity.Vocabulary;
-import com.lms.dictionary.entity.VocabularyMeaning;
 import com.lms.dictionary.enums.WordType;
 import org.mapstruct.*;
 
@@ -32,7 +31,6 @@ public interface VocabularyMapper {
 
     @Mapping(target = "componentVocabs", source = "subVocabs")
     @Mapping(target = "wordTypes", source = "wordTypes", qualifiedByName = "enumToString")
-    @Mapping(target = "wordType", ignore = true)
     VocabularyResponse toResponse(Vocabulary vocabulary);
 
     @Mapping(target = "id", source = "componentVocab.id")
@@ -48,13 +46,11 @@ public interface VocabularyMapper {
     @Mapping(target = "isSingleVocab", source = "componentVocab.isSingleVocab")
     @Mapping(target = "meanings", source = "componentVocab.meanings")
     @Mapping(target = "componentVocabs", ignore = true)
-    @Mapping(target = "wordType", ignore = true)
     VocabularyResponse toResponse(VocabComponent component);
 
     List<VocabularyResponse> toResponseList(List<Vocabulary> vocabularies);
 
     @Mapping(target = "wordTypes", source = "wordTypes", qualifiedByName = "enumToString")
-    @Mapping(target = "meanings", source = "meanings", qualifiedByName = "mapMeanings")
     VocabularyBasicResponse toBasicResponse(Vocabulary vocabulary);
 
     List<VocabularyBasicResponse> toBasicResponseList(List<Vocabulary> vocabularies);
@@ -66,12 +62,8 @@ public interface VocabularyMapper {
         return types.stream().map(WordType::getValue).collect(Collectors.toList());
     }
 
-    @Named("mapMeanings")
-    default List<String> mapMeaningsToStringList(List<VocabularyMeaning> meanings) {
-        if (meanings == null)
-            return new ArrayList<>();
-        return meanings.stream().map(VocabularyMeaning::getMeaning).collect(Collectors.toList());
-    }
+    // mapMeanings removed - VocabularyMeaningMapper handles List<VocabularyMeaning>
+    // -> List<VocabularyMeaningResponse>
 
     @Named("stringToEnum")
     default List<WordType> mapStringListToEnumList(List<String> types) {

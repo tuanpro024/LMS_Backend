@@ -14,7 +14,6 @@ public class VocabularyResponse {
     private List<String> wordTypes;
     private String hanzi;
     private String pinyin;
-    private String wordType;
     private String audioUrl;
     private String imageUrl;
     private String strokeAnimationUrl;

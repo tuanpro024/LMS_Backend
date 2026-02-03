@@ -13,14 +13,13 @@ public class VideoWebhookRequest {
 
     private String description;
 
-    @NotBlank(message = "User ID is required")
-    private String userId;
-
     @NotBlank(message = "Status is required")
     private String status; // "completed", "failed", "processing"
 
     private Integer duration; // Duration in seconds
     private String thumbnailPath;
-    private String subtitlePath;
+    private String subtitlePath; // NEW: Match Express field name
     private String karaokePath;
+
+    private String studySetId; // Optional - not sent by Express yet
 }

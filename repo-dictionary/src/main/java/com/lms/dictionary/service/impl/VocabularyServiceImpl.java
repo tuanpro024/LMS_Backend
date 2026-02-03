@@ -60,12 +60,12 @@ public class VocabularyServiceImpl implements VocabularyService {
             throw new ApiException(ErrorCode.E227, "Hanzi already exists: " + request.getHanzi());
         }
 
-        Vocabulary vocabulary = processCreateVocabulary(request);
+        Vocabulary vocabulary = processCreateVocabulary(request, true);
         Vocabulary savedVocabulary = vocabularyRepository.save(vocabulary);
         return vocabularyMapper.toResponse(savedVocabulary);
     }
 
-    private Vocabulary processCreateVocabulary(CreateVocabularyRequest request) {
+    private Vocabulary processCreateVocabulary(CreateVocabularyRequest request, boolean allowCreateComponent) {
         Vocabulary vocabulary = vocabularyMapper.toEntity(request);
 
         if (request.getMeanings() != null) {
@@ -100,7 +100,12 @@ public class VocabularyServiceImpl implements VocabularyService {
                     }
 
                     if (componentVocab == null) {
-                        componentVocab = processCreateVocabulary(cReq.getNewVocabulary());
+                        if (!allowCreateComponent) {
+                            throw new ApiException(ErrorCode.E227,
+                                    "Component not found: " + cReq.getNewVocabulary().getHanzi()
+                                            + ". Please create single vocabulary first.");
+                        }
+                        componentVocab = processCreateVocabulary(cReq.getNewVocabulary(), true);
                         componentVocab = vocabularyRepository.save(componentVocab);
                     }
                 } else {
@@ -190,7 +195,7 @@ public class VocabularyServiceImpl implements VocabularyService {
                             cReq.getNewVocabulary().getPinyin())
                             .orElse(null);
                     if (componentVocab == null) {
-                        componentVocab = processCreateVocabulary(cReq.getNewVocabulary());
+                        componentVocab = processCreateVocabulary(cReq.getNewVocabulary(), true);
                         componentVocab = vocabularyRepository.save(componentVocab);
                     }
                 } else {
@@ -367,7 +372,7 @@ public class VocabularyServiceImpl implements VocabularyService {
                         continue;
                     }
 
-                    Vocabulary vocabulary = processCreateVocabulary(req);
+                    Vocabulary vocabulary = processCreateVocabulary(req, false);
                     vocabularyRepository.save(vocabulary);
                     successCount++;
                 } catch (Exception e) {

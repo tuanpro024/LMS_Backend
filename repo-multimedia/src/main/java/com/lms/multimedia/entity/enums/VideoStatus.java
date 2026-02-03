@@ -1,4 +1,4 @@
-package com.lms.content.common.entity.enums;
+package com.lms.multimedia.entity.enums;
 
 public enum VideoStatus {
     PROCESSING,

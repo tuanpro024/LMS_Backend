@@ -140,22 +140,36 @@ public class DeviceServiceImpl implements DeviceService {
         saveNewDevice(user, deviceId, userAgent, type, request);
     }
 
-    private void saveNewDevice(User user, String deviceId, String userAgent, DeviceType type, HttpServletRequest request) {
+    private void saveNewDevice(User user, String deviceId, String userAgent, DeviceType type,
+            HttpServletRequest request) {
         String[] info = parseUserAgent(userAgent);
         String ipAddress = request.getRemoteAddr();
 
-        UserDevice newDevice = UserDevice.builder()
-                .user(user)
-                .deviceId(deviceId)
-                .deviceType(type)
-                .deviceName(info[0] + " on " + info[1])
-                .browser(info[0])
-                .os(info[1])
-                .location(ipAddress)
-                .lastLogin(LocalDateTime.now())
-                .build();
+        var existingDevice = deviceRepository.findByUser_IdAndDeviceId(user.getId(), deviceId);
 
-        deviceRepository.save(newDevice);
+        if (existingDevice.isPresent()) {
+            UserDevice device = existingDevice.get();
+            device.setDeviceType(type);
+            device.setDeviceName(info[0] + " on " + info[1]);
+            device.setBrowser(info[0]);
+            device.setOs(info[1]);
+            device.setLocation(ipAddress);
+            device.setLastLogin(LocalDateTime.now());
+            deviceRepository.save(device);
+        } else {
+            UserDevice newDevice = UserDevice.builder()
+                    .user(user)
+                    .deviceId(deviceId)
+                    .deviceType(type)
+                    .deviceName(info[0] + " on " + info[1])
+                    .browser(info[0])
+                    .os(info[1])
+                    .location(ipAddress)
+                    .lastLogin(LocalDateTime.now())
+                    .build();
+
+            deviceRepository.save(newDevice);
+        }
     }
 
     private String[] parseUserAgent(String userAgent) {
@@ -165,11 +179,14 @@ public class DeviceServiceImpl implements DeviceService {
         if (userAgent != null && uaParser != null) {
             try {
                 Client c = uaParser.parse(userAgent);
-                if (c.os != null && c.os.family != null) os = c.os.family;
-                if (c.userAgent != null && c.userAgent.family != null) browser = c.userAgent.family;
-            } catch (Exception ignored) {}
+                if (c.os != null && c.os.family != null)
+                    os = c.os.family;
+                if (c.userAgent != null && c.userAgent.family != null)
+                    browser = c.userAgent.family;
+            } catch (Exception ignored) {
+            }
         }
-        return new String[]{browser, os};
+        return new String[] { browser, os };
     }
 
     private String getCurrentRequestDeviceId() {
@@ -178,23 +195,30 @@ public class DeviceServiceImpl implements DeviceService {
             if (attrs != null) {
                 return attrs.getRequest().getHeader("X-Device-ID");
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return "";
     }
 
     private int getLimitByType(DeviceType type) {
         switch (type) {
-            case MOBILE: return LIMIT_MOBILE;
-            case TABLET: return LIMIT_TABLET;
-            default: return LIMIT_WEBSITE;
+            case MOBILE:
+                return LIMIT_MOBILE;
+            case TABLET:
+                return LIMIT_TABLET;
+            default:
+                return LIMIT_WEBSITE;
         }
     }
 
     private DeviceType detectDeviceType(String userAgent) {
-        if (userAgent == null) return DeviceType.WEBSITE;
+        if (userAgent == null)
+            return DeviceType.WEBSITE;
         String ua = userAgent.toLowerCase();
-        if (ua.contains("ipad") || ua.contains("tablet")) return DeviceType.TABLET;
-        if (ua.contains("mobile") || ua.contains("android") || ua.contains("iphone")) return DeviceType.MOBILE;
+        if (ua.contains("ipad") || ua.contains("tablet"))
+            return DeviceType.TABLET;
+        if (ua.contains("mobile") || ua.contains("android") || ua.contains("iphone"))
+            return DeviceType.MOBILE;
         return DeviceType.WEBSITE;
     }
 }

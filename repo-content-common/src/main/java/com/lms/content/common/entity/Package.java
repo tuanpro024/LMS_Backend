@@ -9,8 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "packages")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

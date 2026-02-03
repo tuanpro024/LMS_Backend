@@ -1,0 +1,900 @@
+{
+    "info": {
+        "name": "LMS - Multimedia Service",
+        "description": "Complete API collection for repo-multimedia service",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "auth_token",
+            "value": "YOUR_JWT_TOKEN_HERE",
+            "type": "string"
+        },
+        {
+            "key": "package_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "folder_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "study_set_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "video_id",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "video_code",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "subtitle_id",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Authentication",
+            "item": [
+                {
+                    "name": "Login (Get Token)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                                    "        pm.collectionVariables.set('auth_token', jsonData.data.token);",
+                                    "        console.log('✅ Token saved:', jsonData.data.token.substring(0, 20) + '...');",
+                                    "    }",
+                                    "    if (jsonData.success && jsonData.data && jsonData.data.refreshToken) {",
+                                    "        pm.collectionVariables.set('refresh_token', jsonData.data.refreshToken);",
+                                    "        console.log('✅ Refresh Token saved');",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"teacher@lms.com\",\n  \"password\": \"Teacher@123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/me",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Logout (Clear Token)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    pm.collectionVariables.set('auth_token', '');",
+                                    "    pm.collectionVariables.set('refresh_token', '');",
+                                    "    console.log('✅ Logged out successfully. Tokens cleared.');",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "logout"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Package Management",
+            "item": [
+                {
+                    "name": "Get Package Types",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/packages/types",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "packages",
+                                "types"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Package",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('package_id', jsonData.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"HSK Video Course\",\n  \"type\": \"VIDEO_COURSE\",\n  \"description\": \"Complete HSK 1-6 video lessons\",\n  \"thumbnail\": \"https://example.com/thumbnail.jpg\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/packages",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "packages"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get All Packages",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/packages?type=VIDEO_COURSE",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "packages"
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "VIDEO_COURSE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Package by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/packages/{{package_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "packages",
+                                "{{package_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Package",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"HSK Video Course - Updated\",\n  \"type\": \"VIDEO_COURSE\",\n  \"description\": \"Updated description\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/packages/{{package_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "packages",
+                                "{{package_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Package",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/packages/{{package_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "packages",
+                                "{{package_id}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Folder Management",
+            "item": [
+                {
+                    "name": "Create Folder",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('folder_id', jsonData.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"HSK Level 1\",\n  \"packageId\": \"{{package_id}}\",\n  \"description\": \"Beginner level Chinese\",\n  \"isPrivate\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/folders",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "folders"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Folders by Package",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/folders?packageId={{package_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "folders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "packageId",
+                                    "value": "{{package_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Folder by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/folders/{{folder_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "folders",
+                                "{{folder_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Folder",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"HSK Level 1 - Updated\",\n  \"packageId\": \"{{package_id}}\",\n  \"description\": \"Updated description\",\n  \"isPrivate\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/folders/{{folder_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "folders",
+                                "{{folder_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Folder",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/folders/{{folder_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "folders",
+                                "{{folder_id}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. StudySet Management",
+            "item": [
+                {
+                    "name": "Create StudySet",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('study_set_id', jsonData.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Lesson 1: Greetings\",\n  \"folderId\": \"{{folder_id}}\",\n  \"description\": \"Basic Chinese greetings\",\n  \"isPrivate\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/study-sets",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study-sets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get StudySets by Folder",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/study-sets?folderId={{folder_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study-sets"
+                            ],
+                            "query": [
+                                {
+                                    "key": "folderId",
+                                    "value": "{{folder_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get StudySet by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/study-sets/{{study_set_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study-sets",
+                                "{{study_set_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update StudySet",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Lesson 1: Greetings - Updated\",\n  \"folderId\": \"{{folder_id}}\",\n  \"description\": \"Updated description\",\n  \"isPrivate\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/study-sets/{{study_set_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study-sets",
+                                "{{study_set_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StudySet",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/study-sets/{{study_set_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "study-sets",
+                                "{{study_set_id}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Video Management",
+            "item": [
+                {
+                    "name": "Video Webhook",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('video_id', jsonData.data.id);",
+                                    "    pm.collectionVariables.set('video_code', jsonData.data.code);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"code\": \"video_001\",\n  \"name\": \"Introduction to Chinese\",\n  \"duration\": 300,\n  \"masterPlaylistUrl\": \"https://storage.example.com/video_001/master.m3u8\",\n  \"thumbnailUrl\": \"https://storage.example.com/video_001/thumbnail.jpg\",\n  \"status\": \"READY\",\n  \"studySetId\": \"{{study_set_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/videos/webhook",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "videos",
+                                "webhook"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get All Videos",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/videos",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "videos"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Videos by StudySet",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/videos?studySetId={{study_set_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "videos"
+                            ],
+                            "query": [
+                                {
+                                    "key": "studySetId",
+                                    "value": "{{study_set_id}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Video by Code",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/videos/{{video_code}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "videos",
+                                "{{video_code}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Video Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/videos/{{video_id}}/details",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "videos",
+                                "{{video_id}}",
+                                "details"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Video",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/videos/{{video_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "videos",
+                                "{{video_id}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Subtitle Management",
+            "item": [
+                {
+                    "name": "Subtitle Webhook",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('subtitle_id', jsonData.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"videoCode\": \"{{video_code}}\",\n  \"subtitleName\": \"English\",\n  \"language\": \"en\",\n  \"subtitleUrl\": \"https://storage.example.com/video_001/en.vtt\",\n  \"isActive\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/subtitles/webhook",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "subtitles",
+                                "webhook"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Subtitles by Video",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/subtitles/video/{{video_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "subtitles",
+                                "video",
+                                "{{video_id}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Active Subtitle",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/subtitles/video/{{video_id}}/active",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "subtitles",
+                                "video",
+                                "{{video_id}}",
+                                "active"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Set Active Subtitle",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/subtitles/{{subtitle_id}}/activate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "subtitles",
+                                "{{subtitle_id}}",
+                                "activate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Subtitle",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{auth_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/subtitles/{{subtitle_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "subtitles",
+                                "{{subtitle_id}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

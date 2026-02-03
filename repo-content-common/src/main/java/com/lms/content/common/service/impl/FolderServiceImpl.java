@@ -37,6 +37,7 @@ public class FolderServiceImpl implements FolderService {
     private final SlotRepository slotRepository;
     private final StudySetRepository studySetRepository;
     private final FolderMapper folderMapper;
+    private final com.lms.content.common.service.StudySetService studySetService;
 
     @Override
     public FolderResponse createFolder(CreateFolderRequest request, String userId) {
@@ -66,8 +67,7 @@ public class FolderServiceImpl implements FolderService {
         if (request.getSlotId() != null && !request.getSlotId().trim().isEmpty()) {
             slotRepository.findById(request.getSlotId()).ifPresentOrElse(
                     folder::setSlot,
-                    () -> log.warn("Slot with id {} not found, creating folder without slot", request.getSlotId())
-            );
+                    () -> log.warn("Slot with id {} not found, creating folder without slot", request.getSlotId()));
         }
 
         // Hook: before save
@@ -129,9 +129,11 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        if (!folder.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to modify this folder");
-        }
+        // Check ownership - DISABLED
+        // if (!folder.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to modify this
+        // folder");
+        // }
 
         // Hook: validate update
         validateUpdateFolder(folder, request, userId);
@@ -162,12 +164,18 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        if (!folder.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to delete this folder");
-        }
+        // Check ownership - DISABLED
+        // if (!folder.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to delete this
+        // folder");
+        // }
 
         // Hook: before delete
         beforeDeleteFolder(folder, userId);
+
+        // Note: Folder deletion should NOT delete StudySets (Many-to-Many).
+        // JPA will automatically handle the removal of rows in the join table because
+        // Folder owns the relationship.
 
         folderRepository.delete(folder);
 
@@ -180,9 +188,11 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        if (!folder.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to modify this folder");
-        }
+        // Check ownership - DISABLED
+        // if (!folder.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to modify this
+        // folder");
+        // }
 
         StudySet studySet = studySetRepository.findById(studySetId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
@@ -198,9 +208,11 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        if (!folder.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to modify this folder");
-        }
+        // Check ownership - DISABLED
+        // if (!folder.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to modify this
+        // folder");
+        // }
 
         StudySet studySet = studySetRepository.findById(studySetId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
@@ -216,9 +228,11 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        if (!folder.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to modify this folder");
-        }
+        // Check ownership - DISABLED
+        // if (!folder.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to modify this
+        // folder");
+        // }
 
         folder.setPrivate(isPrivate);
         folderRepository.save(folder);

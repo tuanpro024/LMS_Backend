@@ -16,6 +16,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+    open-in-view: false
     defer-datasource-initialization: true
 
   sql:
@@ -37,7 +38,7 @@ eureka:
 
 logging:
   level:
-    com.lms.multimedia: DEBUG
+    com.lms.multimedia: INFO
     org.springframework.web: INFO
 
 security:

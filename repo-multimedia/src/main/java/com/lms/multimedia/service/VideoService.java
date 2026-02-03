@@ -161,6 +161,27 @@ public class VideoService {
     }
 
     /**
+     * Orphan and soft delete videos associated with a study set
+     * Triggered when a study set is deleted
+     */
+    @Transactional
+    public void orphanAndSoftDeleteVideosByStudySetId(String studySetId) {
+        List<Video> videos = videoRepository.findByStudySetId(studySetId);
+        if (videos.isEmpty()) {
+            return;
+        }
+
+        log.info("Orphaning and soft deleting {} videos for study set: {}", videos.size(), studySetId);
+
+        for (Video video : videos) {
+            video.setStudySetId(null);
+            video.setDeleted(true);
+        }
+
+        videoRepository.saveAll(videos);
+    }
+
+    /**
      * Map Video entity to VideoResponse DTO
      */
     private VideoResponse mapToResponse(Video video) {

@@ -3,13 +3,16 @@ package com.lms.writing.controller;
 import com.lms.common.security.AuthPrincipal;
 import org.springframework.security.core.Authentication;
 import com.lms.common.dto.ApiResponse;
+import com.lms.writing.dto.request.AddWordsToStudySetRequest;
 import com.lms.writing.dto.request.UpdateWordRequest;
 import com.lms.writing.dto.response.WordResponse;
 import com.lms.writing.service.WordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +24,21 @@ import java.util.List;
 public class WordController {
 
     private final WordService wordService;
+
+    @PostMapping("/bulk")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse<List<WordResponse>>> addWordsToStudySet(
+            @RequestBody @Valid AddWordsToStudySetRequest request,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+
+        List<WordResponse> responses = wordService.addWordsToStudySet(
+                request.getStudySetId(),
+                request.getWords(),
+                principal.userId());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(responses));
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<WordResponse>> getWord(@PathVariable String id) {
@@ -36,6 +54,7 @@ public class WordController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<WordResponse>> updateWord(
             @PathVariable String id,
             @Valid @RequestBody UpdateWordRequest request,
@@ -55,6 +74,7 @@ public class WordController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteWord(
             @PathVariable String id,
             @RequestHeader("X-User-Id") String userId) {

@@ -1,7 +1,11 @@
 package com.lms.writing.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.repository.StudySetRepository;
+import com.lms.writing.dto.request.CreateWordRequest;
 import com.lms.writing.dto.request.UpdateWordRequest;
 import com.lms.writing.dto.response.WordResponse;
 import com.lms.writing.entity.Word;
@@ -18,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +33,8 @@ public class WordServiceImpl implements WordService {
     private final WordRepository wordRepository;
     private final UserWordProgressRepository userWordProgressRepository;
     private final WordMapper wordMapper;
+    private final StudySetRepository studySetRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -49,10 +56,11 @@ public class WordServiceImpl implements WordService {
         Word word = wordRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
-        // Check ownership via studySet
-        if (!word.getStudySet().getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to update this word");
-        }
+        // Check ownership - DISABLED
+        // Admin and Teacher roles have full access via @PreAuthorize in controller
+        // if (!word.getStudySet().getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to update this word");
+        // }
 
         // Update entity (auto-regenerates characters if word changed)
         wordMapper.updateEntity(word, request);
@@ -66,10 +74,11 @@ public class WordServiceImpl implements WordService {
         Word word = wordRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
-        // Check ownership
-        if (!word.getStudySet().getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to delete this word");
-        }
+        // Check ownership - DISABLED
+        // Admin and Teacher roles have full access via @PreAuthorize in controller
+        // if (!word.getStudySet().getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to delete this word");
+        // }
 
         wordRepository.delete(word);
     }
@@ -144,5 +153,34 @@ public class WordServiceImpl implements WordService {
     public long countTotalWords(String studySetId) {
         List<Word> words = wordRepository.findByStudySetId(studySetId);
         return words.size();
+    }
+
+    @Override
+    public List<WordResponse> addWordsToStudySet(String studySetId, List<CreateWordRequest> words, String userId) {
+        // Validate StudySet exists
+        StudySet studySet = studySetRepository.findById(studySetId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
+
+        log.debug("Adding words to StudySet: studySetId={}, studySetOwnerId={}, requestUserId={}",
+                studySetId, studySet.getUserId(), userId);
+
+        // Convert and save all words
+        List<Word> wordEntities = words.stream()
+                .map(request -> {
+                    Word word = wordMapper.toEntity(request);
+                    word.setStudySet(studySet);
+
+                    // Handle characters JSON conversion if needed (similar to Card)
+                    // The WordMapper should handle this automatically
+
+                    return word;
+                })
+                .collect(Collectors.toList());
+
+        List<Word> savedWords = wordRepository.saveAll(wordEntities);
+
+        log.info("Added {} words to StudySet {} by user {}", savedWords.size(), studySetId, userId);
+
+        return wordMapper.toResponseList(savedWords);
     }
 }

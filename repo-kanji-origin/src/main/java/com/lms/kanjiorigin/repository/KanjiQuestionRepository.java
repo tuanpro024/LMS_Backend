@@ -27,4 +27,7 @@ public interface KanjiQuestionRepository extends JpaRepository<KanjiQuestion, St
     @Query("SELECT q FROM KanjiQuestion q WHERE q.deleted = false " +
            "AND (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<KanjiQuestion> searchList(@Param("keyword") String keyword);
+    
+    // For import
+    Optional<KanjiQuestion> findByContentAndCorrectAnswerAndDeletedFalse(String content, String correctAnswer);
 }

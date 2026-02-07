@@ -38,4 +38,10 @@ public interface KanjiLessonRepository extends JpaRepository<KanjiLesson, String
     boolean existsByStudySetIdAndTitle(String studySetId, String title);
     boolean existsByStudySetIdAndTitleAndIdNot(String studySetId, String title, String id);
     boolean existsByIdAndDeletedFalse(String id);
+    
+    // For import
+    Optional<KanjiLesson> findByStudySetIdAndTitleAndDeletedFalse(String studySetId, String title);
+    
+    @Query("SELECT MAX(l.contentIndex) FROM KanjiLesson l WHERE l.studySet.id = :studySetId AND l.deleted = false")
+    Integer findMaxContentIndexByStudySetId(@Param("studySetId") String studySetId);
 }

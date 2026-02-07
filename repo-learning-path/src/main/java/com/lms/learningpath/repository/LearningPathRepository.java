@@ -10,15 +10,15 @@ import java.util.Optional;
 @Repository
 public interface LearningPathRepository extends JpaRepository<LearningPath, String> {
 
-    List<LearningPath> findByStudySetIdOrderByCreatedAtAsc(String studySetId);
+    List<LearningPath> findByStudySet_IdOrderByCreatedAtAsc(String studySetId);
 
     Optional<LearningPath> findByIdAndIsActiveTrue(String id);
 
-    List<LearningPath> findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(String studySetId);
+    List<LearningPath> findByStudySet_IdAndIsActiveTrueOrderByCreatedAtAsc(String studySetId);
 
     List<LearningPath> findByCreatedBy(String userId);
 
     boolean existsByIdAndIsActiveTrue(String id);
 
-    long countByStudySetId(String studySetId);
+    long countByStudySet_Id(String studySetId);
 }

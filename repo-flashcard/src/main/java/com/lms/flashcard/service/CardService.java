@@ -21,4 +21,6 @@ public interface CardService {
     long countTotalCards(String studySetId);
 
     List<CardResponse> addCardsToStudySet(String studySetId, List<CreateCardRequest> cards, String userId);
+
+    List<CardResponse> getCardsByStudySetId(String studySetId);
 }

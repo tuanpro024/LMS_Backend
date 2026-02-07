@@ -41,6 +41,13 @@ public class CardController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(responses));
     }
 
+    @GetMapping("/study-set")
+    public ResponseEntity<ApiResponse<List<CardResponse>>> getCardsByStudySet(
+            @RequestParam String studySetId) {
+        List<CardResponse> response = cardService.getCardsByStudySetId(studySetId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<Void>> updateCardStatus(
             @PathVariable String id,

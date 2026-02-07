@@ -133,4 +133,10 @@ public class CardServiceImpl implements CardService {
 
         return cardMapper.toResponseList(savedCards);
     }
+
+    @Override
+    public List<CardResponse> getCardsByStudySetId(String studySetId) {
+        List<Card> cards = cardRepository.findByStudySetId(studySetId);
+        return cardMapper.toResponseList(cards);
+    }
 }

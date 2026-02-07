@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface KanjiOriginRepository extends JpaRepository<KanjiOrigin, String> {
@@ -33,4 +34,10 @@ public interface KanjiOriginRepository extends JpaRepository<KanjiOrigin, String
            "OR LOWER(o.meaning) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     List<KanjiOrigin> searchList(@Param("lessonId") String lessonId, 
                                   @Param("keyword") String keyword);
+    
+    // For import
+    Optional<KanjiOrigin> findByKanjiLessonIdAndTermAndDeletedFalse(String kanjiLessonId, String term);
+    
+    @Query("SELECT MAX(o.contentIndex) FROM KanjiOrigin o WHERE o.kanjiLesson.id = :lessonId AND o.deleted = false")
+    Integer findMaxContentIndexByKanjiLessonId(@Param("lessonId") String lessonId);
 }

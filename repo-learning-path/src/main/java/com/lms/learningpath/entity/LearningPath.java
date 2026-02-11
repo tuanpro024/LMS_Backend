@@ -1,6 +1,6 @@
 package com.lms.learningpath.entity;
 
-import com.lms.common.jpa.BaseEntity;
+import com.lms.content.common.entity.BaseContentItem;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,10 +18,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LearningPath extends BaseEntity {
+public class LearningPath extends BaseContentItem {
 
-    @Column(nullable = false, length = 26)
-    private String studySetId; // FK to StudySet (Content Common)
+    // studySetId removed - now inherited via studySet relationship from
+    // BaseContentItem
+    // contentIndex inherited from BaseContentItem (nullable, for optional ordering)
 
     @Column(nullable = false, length = 255)
     private String title; // "HSK 1", "HSK 2", "HSK 3"

@@ -1,5 +1,6 @@
 package com.lms.flashcard.service;
 
+import com.lms.flashcard.dto.request.CreateCardRequest;
 import com.lms.flashcard.dto.request.UpdateCardStatusRequest;
 import com.lms.flashcard.dto.response.CardResponse;
 
@@ -18,4 +19,8 @@ public interface CardService {
     long countNotLearnedCards(String userId, String studySetId);
 
     long countTotalCards(String studySetId);
+
+    List<CardResponse> addCardsToStudySet(String studySetId, List<CreateCardRequest> cards, String userId);
+
+    List<CardResponse> getCardsByStudySetId(String studySetId);
 }

@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ public class SubjectController {
     private final SubjectApiDelegate delegate;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<SubjectResponse>> createSubject(
             @RequestBody @Valid CreateSubjectRequest request,
             Authentication authentication) {
@@ -51,6 +53,7 @@ public class SubjectController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<SubjectResponse>> updateSubject(
             @PathVariable String id,
             @RequestBody @Valid UpdateSubjectRequest request,
@@ -61,6 +64,7 @@ public class SubjectController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSubject(
             @PathVariable String id,
             Authentication authentication) {
@@ -70,6 +74,7 @@ public class SubjectController {
     }
 
     @PostMapping("/{subjectId}/folders/{folderId}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<SubjectResponse>> addFolderToSubject(
             @PathVariable String subjectId,
             @PathVariable String folderId,
@@ -80,6 +85,7 @@ public class SubjectController {
     }
 
     @DeleteMapping("/{subjectId}/folders/{folderId}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<SubjectResponse>> removeFolderFromSubject(
             @PathVariable String subjectId,
             @PathVariable String folderId,

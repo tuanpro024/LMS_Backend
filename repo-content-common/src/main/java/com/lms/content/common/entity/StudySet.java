@@ -9,8 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "study_sets")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -38,19 +37,6 @@ public class StudySet extends BaseEntity {
     @Builder.Default
     private List<Folder> folders = new ArrayList<>();
 
-    @ManyToMany
-    @JoinTable(name = "study_set_videos", joinColumns = @JoinColumn(name = "study_set_id"), inverseJoinColumns = @JoinColumn(name = "video_id"))
-    @Builder.Default
-    private List<Video> videos = new ArrayList<>();
-
-    // Helper methods for video management
-    public void addVideo(Video video) {
-        videos.add(video);
-        video.getStudySets().add(this);
-    }
-
-    public void removeVideo(Video video) {
-        videos.remove(video);
-        video.getStudySets().remove(this);
-    }
+    // Note: Videos are managed in repo-multimedia
+    // Use VideoService.getVideosByStudySetId(studySetId) to retrieve videos
 }

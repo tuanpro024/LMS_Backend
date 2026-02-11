@@ -29,6 +29,7 @@ public class AuthServiceImpl implements AuthService {
     private final EmailVerificationService emailVerificationService;
     private final OtpService otpService;
     private final DeviceService deviceService;
+    private final LoginHistoryService loginHistoryService;
     @Transactional
     @Override
     public AuthResponse signup(SignupRequest request) {
@@ -84,6 +85,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new ApiException(ErrorCode.DEVICE_LIMIT_EXCEEDED);
             }
         }
+        loginHistoryService.logLogin(user, servletRequest);
         return jwtTokenService.issueTokens(user);
     }
 
@@ -177,7 +179,7 @@ public class AuthServiceImpl implements AuthService {
 
         String deviceId = servletRequest.getHeader("X-Device-ID");
         deviceService.replaceOldestDevice(user, deviceId, servletRequest);
-
+        loginHistoryService.logLogin(user, servletRequest);
         return jwtTokenService.issueTokens(user);
     }
 }

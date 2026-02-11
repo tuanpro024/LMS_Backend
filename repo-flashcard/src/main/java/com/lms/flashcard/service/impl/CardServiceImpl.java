@@ -1,7 +1,11 @@
 package com.lms.flashcard.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.repository.StudySetRepository;
+import com.lms.flashcard.dto.request.CreateCardRequest;
 import com.lms.flashcard.dto.request.UpdateCardStatusRequest;
 import com.lms.flashcard.dto.response.CardResponse;
 import com.lms.flashcard.entity.Card;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +32,8 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final UserCardProgressRepository userCardProgressRepository;
     private final CardMapper cardMapper;
+    private final StudySetRepository studySetRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void updateCardStatus(String userId, String cardId, UpdateCardStatusRequest request) {
@@ -89,5 +96,47 @@ public class CardServiceImpl implements CardService {
     @Override
     public long countTotalCards(String studySetId) {
         return cardRepository.countByStudySetId(studySetId);
+    }
+
+    @Override
+    public List<CardResponse> addCardsToStudySet(String studySetId, List<CreateCardRequest> cards, String userId) {
+        // Validate StudySet exists
+        StudySet studySet = studySetRepository.findById(studySetId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
+
+        log.debug("Adding cards to StudySet: studySetId={}, studySetOwnerId={}, requestUserId={}",
+                studySetId, studySet.getUserId(), userId);
+
+        // Convert and save all cards
+        List<Card> cardEntities = cards.stream()
+                .map(request -> {
+                    Card card = cardMapper.toEntity(request);
+                    card.setStudySet(studySet);
+
+                    // Handle characters JSON conversion
+                    if (request.getCharacters() != null && !request.getCharacters().isEmpty()) {
+                        try {
+                            String charactersJson = objectMapper.writeValueAsString(request.getCharacters());
+                            card.setCharacters(charactersJson);
+                        } catch (Exception e) {
+                            log.error("Error converting characters to JSON", e);
+                        }
+                    }
+
+                    return card;
+                })
+                .collect(Collectors.toList());
+
+        List<Card> savedCards = cardRepository.saveAll(cardEntities);
+
+        log.info("Added {} cards to StudySet {} by user {}", savedCards.size(), studySetId, userId);
+
+        return cardMapper.toResponseList(savedCards);
+    }
+
+    @Override
+    public List<CardResponse> getCardsByStudySetId(String studySetId) {
+        List<Card> cards = cardRepository.findByStudySetId(studySetId);
+        return cardMapper.toResponseList(cards);
     }
 }

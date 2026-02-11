@@ -18,6 +18,7 @@ public interface FolderMapper {
     @Mapping(target = "studySets", ignore = true)
     Folder toEntity(CreateFolderRequest request);
 
+    @Mapping(target = "studySets", ignore = true)
     @Mapping(target = "packageId", expression = "java(folder.getPackageEntity() != null ? folder.getPackageEntity().getId() : null)")
     @Mapping(target = "subjectId", expression = "java(folder.getSubject() != null ? folder.getSubject().getId() : null)")
     @Mapping(target = "slotId", expression = "java(folder.getSlot() != null ? folder.getSlot().getId() : null)")

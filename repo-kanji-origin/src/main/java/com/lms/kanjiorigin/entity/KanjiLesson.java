@@ -22,9 +22,6 @@ public class KanjiLesson extends BaseContentItem {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private Integer contentIndex;
-
     @OneToMany(mappedBy = "kanjiLesson", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<KanjiOrigin> kanjiOrigins = new ArrayList<>();

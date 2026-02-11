@@ -5,12 +5,15 @@ import com.lms.common.dto.PageResponse;
 import com.lms.kanjiorigin.dto.request.CreateKanjiLessonRequest;
 import com.lms.kanjiorigin.dto.request.KanjiLessonSearchRequest;
 import com.lms.kanjiorigin.dto.request.UpdateKanjiLessonRequest;
+import com.lms.kanjiorigin.dto.response.ImportResultResponse;
 import com.lms.kanjiorigin.dto.response.KanjiLessonBasicResponse;
 import com.lms.kanjiorigin.dto.response.KanjiLessonResponse;
 import com.lms.kanjiorigin.service.KanjiLessonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -52,5 +55,12 @@ public class KanjiLessonController {
     @GetMapping("/paged")
     public ApiResponse<PageResponse<KanjiLessonBasicResponse>> searchPaged(KanjiLessonSearchRequest request) {
         return ApiResponse.ok(kanjiLessonService.searchPaged(request));
+    }
+
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ImportResultResponse> importFromExcel(
+            @RequestParam("studySetId") String studySetId,
+            @RequestParam("file") MultipartFile file) {
+        return ApiResponse.ok(kanjiLessonService.importFromExcel(studySetId, file));
     }
 }

@@ -22,4 +22,6 @@ public class CreateStudySetRequest {
 
     @NotNull(message = "isPrivate is required")
     private Boolean isPrivate;
+
+    private String folderId;
 }

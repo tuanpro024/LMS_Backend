@@ -31,6 +31,7 @@ public class PackageServiceImpl implements PackageService {
     private final FolderRepository folderRepository;
     private final PackageMapper packageMapper;
     private final TypeRepository typeRepository;
+    private final com.lms.content.common.service.FolderService folderService;
 
     @Override
     public PackageResponse createPackage(CreatePackageRequest request, String userId) {
@@ -87,9 +88,11 @@ public class PackageServiceImpl implements PackageService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
         // Check ownership
-        if (!packageEntity.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to modify this package");
-        }
+        // Check ownership - DISABLED to allow Admin/Manager access
+        // if (!packageEntity.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to modify this
+        // package");
+        // }
 
         // Hook: validate before update
         validateUpdatePackage(packageEntity, request, userId);
@@ -124,14 +127,27 @@ public class PackageServiceImpl implements PackageService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
         // Check ownership
-        if (!packageEntity.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to delete this package");
-        }
+        // Check ownership - DISABLED to allow Admin/Manager access
+        // if (!packageEntity.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to delete this
+        // package");
+        // }
 
         // Hook: before delete
         beforeDeletePackage(packageEntity, userId);
 
         // Cascade delete will handle subjects and their slots automatically
+        // But we need to manually trigger folder cleanup to ensure StudySets/Videos are
+        // handled via listeners
+        List<Folder> folders = folderRepository.findByPackageId(id);
+        for (Folder folder : folders) {
+            try {
+                folderService.deleteFolder(folder.getId(), userId);
+            } catch (Exception e) {
+                log.error("Failed to delete folder {} during package deletion: {}", folder.getId(), e.getMessage());
+            }
+        }
+
         packageRepository.delete(packageEntity);
 
         // Hook: after delete
@@ -144,17 +160,20 @@ public class PackageServiceImpl implements PackageService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
         // Check ownership of package
-        if (!packageEntity.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to modify this package");
-        }
+        // Check ownership of package - DISABLED
+        // if (!packageEntity.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to modify this
+        // package");
+        // }
 
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
         // Check ownership of folder
-        if (!folder.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to add this folder");
-        }
+        // Check ownership of folder - DISABLED
+        // if (!folder.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to add this folder");
+        // }
 
         packageEntity.addFolder(folder);
         Package updated = packageRepository.save(packageEntity);
@@ -168,9 +187,11 @@ public class PackageServiceImpl implements PackageService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
         // Check ownership
-        if (!packageEntity.getUserId().equals(userId)) {
-            throw new ApiException(ErrorCode.E240, "No permission to modify this package");
-        }
+        // Check ownership - DISABLED
+        // if (!packageEntity.getUserId().equals(userId)) {
+        // throw new ApiException(ErrorCode.E240, "No permission to modify this
+        // package");
+        // }
 
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));

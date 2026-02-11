@@ -2,6 +2,8 @@ package com.lms.kanjiorigin.repository;
 
 import com.lms.kanjiorigin.entity.KanjiLessonQuestion;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,4 +16,8 @@ public interface KanjiLessonQuestionRepository extends JpaRepository<KanjiLesson
     boolean existsByKanjiLessonIdAndKanjiQuestionIdAndDeletedFalse(String lessonId, String questionId);
     boolean existsByKanjiLessonIdAndContentIndexAndDeletedFalse(String lessonId, Integer contentIndex);
     boolean existsByKanjiLessonIdAndContentIndexAndIdNotAndDeletedFalse(String lessonId, Integer contentIndex, String id);
+    
+    // For import
+    @Query("SELECT MAX(lq.contentIndex) FROM KanjiLessonQuestion lq WHERE lq.kanjiLesson.id = :lessonId AND lq.deleted = false")
+    Integer findMaxContentIndexByKanjiLessonId(@Param("lessonId") String lessonId);
 }

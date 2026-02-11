@@ -1,5 +1,6 @@
 package com.lms.learningpath.service.impl;
 
+import com.lms.content.common.repository.StudySetRepository;
 import com.lms.learningpath.exception.ResourceAlreadyExistsException;
 import com.lms.learningpath.exception.ResourceNotFoundException;
 import com.lms.learningpath.dto.request.CreateLearningPathRequest;
@@ -29,13 +30,19 @@ public class LearningPathServiceImpl implements ILearningPathService {
     private final LearningPathProgressRepository learningPathProgressRepository;
     private final StepRepository stepRepository;
     private final LearningPathMapper learningPathMapper;
+    private final StudySetRepository studySetRepository;
 
     @Override
     @Transactional
     public LearningPathResponse createLearningPath(CreateLearningPathRequest request, String userId) {
         log.info("Creating learning path: {} for study set: {}", request.getTitle(), request.getStudySetId());
 
-        LearningPath learningPath = learningPathMapper.toEntity(request, userId);
+        // Fetch StudySet entity
+        var studySet = studySetRepository.findById(request.getStudySetId())
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Study set not found with id: " + request.getStudySetId()));
+
+        LearningPath learningPath = learningPathMapper.toEntity(request, studySet, userId);
         learningPath = learningPathRepository.save(learningPath);
 
         log.info("Successfully created learning path: {}", learningPath.getId());
@@ -76,7 +83,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     @Override
     public List<LearningPathResponse> getLearningPathsByStudySetId(String studySetId) {
         List<LearningPath> learningPaths = learningPathRepository
-                .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
+                .findByStudySet_IdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
 
         return learningPaths.stream()
                 .map(lp -> {
@@ -91,7 +98,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     @Override
     public List<LearningPathResponse> getLearningPathsByStudySetIdWithProgress(String studySetId, String userId) {
         List<LearningPath> learningPaths = learningPathRepository
-                .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
+                .findByStudySet_IdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
 
         return learningPaths.stream()
                 .map(lp -> {
@@ -135,7 +142,6 @@ public class LearningPathServiceImpl implements ILearningPathService {
 
         log.info("Successfully soft-deleted learning path: {}", id);
     }
-
 
     private LearningPath findLearningPathById(String id) {
         return learningPathRepository.findById(id)

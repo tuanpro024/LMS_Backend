@@ -98,6 +98,12 @@ spring:
             - Path=${config.api-prefix}/kanji-origin/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: pronunciation
+          uri: lb://REPO-PRONUNCIATION
+          predicates:
+            - Path=${config.api-prefix}/pronunciation/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

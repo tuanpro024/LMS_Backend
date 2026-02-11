@@ -93,6 +93,12 @@ spring:
             - Path=${config.api-prefix}/learning-path/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: kanji-origin
+          uri: lb://REPO-KANJI-ORIGIN
+          predicates:
+            - Path=${config.api-prefix}/kanji-origin/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

@@ -1,6 +1,6 @@
 package com.lms.pronunciation.entity;
 
-import com.lms.content.common.entity.BaseContentItem;
+import com.lms.content.common.entity .BaseContentItem;
 import com.lms.pronunciation.entity.enums.PronunciationType;
 import jakarta.persistence.*;
 import lombok.*;

@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EnableDiscoveryClient
 @ComponentScan(basePackages = {
         "com.lms.pronunciation",
-        "com.lms.common"
+        "com.lms.content.common"
 })
 @EntityScan(basePackages = {
         "com.lms.pronunciation.entity",
@@ -19,8 +19,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.lms.common.jpa"
 })
 @EnableJpaRepositories(basePackages = {
-        "com.lms.pronunciation.repository",
-        "com.lms.content.common.repository"
+        "com.lms.pronunciation.repository"
 })
 public class RepoPronunciationApplication {
 

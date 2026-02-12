@@ -3,13 +3,16 @@ package com.lms.content.common.delegate.api;
 import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
+import com.lms.content.common.dto.response.TypeResponse;
 import com.lms.content.common.entity.TypeName;
+import com.lms.content.common.repository.TypeRepository;
 import com.lms.content.common.service.PackageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * API Delegate for Package operations
@@ -21,14 +24,23 @@ import java.util.List;
 public class PackageApiDelegate {
 
     private final PackageService packageService;
+    private final TypeRepository typeRepository;
 
     /**
      * Get all available package types
      * 
-     * @return List of TypeName enums
+     * @return List of TypeResponse with IDs and names
      */
-    public List<TypeName> getPackageTypes() {
-        return Arrays.asList(TypeName.values());
+    public List<TypeResponse> getPackageTypes() {
+        return typeRepository.findAll().stream()
+                .map(type -> TypeResponse.builder()
+                        .id(type.getId())
+                        .name(type.getName())
+                        .description(type.getDescription())
+                        .createdAt(type.getCreatedAt())
+                        .updatedAt(type.getUpdatedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     /**

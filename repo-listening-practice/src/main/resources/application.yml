@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: repo-listening-practice
+  datasource:
+    url: jdbc:mysql://localhost:3306/lms_listening_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+  cloud:
+    discovery:
+      enabled: true
+
+server:
+  port: 8089
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    hostname: repo-listening-practice
+    instance-id: ${spring.application.name}:${server.port}
+
+# JWT Security Configuration
+security:
+  jwt:
+    public-key-path: file:secrets/jwt-public.pem
+
+# Application specific properties
+listening:
+  multimedia-service:
+    url: http://localhost:8086

@@ -33,6 +33,7 @@ public class CreateKanjiOriginRequest {
     private String originTextCn;
     private String originTextEn;
     private String exampleSentence;
+    private String exampleMeaning;
     private String exampleMeaningVi;
     private String exampleMeaningEn;
     private String examplePinyin;

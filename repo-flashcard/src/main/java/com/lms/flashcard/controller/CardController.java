@@ -3,6 +3,7 @@ package com.lms.flashcard.controller;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.flashcard.dto.request.AddCardsToStudySetRequest;
+import com.lms.flashcard.dto.request.UpdateCardRequest;
 import com.lms.flashcard.dto.request.UpdateCardStatusRequest;
 import com.lms.flashcard.dto.response.CardResponse;
 import com.lms.flashcard.service.CardService;
@@ -15,9 +16,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-import com.lms.common.security.AuthPrincipal;
-import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/cards")
@@ -41,10 +39,27 @@ public class CardController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(responses));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<CardResponse>> getCard(@PathVariable String id) {
+        CardResponse response = cardService.getCardById(id);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @GetMapping("/study-set")
     public ResponseEntity<ApiResponse<List<CardResponse>>> getCardsByStudySet(
             @RequestParam String studySetId) {
         List<CardResponse> response = cardService.getCardsByStudySetId(studySetId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse<CardResponse>> updateCard(
+            @PathVariable String id,
+            @Valid @RequestBody UpdateCardRequest request,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        CardResponse response = cardService.updateCard(id, request, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -56,6 +71,16 @@ public class CardController {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
 
         cardService.updateCardStatus(principal.userId(), id, request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteCard(
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        cardService.deleteCard(id, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

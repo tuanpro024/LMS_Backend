@@ -6,6 +6,7 @@ import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.flashcard.dto.request.CreateCardRequest;
+import com.lms.flashcard.dto.request.UpdateCardRequest;
 import com.lms.flashcard.dto.request.UpdateCardStatusRequest;
 import com.lms.flashcard.dto.response.CardResponse;
 import com.lms.flashcard.entity.Card;
@@ -138,5 +139,96 @@ public class CardServiceImpl implements CardService {
     public List<CardResponse> getCardsByStudySetId(String studySetId) {
         List<Card> cards = cardRepository.findByStudySetId(studySetId);
         return cardMapper.toResponseList(cards);
+    }
+
+    @Override
+    public CardResponse getCardById(String id) {
+        Card card = cardRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
+        return cardMapper.toResponse(card);
+    }
+
+    @Override
+    public CardResponse updateCard(String id, UpdateCardRequest request, String userId) {
+        Card card = cardRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
+
+        // Verify ownership
+        StudySet studySet = card.getStudySet();
+        if (!studySet.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E228, "You don't have permission to update this card");
+        }
+
+        // Update fields if provided
+        if (request.getTerm() != null) {
+            card.setTerm(request.getTerm());
+        }
+        if (request.getDefinition() != null) {
+            card.setDefinition(request.getDefinition());
+        }
+        if (request.getCardIndex() != null) {
+            card.setCardIndex(request.getCardIndex());
+        }
+        if (request.getPinyin() != null) {
+            card.setPinyin(request.getPinyin());
+        }
+        if (request.getExampleSentence() != null) {
+            card.setExampleSentence(request.getExampleSentence());
+        }
+        if (request.getSinoVn() != null) {
+            card.setSinoVn(request.getSinoVn());
+        }
+        if (request.getWordType() != null) {
+            card.setWordType(request.getWordType());
+        }
+        if (request.getHskLevel() != null) {
+            card.setHskLevel(request.getHskLevel());
+        }
+        if (request.getExamplePinyin() != null) {
+            card.setExamplePinyin(request.getExamplePinyin());
+        }
+        if (request.getExampleMeaning() != null) {
+            card.setExampleMeaning(request.getExampleMeaning());
+        }
+        if (request.getSinoOrigin() != null) {
+            card.setSinoOrigin(request.getSinoOrigin());
+        }
+        if (request.getImageWord() != null) {
+            card.setImageWord(request.getImageWord());
+        }
+        if (request.getImageOrigin() != null) {
+            card.setImageOrigin(request.getImageOrigin());
+        }
+        if (request.getAudio() != null) {
+            card.setAudio(request.getAudio());
+        }
+        if (request.getCharacters() != null) {
+            try {
+                String charactersJson = objectMapper.writeValueAsString(request.getCharacters());
+                card.setCharacters(charactersJson);
+            } catch (Exception e) {
+                log.error("Error converting characters to JSON", e);
+            }
+        }
+
+        Card savedCard = cardRepository.save(card);
+        log.info("Updated card {} by user {}", id, userId);
+
+        return cardMapper.toResponse(savedCard);
+    }
+
+    @Override
+    public void deleteCard(String id, String userId) {
+        Card card = cardRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
+
+        // Verify ownership
+        StudySet studySet = card.getStudySet();
+        if (!studySet.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E228, "You don't have permission to delete this card");
+        }
+
+        cardRepository.delete(card);
+        log.info("Deleted card {} by user {}", id, userId);
     }
 }

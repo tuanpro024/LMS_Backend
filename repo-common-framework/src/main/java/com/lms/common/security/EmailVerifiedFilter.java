@@ -18,7 +18,8 @@ import java.util.List;
 
 /**
  * Chặn người dùng chưa verify email (emailVerified=false).
- * Chỉ chạy khi đã có Authentication. Có thể bỏ qua các path được cấu hình (public).
+ * Chỉ chạy khi đã có Authentication. Có thể bỏ qua các path được cấu hình
+ * (public).
  */
 public class EmailVerifiedFilter extends OncePerRequestFilter {
 
@@ -39,16 +40,29 @@ public class EmailVerifiedFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        String path = request.getRequestURI();
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        log.debug("EmailVerifiedFilter processing path: {}, authentication present: {}",
+                path, authentication != null);
+
         if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
+            log.debug("Checking email verification status for user: {} ({})",
+                    principal.userId(), principal.email());
+
             if (!principal.emailVerified()) {
-                log.warn("Email not verified for user {}", principal.email());
+                log.warn("Access denied - Email not verified for user: {} ({}), path: {}",
+                        principal.userId(), principal.email(), path);
                 response.setStatus(HttpStatus.FORBIDDEN.value());
                 response.setContentType("application/json");
-                response.getWriter().write("{\"success\":false,\"errorCode\":\"233\",\"errorMessage\":\"Email not verified\"}");
+                response.getWriter()
+                        .write("{\"success\":false,\"errorCode\":\"233\",\"errorMessage\":\"Email not verified\"}");
                 return;
             }
+
+            log.debug("Email verification check passed for user: {}", principal.userId());
         }
+
         filterChain.doFilter(request, response);
     }
 }

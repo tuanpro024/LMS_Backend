@@ -7,6 +7,7 @@ import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
+import com.lms.content.common.dto.response.TypeResponse;
 import com.lms.content.common.entity.TypeName;
 import com.lms.flashcard.service.ExcelImportService;
 import jakarta.validation.Valid;
@@ -33,8 +34,8 @@ public class PackageController {
     private final ExcelImportService excelImportService;
 
     @GetMapping("/types")
-    public ResponseEntity<ApiResponse<List<TypeName>>> getPackageTypes() {
-        List<TypeName> types = delegate.getPackageTypes();
+    public ResponseEntity<ApiResponse<List<TypeResponse>>> getPackageTypes() {
+        List<TypeResponse> types = delegate.getPackageTypes();
         return ResponseEntity.ok(ApiResponse.ok(types));
     }
 

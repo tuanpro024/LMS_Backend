@@ -1,6 +1,5 @@
 package com.lms.learningpath.mapper;
 
-import com.lms.content.common.entity.StudySet;
 import com.lms.learningpath.dto.request.CreateLearningPathRequest;
 import com.lms.learningpath.dto.request.UpdateLearningPathRequest;
 import com.lms.learningpath.dto.response.LearningPathResponse;
@@ -10,14 +9,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class LearningPathMapper {
 
-    public LearningPath toEntity(CreateLearningPathRequest request, StudySet studySet, String userId) {
+    public LearningPath toEntity(CreateLearningPathRequest request, String userId) {
         LearningPath learningPath = new LearningPath();
 
-        // Set inherited fields from BaseContentItem
-        learningPath.setStudySet(studySet);
-        learningPath.setContentIndex(null); // Optional ordering
-
-        // Set own fields
+        // Set LearningPath-specific fields only
+        // StudySet will be set by service layer
         learningPath.setTitle(request.getTitle());
         learningPath.setDescription(request.getDescription());
         learningPath.setThumbnail(request.getThumbnail());

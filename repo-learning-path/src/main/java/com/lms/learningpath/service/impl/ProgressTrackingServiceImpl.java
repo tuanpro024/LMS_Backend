@@ -132,7 +132,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         @Override
         public List<LearningPathProgressResponse> getAllLearningPathProgress(String userId, String studySetId) {
                 List<LearningPath> learningPaths = learningPathRepository
-                                .findByStudySet_IdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
+                                .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
 
                 return learningPaths.stream()
                                 .map(lp -> learningPathProgressRepository

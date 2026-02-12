@@ -4,6 +4,7 @@ import com.lms.common.dto.ApiResponse;
 import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.learningpath.client.FlashcardServiceClient;
 import com.lms.learningpath.client.KanjiOriginServiceClient;
+import com.lms.learningpath.client.QuizServiceClient;
 import com.lms.learningpath.client.WritingServiceClient;
 import com.lms.learningpath.dto.response.AvailableModuleResponse;
 import com.lms.learningpath.entity.enums.ModuleType;
@@ -24,6 +25,7 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     private final FlashcardServiceClient flashcardServiceClient;
     private final WritingServiceClient writingServiceClient;
     private final KanjiOriginServiceClient kanjiOriginServiceClient;
+    private final QuizServiceClient quizServiceClient;
 
     @Override
     public List<AvailableModuleResponse> getAllAvailableModules(String query) {
@@ -35,6 +37,7 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
         allModules.addAll(getAvailableFlashcardSets(query));
         allModules.addAll(getAvailableWritingSets(query));
         allModules.addAll(getAvailableKanjiSets(query));
+        allModules.addAll(getAvailableQuizSets(query));
 
         log.info("Found {} available modules across all repos", allModules.size());
         return allModules;
@@ -105,6 +108,29 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Error fetching kanji sets: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    @Override
+    public List<AvailableModuleResponse> getAvailableQuizSets(String query) {
+        log.info("Fetching available quiz sets");
+
+        try {
+            ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
+                    ? quizServiceClient.searchStudySets(query)
+                    : quizServiceClient.getAllStudySets();
+
+            List<StudySetResponse> studySets = response.data();
+            if (studySets == null) {
+                return new ArrayList<>();
+            }
+
+            return studySets.stream()
+                    .map(dto -> toAvailableModuleResponse(dto, ModuleType.QUIZ, "repo-quiz"))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error fetching quiz sets: {}", e.getMessage());
             return new ArrayList<>();
         }
     }

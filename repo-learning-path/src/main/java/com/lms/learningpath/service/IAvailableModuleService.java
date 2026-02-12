@@ -29,4 +29,9 @@ public interface IAvailableModuleService {
      * Get available kanji-origin study sets
      */
     List<AvailableModuleResponse> getAvailableKanjiSets(String query);
+
+    /**
+     * Get available quiz study sets
+     */
+    List<AvailableModuleResponse> getAvailableQuizSets(String query);
 }

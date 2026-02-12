@@ -20,6 +20,7 @@ public interface KanjiLessonQuestionMapper {
 
     @Mapping(target = "id", source = "kanjiQuestion.id")
     @Mapping(target = "kanjiLessonId", source = "kanjiLesson.id")
+    @Mapping(target = "contentIndex", source = "contentIndex")
     @Mapping(target = "content", source = "kanjiQuestion.content")
     @Mapping(target = "correctAnswer", source = "kanjiQuestion.correctAnswer")
     @Mapping(target = "wrongOptions", expression = "java(question.getKanjiQuestion().getWrongOptions().stream().map(com.lms.kanjiorigin.entity.KanjiQuestionWrongOption::getWrongOption).toList())")

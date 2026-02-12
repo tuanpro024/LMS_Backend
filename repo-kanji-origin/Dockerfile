@@ -22,5 +22,5 @@ RUN mvn -f repo-kanji-origin/pom.xml clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 COPY --from=build /app/repo-kanji-origin/target/repo-kanji-origin-*.jar app.jar
-EXPOSE 8086
+EXPOSE 8087
 ENTRYPOINT ["java", "-jar", "app.jar"]

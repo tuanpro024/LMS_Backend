@@ -8,20 +8,20 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {
-        "com.lms.kanjiorigin",
-        "com.lms.content.common",
-        "com.lms.common"
+                "com.lms.kanjiorigin",
+                "com.lms.content.common",
+                "com.lms.common"
 })
 @EntityScan(basePackages = {
-        "com.lms.kanjiorigin.entity",
-        "com.lms.content.common.entity"
+                "com.lms.kanjiorigin.entity",
+                "com.lms.content.common.entity"
 })
 @EnableJpaRepositories(basePackages = {
-        "com.lms.kanjiorigin.repository"
+                "com.lms.kanjiorigin.repository"
 })
 public class RepoKanjiOriginApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(RepoKanjiOriginApplication.class, args);
-    }
+        public static void main(String[] args) {
+                SpringApplication.run(RepoKanjiOriginApplication.class, args);
+        }
 }

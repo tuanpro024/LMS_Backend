@@ -38,22 +38,30 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
         log.info("Creating kanji origin with term: {}", request.getTerm());
 
         KanjiLesson lesson = kanjiLessonRepository.findById(request.getKanjiLessonId())
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiLesson not found with id: " + request.getKanjiLessonId()));
+                .orElseThrow(() -> new ApiException(ErrorCode.E227,
+                        "KanjiLesson not found with id: " + request.getKanjiLessonId()));
 
-        if (request.getContentIndex() == null) {
-            throw new ApiException(ErrorCode.E227, "Content index is required");
+        Integer contentIndex = request.getContentIndex();
+        if (contentIndex == null) {
+            Integer maxContentIndex = kanjiOriginRepository
+                    .findMaxContentIndexByKanjiLessonId(request.getKanjiLessonId());
+            contentIndex = maxContentIndex == null ? 0 : maxContentIndex + 1;
         }
 
-        if (kanjiOriginRepository.existsByKanjiLessonIdAndContentIndexAndDeletedFalse(request.getKanjiLessonId(), request.getContentIndex())) {
-            throw new ApiException(ErrorCode.E227, "Content index already exists in this lesson: " + request.getContentIndex());
+        if (kanjiOriginRepository.existsByKanjiLessonIdAndContentIndexAndDeletedFalse(request.getKanjiLessonId(),
+                contentIndex)) {
+            throw new ApiException(ErrorCode.E227,
+                    "Content index already exists in this lesson: " + contentIndex);
         }
 
-        if (kanjiOriginRepository.existsByTermAndKanjiLessonIdAndDeletedFalse(request.getTerm(), request.getKanjiLessonId())) {
+        if (kanjiOriginRepository.existsByTermAndKanjiLessonIdAndDeletedFalse(request.getTerm(),
+                request.getKanjiLessonId())) {
             throw new ApiException(ErrorCode.E227, "Term already exists in this lesson: " + request.getTerm());
         }
 
         KanjiOrigin origin = kanjiOriginMapper.toEntity(request);
         origin.setKanjiLesson(lesson);
+        origin.setContentIndex(contentIndex);
 
         KanjiOrigin savedOrigin = kanjiOriginRepository.save(origin);
         return kanjiOriginMapper.toResponse(savedOrigin);
@@ -64,18 +72,21 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
         log.info("Updating kanji origin with id: {}", id);
 
         KanjiOrigin origin = kanjiOriginRepository.findById(id)
+                .filter(o -> !o.isDeleted())
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiOrigin not found with id: " + id));
 
         if (!origin.getTerm().equals(request.getTerm()) &&
-            kanjiOriginRepository.existsByTermAndKanjiLessonIdAndDeletedFalse(request.getTerm(), origin.getKanjiLesson().getId())) {
+                kanjiOriginRepository.existsByTermAndKanjiLessonIdAndDeletedFalse(request.getTerm(),
+                        origin.getKanjiLesson().getId())) {
             throw new ApiException(ErrorCode.E227, "Term already exists in this lesson: " + request.getTerm());
         }
 
         if (request.getContentIndex() != null) {
             if (!request.getContentIndex().equals(origin.getContentIndex()) &&
-                kanjiOriginRepository.existsByKanjiLessonIdAndContentIndexAndIdNotAndDeletedFalse(
-                    origin.getKanjiLesson().getId(), request.getContentIndex(), id)) {
-                throw new ApiException(ErrorCode.E227, "Content index already exists in this lesson: " + request.getContentIndex());
+                    kanjiOriginRepository.existsByKanjiLessonIdAndContentIndexAndIdNotAndDeletedFalse(
+                            origin.getKanjiLesson().getId(), request.getContentIndex(), id)) {
+                throw new ApiException(ErrorCode.E227,
+                        "Content index already exists in this lesson: " + request.getContentIndex());
             }
         }
 
@@ -88,8 +99,15 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
     public void deleteOrigin(String id) {
         log.info("Deleting kanji origin with id: {}", id);
 
-        KanjiOrigin origin = kanjiOriginRepository.findById(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiOrigin not found with id: " + id));
+        KanjiOrigin origin = kanjiOriginRepository.findById(id).orElse(null);
+        if (origin == null) {
+            log.warn("Delete requested for non-existing kanji origin id: {}. Treating as no-op.", id);
+            return;
+        }
+        if (origin.isDeleted()) {
+            log.warn("Delete requested for already deleted kanji origin id: {}. Treating as no-op.", id);
+            return;
+        }
 
         origin.setDeleted(true);
         kanjiOriginRepository.save(origin);
@@ -101,6 +119,7 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
         log.info("Getting kanji origin with id: {}", id);
 
         KanjiOrigin origin = kanjiOriginRepository.findById(id)
+                .filter(o -> !o.isDeleted())
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiOrigin not found with id: " + id));
 
         return kanjiOriginMapper.toResponse(origin);
@@ -130,13 +149,14 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<KanjiOriginResponse> searchPaged(KanjiOriginSearchRequest request) {
-        log.info("Searching paged kanji origins with lessonId: {}, keyword: {}", request.getLessonId(), request.getKeyword());
-        
+        log.info("Searching paged kanji origins with lessonId: {}, keyword: {}", request.getLessonId(),
+                request.getKeyword());
+
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         Page<KanjiOrigin> page = kanjiOriginRepository.search(request.getLessonId(), request.getKeyword(), pageable);
-        
+
         List<KanjiOriginResponse> items = kanjiOriginMapper.toResponseList(page.getContent());
-        
+
         return PageResponse.<KanjiOriginResponse>builder()
                 .items(items)
                 .totalElements(page.getTotalElements())
@@ -146,4 +166,3 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
                 .build();
     }
 }
-

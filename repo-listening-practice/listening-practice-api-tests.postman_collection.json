@@ -1,0 +1,730 @@
+{
+    "info": {
+        "name": "Listening Practice APIs (via Gateway)",
+        "description": "API collection for testing repo-listening-practice service through API Gateway",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "authBaseUrl",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "authToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "refreshToken",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "packageId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "folderId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "studySetId",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "videoCode",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Authentication",
+            "item": [
+                {
+                    "name": "Login (Get Token)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                                    "        pm.collectionVariables.set('authToken', jsonData.data.token);",
+                                    "        console.log('✅ Token saved:', jsonData.data.token.substring(0, 20) + '...');",
+                                    "    }",
+                                    "    if (jsonData.success && jsonData.data && jsonData.data.refreshToken) {",
+                                    "        pm.collectionVariables.set('refreshToken', jsonData.data.refreshToken);",
+                                    "        console.log('✅ Refresh Token saved');",
+                                    "    }",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"teacher@lms.com\",\n  \"password\": \"Teacher@123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{authBaseUrl}}/api/auth/login",
+                            "host": [
+                                "{{authBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{authBaseUrl}}/api/auth/me",
+                            "host": [
+                                "{{authBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Logout (Clear Token)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    pm.collectionVariables.set('authToken', '');",
+                                    "    pm.collectionVariables.set('refreshToken', '');",
+                                    "    console.log('✅ Logged out successfully. Tokens cleared.');",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{authBaseUrl}}/api/auth/logout",
+                            "host": [
+                                "{{authBaseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "auth",
+                                "logout"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Package Management",
+            "item": [
+                {
+                    "name": "Get Package Types",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/packages/types",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "packages",
+                                "types"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Create Package",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('packageId', jsonData.data.id);",
+                                    "    console.log('Package ID saved: ' + jsonData.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Listening Practice Package\",\n  \"description\": \"Package for listening practice content\",\n  \"type\": \"LEARNING_PATH\",\n  \"classId\": null\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/packages",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "packages"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Package By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/packages/{{packageId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "packages",
+                                "{{packageId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get All Packages",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/packages",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "packages"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Package",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Updated Listening Practice Package\",\n  \"description\": \"Updated description\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/packages/{{packageId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "packages",
+                                "{{packageId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Folder Management",
+            "item": [
+                {
+                    "name": "Create Folder",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('folderId', jsonData.data.id);",
+                                    "    console.log('Folder ID saved: ' + jsonData.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Beginner Listening\",\n  \"description\": \"Listening exercises for beginners\",\n  \"isPrivate\": false,\n  \"packageId\": \"{{packageId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/folders",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "folders"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Folder By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/folders/{{folderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "folders",
+                                "{{folderId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Folders By Package",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/folders?packageId={{packageId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "folders"
+                            ],
+                            "query": [
+                                {
+                                    "key": "packageId",
+                                    "value": "{{packageId}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add Folder to Package",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/packages/{{packageId}}/folders/{{folderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "packages",
+                                "{{packageId}}",
+                                "folders",
+                                "{{folderId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. StudySet Management",
+            "item": [
+                {
+                    "name": "Create StudySet",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('studySetId', jsonData.data.id);",
+                                    "    console.log('StudySet ID saved: ' + jsonData.data.id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Daily Conversations\",\n  \"description\": \"Practice listening to daily conversations\",\n  \"thumbnailUrl\": null,\n  \"isPublic\": true,\n  \"folderId\": \"{{folderId}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "study-sets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get StudySet By ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets/{{studySetId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "study-sets",
+                                "{{studySetId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get StudySets By Folder",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets?folderId={{folderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "study-sets"
+                            ],
+                            "query": [
+                                {
+                                    "key": "folderId",
+                                    "value": "{{folderId}}"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Add StudySet to Folder",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/folders/{{folderId}}/study-sets/{{studySetId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "folders",
+                                "{{folderId}}",
+                                "study-sets",
+                                "{{studySetId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Video Selection (Listening Practice)",
+            "item": [
+                {
+                    "name": "Add Video to StudySet",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.collectionVariables.set('videoCode', jsonData.data.videoCode);",
+                                    "    console.log('Video Code saved: ' + jsonData.data.videoCode);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"videoCode\": \"VIDEO_CODE_FROM_MULTIMEDIA\",\n  \"displayOrder\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets/{{studySetId}}/videos",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "listening-practice",
+                                "study-sets",
+                                "{{studySetId}}",
+                                "videos"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Videos in StudySet",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets/{{studySetId}}/videos",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "listening-practice",
+                                "study-sets",
+                                "{{studySetId}}",
+                                "videos"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Video Display Order",
+                    "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets/{{studySetId}}/videos/{{videoCode}}/display-order?displayOrder=2",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "listening-practice",
+                                "study-sets",
+                                "{{studySetId}}",
+                                "videos",
+                                "{{videoCode}}",
+                                "display-order"
+                            ],
+                            "query": [
+                                {
+                                    "key": "displayOrder",
+                                    "value": "2"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh Video Metadata",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets/{{studySetId}}/videos/{{videoCode}}/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "listening-practice",
+                                "study-sets",
+                                "{{studySetId}}",
+                                "videos",
+                                "{{videoCode}}",
+                                "refresh"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Remove Video from StudySet",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets/{{studySetId}}/videos/{{videoCode}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "listening-practice",
+                                "study-sets",
+                                "{{studySetId}}",
+                                "videos",
+                                "{{videoCode}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Cleanup (Delete in Reverse Order)",
+            "item": [
+                {
+                    "name": "Delete StudySet",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/study-sets/{{studySetId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "study-sets",
+                                "{{studySetId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Folder",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/folders/{{folderId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "folders",
+                                "{{folderId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Package",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/listening-practice/packages/{{packageId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "listening-practice",
+                                "packages",
+                                "{{packageId}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

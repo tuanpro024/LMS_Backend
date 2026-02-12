@@ -92,6 +92,13 @@ spring:
             - Path=${config.api-prefix}/learning-path/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: listening-practice
+          uri: lb://REPO-LISTENING-PRACTICE
+          predicates:
+            - Path=/api/listening-practice/**
+          filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+          # No StripPrefix - forward path as-is to listening-practice service
         - id: kanji-origin
           uri: lb://REPO-KANJI-ORIGIN
           predicates:

@@ -46,10 +46,19 @@ public class KanjiOrigin extends BaseEntity {
     private String originTextCn;
 
     @Column(columnDefinition = "TEXT")
+    private String originTextEn;
+
+    @Column(columnDefinition = "TEXT")
     private String exampleSentence;
 
     @Column(columnDefinition = "TEXT")
     private String exampleMeaning;
+
+    @Column(columnDefinition = "TEXT")
+    private String exampleMeaningVi;
+
+    @Column(columnDefinition = "TEXT")
+    private String exampleMeaningEn;
 
     @Column(columnDefinition = "TEXT")
     private String examplePinyin;

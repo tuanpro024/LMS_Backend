@@ -14,6 +14,7 @@ import java.util.List;
 public class QuestionResponse {
     private String id;
     private String kanjiLessonId;
+    private Integer contentIndex;
     private String content;
     private String correctAnswer;
     private List<String> wrongOptions;

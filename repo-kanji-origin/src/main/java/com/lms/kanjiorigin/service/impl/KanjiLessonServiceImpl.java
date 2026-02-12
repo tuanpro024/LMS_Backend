@@ -58,14 +58,14 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
     @Override
     public ImportResultResponse importFromExcel(String studySetId, MultipartFile file) {
         log.info("Importing kanji lessons from Excel for studySetId: {}", studySetId);
-        
+
         ImportResultResponse response = ImportResultResponse.builder()
                 .errors(new ArrayList<>())
                 .build();
-        
+
         StudySet studySet = studySetRepository.findById(studySetId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found with id: " + studySetId));
-        
+
         List<ImportLessonRequest> lessonRequests;
         try {
             lessonRequests = KanjiExcelHelper.excelToLessons(file.getInputStream());
@@ -73,21 +73,21 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
             log.error("Error parsing Excel file", e);
             throw new ApiException(ErrorCode.E227, "Error parsing Excel file: " + e.getMessage());
         }
-        
+
         response.setTotalSheets(lessonRequests.size());
-        
+
         int lessonsCreated = 0;
         int lessonsUpdated = 0;
         int kanjisCreated = 0;
         int questionsCreated = 0;
         int questionsReused = 0;
-        
+
         for (ImportLessonRequest lessonRequest : lessonRequests) {
             try {
                 // Check if lesson already exists
                 Optional<KanjiLesson> existingLessonOpt = kanjiLessonRepository
                         .findByStudySetIdAndTitleAndDeletedFalse(studySetId, lessonRequest.getTitle());
-                
+
                 KanjiLesson lesson;
                 if (existingLessonOpt.isPresent()) {
                     lesson = existingLessonOpt.get();
@@ -100,7 +100,7 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
                     // Create new lesson
                     Integer maxIndex = kanjiLessonRepository.findMaxContentIndexByStudySetId(studySetId);
                     int newIndex = (maxIndex == null) ? 1 : maxIndex + 1;
-                    
+
                     lesson = new KanjiLesson();
                     lesson.setStudySet(studySet);
                     lesson.setTitle(lessonRequest.getTitle());
@@ -110,19 +110,20 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
                     lesson = kanjiLessonRepository.save(lesson);
                     lessonsCreated++;
                 }
-                
+
                 // Process kanjis
                 for (ImportKanjiRequest kanjiRequest : lessonRequest.getKanjis()) {
                     try {
                         // Check if kanji already exists
                         Optional<KanjiOrigin> existingKanjiOpt = kanjiOriginRepository
                                 .findByKanjiLessonIdAndTermAndDeletedFalse(lesson.getId(), kanjiRequest.getTerm());
-                        
+
                         if (existingKanjiOpt.isEmpty()) {
                             // Create new kanji
-                            Integer maxKanjiIndex = kanjiOriginRepository.findMaxContentIndexByKanjiLessonId(lesson.getId());
+                            Integer maxKanjiIndex = kanjiOriginRepository
+                                    .findMaxContentIndexByKanjiLessonId(lesson.getId());
                             int newKanjiIndex = (maxKanjiIndex == null) ? 1 : maxKanjiIndex + 1;
-                            
+
                             KanjiOrigin kanji = new KanjiOrigin();
                             kanji.setKanjiLesson(lesson);
                             kanji.setTerm(kanjiRequest.getTerm());
@@ -146,7 +147,7 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
                         response.getErrors().add("Kanji '" + kanjiRequest.getTerm() + "': " + e.getMessage());
                     }
                 }
-                
+
                 // Process questions
                 for (ImportQuestionRequest questionRequest : lessonRequest.getQuestions()) {
                     try {
@@ -155,7 +156,7 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
                                 .findByContentAndCorrectAnswerAndDeletedFalse(
                                         questionRequest.getContent(),
                                         questionRequest.getCorrectAnswer());
-                        
+
                         KanjiQuestion question;
                         if (existingQuestionOpt.isPresent()) {
                             question = existingQuestionOpt.get();
@@ -167,7 +168,7 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
                             question.setCorrectAnswer(questionRequest.getCorrectAnswer());
                             question.setDeleted(false);
                             question = kanjiQuestionRepository.save(question);
-                            
+
                             // Create wrong options
                             if (questionRequest.getWrongOptions() != null) {
                                 for (String wrongOption : questionRequest.getWrongOptions()) {
@@ -182,15 +183,17 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
                             }
                             questionsCreated++;
                         }
-                        
+
                         // Link question to lesson if not already linked
                         boolean alreadyLinked = kanjiLessonQuestionRepository
-                                .existsByKanjiLessonIdAndKanjiQuestionIdAndDeletedFalse(lesson.getId(), question.getId());
-                        
+                                .existsByKanjiLessonIdAndKanjiQuestionIdAndDeletedFalse(lesson.getId(),
+                                        question.getId());
+
                         if (!alreadyLinked) {
-                            Integer maxQuestionIndex = kanjiLessonQuestionRepository.findMaxContentIndexByKanjiLessonId(lesson.getId());
+                            Integer maxQuestionIndex = kanjiLessonQuestionRepository
+                                    .findMaxContentIndexByKanjiLessonId(lesson.getId());
                             int newQuestionIndex = (maxQuestionIndex == null) ? 1 : maxQuestionIndex + 1;
-                            
+
                             KanjiLessonQuestion lessonQuestion = new KanjiLessonQuestion();
                             lessonQuestion.setKanjiLesson(lesson);
                             lessonQuestion.setKanjiQuestion(question);
@@ -208,17 +211,17 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
                 response.getErrors().add("Lesson '" + lessonRequest.getTitle() + "': " + e.getMessage());
             }
         }
-        
+
         response.setLessonsCreated(lessonsCreated);
         response.setLessonsUpdated(lessonsUpdated);
         response.setKanjisCreated(kanjisCreated);
         response.setQuestionsCreated(questionsCreated);
         response.setQuestionsReused(questionsReused);
         response.setSuccess(response.getErrors().isEmpty());
-        
+
         log.info("Import completed: {} lessons created, {} updated, {} kanjis, {} questions created, {} reused",
                 lessonsCreated, lessonsUpdated, kanjisCreated, questionsCreated, questionsReused);
-        
+
         return response;
     }
 
@@ -227,17 +230,21 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
         log.info("Creating kanji lesson with title: {}", request.getTitle());
 
         StudySet studySet = studySetRepository.findById(request.getStudySetId())
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found with id: " + request.getStudySetId()));
+                .orElseThrow(() -> new ApiException(ErrorCode.E227,
+                        "StudySet not found with id: " + request.getStudySetId()));
 
         if (request.getContentIndex() != null) {
-            boolean exists = kanjiLessonRepository.existsByStudySetIdAndContentIndex(request.getStudySetId(), request.getContentIndex());
+            boolean exists = kanjiLessonRepository.existsByStudySetIdAndContentIndex(request.getStudySetId(),
+                    request.getContentIndex());
             if (exists) {
-                throw new ApiException(ErrorCode.E227, "Content index " + request.getContentIndex() + " already exists in this StudySet");
+                throw new ApiException(ErrorCode.E227,
+                        "Content index " + request.getContentIndex() + " already exists in this StudySet");
             }
         }
 
         if (kanjiLessonRepository.existsByStudySetIdAndTitle(request.getStudySetId(), request.getTitle())) {
-            throw new ApiException(ErrorCode.E227, "Title '" + request.getTitle() + "' already exists in this StudySet");
+            throw new ApiException(ErrorCode.E227,
+                    "Title '" + request.getTitle() + "' already exists in this StudySet");
         }
 
         KanjiLesson lesson = kanjiLessonMapper.toEntity(request);
@@ -250,30 +257,30 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
     public KanjiLessonResponse updateLesson(String id, UpdateKanjiLessonRequest request) {
         log.info("Updating kanji lesson with id: {}", id);
 
-        KanjiLesson lesson = kanjiLessonRepository.findById(id)
+        KanjiLesson lesson = kanjiLessonRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiLesson not found with id: " + id));
 
         kanjiLessonMapper.updateEntity(lesson, request);
-        
+
         if (request.getContentIndex() != null) {
-             boolean exists = kanjiLessonRepository.existsByStudySetIdAndContentIndexAndIdNot(
-                 lesson.getStudySet().getId(), 
-                 request.getContentIndex(), 
-                 id
-             );
-             if (exists) {
-                 throw new ApiException(ErrorCode.E227, "Content index " + request.getContentIndex() + " already exists in this StudySet");
-             }
+            boolean exists = kanjiLessonRepository.existsByStudySetIdAndContentIndexAndIdNot(
+                    lesson.getStudySet().getId(),
+                    request.getContentIndex(),
+                    id);
+            if (exists) {
+                throw new ApiException(ErrorCode.E227,
+                        "Content index " + request.getContentIndex() + " already exists in this StudySet");
+            }
         }
 
         if (request.getTitle() != null && !request.getTitle().equals(lesson.getTitle())) {
-             if (kanjiLessonRepository.existsByStudySetIdAndTitleAndIdNot(
-                 lesson.getStudySet().getId(), 
-                 request.getTitle(), 
-                 id
-             )) {
-                 throw new ApiException(ErrorCode.E227, "Title '" + request.getTitle() + "' already exists in this StudySet");
-             }
+            if (kanjiLessonRepository.existsByStudySetIdAndTitleAndIdNot(
+                    lesson.getStudySet().getId(),
+                    request.getTitle(),
+                    id)) {
+                throw new ApiException(ErrorCode.E227,
+                        "Title '" + request.getTitle() + "' already exists in this StudySet");
+            }
         }
         KanjiLesson savedLesson = kanjiLessonRepository.save(lesson);
         return kanjiLessonMapper.toResponse(savedLesson);
@@ -283,13 +290,20 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
     public void deleteLesson(String id) {
         log.info("Deleting kanji lesson with id: {}", id);
 
-        KanjiLesson lesson = kanjiLessonRepository.findById(id)
+        KanjiLesson lesson = kanjiLessonRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiLesson not found with id: " + id));
 
-        if (!lesson.getKanjiOrigins().isEmpty()) {
-            throw new ApiException(ErrorCode.E227, "Cannot delete lesson because it has kanji origins. Delete origins first.");
-        }
+        // Soft-delete all kanji origins in this lesson
+        List<KanjiOrigin> origins = kanjiOriginRepository.findByKanjiLessonIdAndDeletedFalse(id);
+        origins.forEach(o -> o.setDeleted(true));
+        kanjiOriginRepository.saveAll(origins);
 
+        // Soft-delete all lesson-question assignments in this lesson
+        List<KanjiLessonQuestion> assignments = kanjiLessonQuestionRepository.findByKanjiLessonIdAndDeletedFalse(id);
+        assignments.forEach(a -> a.setDeleted(true));
+        kanjiLessonQuestionRepository.saveAll(assignments);
+
+        // Finally soft-delete the lesson itself
         lesson.setDeleted(true);
         kanjiLessonRepository.save(lesson);
     }
@@ -299,7 +313,7 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
     public KanjiLessonResponse getLesson(String id) {
         log.info("Getting kanji lesson with id: {}", id);
 
-        KanjiLesson lesson = kanjiLessonRepository.findById(id)
+        KanjiLesson lesson = kanjiLessonRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiLesson not found with id: " + id));
 
         return kanjiLessonMapper.toResponse(lesson);
@@ -324,7 +338,8 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
     @Override
     @Transactional(readOnly = true)
     public List<KanjiLessonBasicResponse> search(KanjiLessonSearchRequest request) {
-        log.info("Searching kanji lessons with studySetId: {}, keyword: {}", request.getStudySetId(), request.getKeyword());
+        log.info("Searching kanji lessons with studySetId: {}, keyword: {}", request.getStudySetId(),
+                request.getKeyword());
         List<KanjiLesson> lessons = kanjiLessonRepository.searchList(request.getStudySetId(), request.getKeyword());
         return kanjiLessonMapper.toBasicResponseList(lessons);
     }
@@ -332,13 +347,14 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<KanjiLessonBasicResponse> searchPaged(KanjiLessonSearchRequest request) {
-        log.info("Searching paged kanji lessons with studySetId: {}, keyword: {}", request.getStudySetId(), request.getKeyword());
-        
+        log.info("Searching paged kanji lessons with studySetId: {}, keyword: {}", request.getStudySetId(),
+                request.getKeyword());
+
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         Page<KanjiLesson> page = kanjiLessonRepository.search(request.getStudySetId(), request.getKeyword(), pageable);
-        
+
         List<KanjiLessonBasicResponse> items = kanjiLessonMapper.toBasicResponseList(page.getContent());
-        
+
         return PageResponse.<KanjiLessonBasicResponse>builder()
                 .items(items)
                 .totalElements(page.getTotalElements())
@@ -348,4 +364,3 @@ public class KanjiLessonServiceImpl implements KanjiLessonService {
                 .build();
     }
 }
-

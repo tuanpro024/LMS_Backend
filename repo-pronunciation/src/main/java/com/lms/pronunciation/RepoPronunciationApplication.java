@@ -10,20 +10,21 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @SpringBootApplication
 @EnableDiscoveryClient
 @ComponentScan(basePackages = {
-        "com.lms.pronunciation",
-        "com.lms.content.common"
+                "com.lms.pronunciation",
+                "com.lms.content.common",
+                "com.lms.common"
 })
 @EntityScan(basePackages = {
-        "com.lms.pronunciation.entity",
-        "com.lms.content.common.entity",
-        "com.lms.common.jpa"
+                "com.lms.pronunciation.entity",
+                "com.lms.content.common.entity",
+                "com.lms.common.jpa"
 })
 @EnableJpaRepositories(basePackages = {
-        "com.lms.pronunciation.repository"
+                "com.lms.pronunciation.repository"
 })
 public class RepoPronunciationApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(RepoPronunciationApplication.class, args);
-    }
+        public static void main(String[] args) {
+                SpringApplication.run(RepoPronunciationApplication.class, args);
+        }
 }

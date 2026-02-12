@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,16 +45,15 @@ public class KanjiQuestionServiceImpl implements KanjiQuestionService {
             throw new ApiException(ErrorCode.E227, "Question with this content already exists");
         }
 
-        if (request.getWrongOptions().contains(request.getCorrectAnswer())) {
-            throw new ApiException(ErrorCode.E227, "Wrong options cannot contain the correct answer");
-        }
+        List<String> normalizedWrongOptions = normalizeWrongOptions(request.getWrongOptions(),
+                request.getCorrectAnswer());
 
         KanjiQuestion question = KanjiQuestion.builder()
                 .content(request.getContent())
                 .correctAnswer(request.getCorrectAnswer())
                 .build();
 
-        List<KanjiQuestionWrongOption> wrongOptions = request.getWrongOptions().stream()
+        List<KanjiQuestionWrongOption> wrongOptions = normalizedWrongOptions.stream()
                 .map(opt -> KanjiQuestionWrongOption.builder()
                         .wrongOption(opt)
                         .kanjiQuestion(question)
@@ -76,12 +76,14 @@ public class KanjiQuestionServiceImpl implements KanjiQuestionService {
         KanjiLesson lesson = lessonRepository.findByIdAndDeletedFalse(lessonId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Lesson not found: " + lessonId));
 
-        if (lessonQuestionRepository.existsByKanjiLessonIdAndKanjiQuestionIdAndDeletedFalse(lessonId, question.getId())) {
+        if (lessonQuestionRepository.existsByKanjiLessonIdAndKanjiQuestionIdAndDeletedFalse(lessonId,
+                question.getId())) {
             throw new ApiException(ErrorCode.E227, "Question already assigned to lesson: " + lessonId);
         }
 
         if (lessonQuestionRepository.existsByKanjiLessonIdAndContentIndexAndDeletedFalse(lessonId, contentIndex)) {
-            throw new ApiException(ErrorCode.E227, "Content index " + contentIndex + " already exists in lesson: " + lessonId);
+            throw new ApiException(ErrorCode.E227,
+                    "Content index " + contentIndex + " already exists in lesson: " + lessonId);
         }
 
         KanjiLessonQuestion lessonQuestion = KanjiLessonQuestion.builder()
@@ -106,10 +108,8 @@ public class KanjiQuestionServiceImpl implements KanjiQuestionService {
             }
         }
 
-        String correctAnswer = request.getCorrectAnswer() != null ? request.getCorrectAnswer() : question.getCorrectAnswer();
-        if (request.getWrongOptions() != null && request.getWrongOptions().contains(correctAnswer)) {
-            throw new ApiException(ErrorCode.E227, "Wrong options cannot contain the correct answer");
-        }
+        String correctAnswer = request.getCorrectAnswer() != null ? request.getCorrectAnswer()
+                : question.getCorrectAnswer();
 
         if (request.getContent() != null) {
             question.setContent(request.getContent());
@@ -118,8 +118,9 @@ public class KanjiQuestionServiceImpl implements KanjiQuestionService {
             question.setCorrectAnswer(request.getCorrectAnswer());
         }
         if (request.getWrongOptions() != null) {
+            List<String> normalizedWrongOptions = normalizeWrongOptions(request.getWrongOptions(), correctAnswer);
             question.getWrongOptions().clear();
-            List<KanjiQuestionWrongOption> newWrongOptions = request.getWrongOptions().stream()
+            List<KanjiQuestionWrongOption> newWrongOptions = normalizedWrongOptions.stream()
                     .map(opt -> KanjiQuestionWrongOption.builder()
                             .wrongOption(opt)
                             .kanjiQuestion(question)
@@ -136,8 +137,23 @@ public class KanjiQuestionServiceImpl implements KanjiQuestionService {
     public void deleteQuestion(String id) {
         log.info("Deleting question with id: {}", id);
 
-        KanjiQuestion question = questionRepository.findByIdAndDeletedFalse(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Question not found with id: " + id));
+        KanjiQuestion question = questionRepository.findById(id).orElse(null);
+        if (question == null) {
+            return;
+        }
+        if (question.isDeleted()) {
+            return;
+        }
+
+        List<KanjiLessonQuestion> assignments = lessonQuestionRepository.findByKanjiQuestionIdAndDeletedFalse(id);
+        if (!assignments.isEmpty()) {
+            assignments.forEach(a -> a.setDeleted(true));
+            lessonQuestionRepository.saveAll(assignments);
+        }
+
+        if (question.getWrongOptions() != null && !question.getWrongOptions().isEmpty()) {
+            question.getWrongOptions().forEach(opt -> opt.setDeleted(true));
+        }
 
         question.setDeleted(true);
         questionRepository.save(question);
@@ -167,11 +183,11 @@ public class KanjiQuestionServiceImpl implements KanjiQuestionService {
     @Transactional(readOnly = true)
     public List<QuestionResponse> getQuestionsByLessonId(String lessonId) {
         log.info("Getting questions for lesson: {}", lessonId);
-        
+
         if (!lessonRepository.existsByIdAndDeletedFalse(lessonId)) {
             throw new ApiException(ErrorCode.E227, "Lesson not found: " + lessonId);
         }
-        
+
         return lessonQuestionRepository.findByKanjiLessonIdAndDeletedFalseOrderByContentIndex(lessonId)
                 .stream()
                 .map(lq -> toResponse(lq.getKanjiQuestion()))
@@ -192,14 +208,14 @@ public class KanjiQuestionServiceImpl implements KanjiQuestionService {
     @Transactional(readOnly = true)
     public PageResponse<QuestionResponse> searchPaged(KanjiQuestionSearchRequest request) {
         log.info("Searching paged kanji questions with keyword: {}", request.getKeyword());
-        
+
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         Page<KanjiQuestion> page = questionRepository.search(request.getKeyword(), pageable);
-        
+
         List<QuestionResponse> items = page.getContent().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
-        
+
         return PageResponse.<QuestionResponse>builder()
                 .items(items)
                 .totalElements(page.getTotalElements())
@@ -215,9 +231,35 @@ public class KanjiQuestionServiceImpl implements KanjiQuestionService {
                 .content(question.getContent())
                 .correctAnswer(question.getCorrectAnswer())
                 .wrongOptions(question.getWrongOptions().stream()
+                        .filter(opt -> !opt.isDeleted())
                         .map(KanjiQuestionWrongOption::getWrongOption)
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .filter(opt -> !opt.isEmpty())
+                        .distinct()
                         .collect(Collectors.toList()))
                 .build();
     }
-}
 
+    private List<String> normalizeWrongOptions(List<String> wrongOptions, String correctAnswer) {
+        if (wrongOptions == null) {
+            throw new ApiException(ErrorCode.E227, "At least one wrong option is required");
+        }
+
+        String normalizedCorrectAnswer = correctAnswer == null ? "" : correctAnswer.trim();
+
+        List<String> normalized = wrongOptions.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(opt -> !opt.isEmpty())
+                .filter(opt -> !opt.equals(normalizedCorrectAnswer))
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (normalized.isEmpty()) {
+            throw new ApiException(ErrorCode.E227, "At least one unique wrong option is required");
+        }
+
+        return normalized;
+    }
+}

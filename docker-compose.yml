@@ -289,6 +289,31 @@ services:
     networks:
       - lms-network
 
+  quiz-api:
+    build:
+      context: .
+      dockerfile: repo-quiz/Dockerfile
+    container_name: lms-quiz
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_quiz_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
 networks:
   lms-network:
     driver: bridge

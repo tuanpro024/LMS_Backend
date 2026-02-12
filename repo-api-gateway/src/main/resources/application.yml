@@ -1,18 +1,18 @@
 spring:
   application:
     name: api-gateway
-#  autoconfigure:
-#    exclude:
-#      # Database Off
-#      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-#      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
-#      # Spring security Off
-#      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
+  #  autoconfigure:
+  #    exclude:
+  #      # Database Off
+  #      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  #      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+  #      # Spring security Off
+  #      - org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration
   data:
     redis:
       host: localhost
       port: 6379
-#      password: redis_password
+  #      password: redis_password
   cloud:
     gateway:
       httpclient:
@@ -22,7 +22,7 @@ spring:
 
       globalcors:
         cors-configurations:
-          '[/**]':
+          "[/**]":
             allowedOriginPatterns:
               - "http://localhost:*"
               - "http://127.0.0.1:*"
@@ -36,7 +36,7 @@ spring:
             allowedHeaders: "*"
             allowCredentials: true
             maxAge: 3600
-            
+
       default-filters:
         - PreserveHostHeader
       discovery:
@@ -90,6 +90,24 @@ spring:
           uri: lb://REPO-LEARNING-PATH
           predicates:
             - Path=${config.api-prefix}/learning-path/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
+        - id: kanji-origin
+          uri: lb://REPO-KANJI-ORIGIN
+          predicates:
+            - Path=${config.api-prefix}/kanji-origin/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
+        - id: pronunciation
+          uri: lb://REPO-PRONUNCIATION
+          predicates:
+            - Path=${config.api-prefix}/pronunciation/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
+        - id: quiz
+          uri: lb://REPO-QUIZ
+          predicates:
+            - Path=${config.api-prefix}/quiz/**
           filters:
             - StripPrefix=${config.strip-prefix}
 

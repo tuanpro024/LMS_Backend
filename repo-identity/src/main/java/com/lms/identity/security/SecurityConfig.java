@@ -1,6 +1,9 @@
 package com.lms.identity.security;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -27,10 +30,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   BaseJwtFilter baseJwtFilter,
-                                                   EmailVerifiedFilter emailVerifiedFilter) throws Exception {
+            BaseJwtFilter baseJwtFilter,
+            EmailVerifiedFilter emailVerifiedFilter) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -46,8 +51,8 @@ public class SecurityConfig {
     @Bean
     public BaseJwtFilter baseJwtFilter(RSAPublicKey jwtPublicKey) {
         return new BaseJwtFilter(jwtPublicKey,
-                List.of(),               // skip patterns
-                List.of("/auth/**"));    // optional auth paths
+                List.of(), // skip patterns
+                List.of("/auth/**")); // optional auth paths
     }
 
     @Bean
@@ -76,12 +81,37 @@ public class SecurityConfig {
     }
 
     @Bean
-    public RSAPublicKey jwtPublicKey(@org.springframework.beans.factory.annotation.Value("${security.jwt.public-key-path}") String publicKeyPath) {
+    public RSAPublicKey jwtPublicKey(
+            @org.springframework.beans.factory.annotation.Value("${security.jwt.public-key-path}") String publicKeyPath) {
         return RsaKeyUtil.loadPublicKey(publicKeyPath);
     }
 
     @Bean
-    public RSAPrivateKey jwtPrivateKey(@org.springframework.beans.factory.annotation.Value("${security.jwt.private-key-path}") String privateKeyPath) {
+    public RSAPrivateKey jwtPrivateKey(
+            @org.springframework.beans.factory.annotation.Value("${security.jwt.private-key-path}") String privateKeyPath) {
         return RsaKeyUtil.loadPrivateKey(privateKeyPath);
+    }
+
+    /**
+     * Validate JWT key pair on application startup.
+     * This ensures the public and private keys are a valid matching pair.
+     */
+    @Bean
+    public ApplicationRunner validateJwtKeyPair(RSAPublicKey publicKey, RSAPrivateKey privateKey) {
+        return args -> {
+            log.info("Validating JWT RSA key pair on application startup...");
+            boolean isValid = RsaKeyUtil.validateKeyPair(publicKey, privateKey);
+            if (!isValid) {
+                log.error("=".repeat(80));
+                log.error("CRITICAL: JWT key pair validation FAILED!");
+                log.error("The public and private keys do not form a valid pair.");
+                log.error("This will cause JWT token verification to fail.");
+                log.error("Please verify your key configuration in application.yml");
+                log.error("=".repeat(80));
+                throw new IllegalStateException(
+                        "JWT key pair validation failed - public and private keys do not match!");
+            }
+            log.info("JWT key pair validation successful - application ready to sign and verify tokens");
+        };
     }
 }

@@ -24,9 +24,11 @@ import java.util.stream.Collectors;
 /**
  * JWT filter dùng chung:
  * - skip các path cấu hình (không chạy filter).
- * - optional paths: nếu có token hợp lệ thì set Authentication, nếu không có/không hợp lệ thì bỏ qua.
- * - các path còn lại: cố gắng parse token; nếu token hợp lệ thì set Authentication, token sai -> chỉ log và bỏ qua
- *   (quyền truy cập cuối cùng do cấu hình security quyết định).
+ * - optional paths: nếu có token hợp lệ thì set Authentication, nếu không
+ * có/không hợp lệ thì bỏ qua.
+ * - các path còn lại: cố gắng parse token; nếu token hợp lệ thì set
+ * Authentication, token sai -> chỉ log và bỏ qua
+ * (quyền truy cập cuối cùng do cấu hình security quyết định).
  */
 public class BaseJwtFilter extends OncePerRequestFilter {
 
@@ -51,31 +53,46 @@ public class BaseJwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        String path = request.getRequestURI();
         String header = request.getHeader(SecurityConstants.HEADER_AUTHORIZATION);
-        boolean isOptional = matches(request.getRequestURI(), optionalPatterns);
+        boolean isOptional = matches(path, optionalPatterns);
+
+        log.debug("Processing authentication for path: {}, token present: {}, optional: {}",
+                path, header != null && header.startsWith(SecurityConstants.HEADER_BEARER_PREFIX), isOptional);
 
         if (header == null || !header.startsWith(SecurityConstants.HEADER_BEARER_PREFIX)) {
+            log.debug("No Bearer token found in request to {}", path);
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = header.substring(SecurityConstants.HEADER_BEARER_PREFIX.length()).trim();
         try {
+            log.debug("Attempting to verify JWT token for path: {}", path);
             JwtUtils.JwtPayload payload = JwtUtils.verify(token, publicKey);
-            AuthPrincipal principal = new AuthPrincipal(payload.userId(), payload.email(), payload.emailVerified(), payload.roles());
+
+            AuthPrincipal principal = new AuthPrincipal(payload.userId(), payload.email(), payload.emailVerified(),
+                    payload.roles());
             List<SimpleGrantedAuthority> authorities = payload.roles().stream()
                     .filter(Objects::nonNull)
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(principal, null, authorities);
+
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(principal,
+                    null, authorities);
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            log.info("JWT authenticated user: {} ({}), roles: {}", payload.userId(), payload.email(), payload.roles());
+            log.debug("SecurityContext updated with authentication for path: {}", path);
         } catch (ApiException ex) {
             if (!isOptional) {
-                log.warn("JWT verification failed on path {}: {}", request.getRequestURI(), ex.getMessage());
+                log.warn("JWT verification failed on path {}: {} - {}", path, ex.getErrorCode(), ex.getMessage(), ex);
+            } else {
+                log.debug("JWT verification failed on optional path {}: {}", path, ex.getMessage());
             }
-            // optional: hoặc token sai -> không set auth, cho qua; access sẽ do Security config quyết định.
+            // optional: hoặc token sai -> không set auth, cho qua; access sẽ do Security
+            // config quyết định.
         }
         filterChain.doFilter(request, response);
     }

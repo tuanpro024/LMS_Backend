@@ -36,7 +36,8 @@ public class SecurityConfig {
     public BaseJwtFilter jwtFilter(RSAPublicKey publicKey) {
         List<String> skipPatterns = List.of(
                 "/health",
-                "/actuator/**");
+                "/actuator/**",
+                "/packages/import-excel");
 
         List<String> optionalPatterns = List.of(
                 "/pronunciation/study-sets/**",
@@ -53,7 +54,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Health endpoints
-                        .requestMatchers("/health", "/actuator/**").permitAll()
+                        .requestMatchers("/health", "/actuator/**", "/packages/import-excel").permitAll()
 
                         // Public GET endpoints
                         .requestMatchers(HttpMethod.GET, "/study-sets/**").permitAll()

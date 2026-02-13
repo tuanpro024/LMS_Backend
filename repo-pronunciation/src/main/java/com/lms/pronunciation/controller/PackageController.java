@@ -1,4 +1,4 @@
-package com.lms.kanjiorigin.controller;
+package com.lms.pronunciation.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
@@ -9,7 +9,7 @@ import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
 import com.lms.content.common.dto.response.TypeResponse;
 import com.lms.content.common.entity.TypeName;
-import com.lms.kanjiorigin.service.ExcelImportService;
+import com.lms.pronunciation.service.ExcelImportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -102,12 +102,9 @@ public class PackageController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("packageTypeId") String packageTypeId,
             Authentication authentication) {
-        String userId = "test-user-id";
-        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
-            userId = principal.userId();
-        }
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, packageTypeId,
-                userId, false);
+                principal.userId(), false);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

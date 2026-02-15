@@ -61,4 +61,12 @@ public interface QuizClient {
      */
     @GetMapping("/study-sets")
     ApiResponse<List<StudySetResponse>> searchStudySets(@RequestParam("q") String query);
+
+    /**
+     * Find study sets by exact title and user ID (case-insensitive)
+     */
+    @GetMapping("/study-sets/exact-match")
+    ApiResponse<List<StudySetResponse>> findByTitleAndUserIdIgnoreCase(
+            @RequestParam("title") String title,
+            @RequestParam("userId") String userId);
 }

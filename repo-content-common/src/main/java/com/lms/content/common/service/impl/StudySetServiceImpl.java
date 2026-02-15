@@ -99,6 +99,13 @@ public class StudySetServiceImpl implements StudySetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<StudySetResponse> findByTitleAndUserIdIgnoreCase(String title, String userId) {
+        List<StudySet> studySets = studySetRepository.findByTitleAndUserIdIgnoreCase(title, userId);
+        return studySetMapper.toResponseList(studySets);
+    }
+
+    @Override
     public StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId) {
         StudySet studySet = studySetRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));

@@ -39,6 +39,10 @@ public class StudySetApiDelegate {
         return studySetService.getAllStudySets();
     }
 
+    public List<StudySetResponse> findByTitleAndUserIdIgnoreCase(String title, String userId) {
+        return studySetService.findByTitleAndUserIdIgnoreCase(title, userId);
+    }
+
     public StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId) {
         return studySetService.updateStudySet(id, request, userId);
     }

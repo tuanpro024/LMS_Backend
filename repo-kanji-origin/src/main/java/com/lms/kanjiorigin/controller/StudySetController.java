@@ -53,6 +53,14 @@ public class StudySetController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @GetMapping("/exact-match")
+    public ResponseEntity<ApiResponse<List<StudySetResponse>>> findByTitleAndUserIdIgnoreCase(
+            @RequestParam String title,
+            @RequestParam String userId) {
+        List<StudySetResponse> response = delegate.findByTitleAndUserIdIgnoreCase(title, userId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @GetMapping("/folder/{folderId}")
     public ResponseEntity<ApiResponse<List<StudySetResponse>>> getStudySetsByFolderId(
             @PathVariable String folderId) {

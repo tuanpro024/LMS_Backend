@@ -208,9 +208,9 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                 String normalizedStudySetName = studySetNameOpt.get();
                 log.debug("Sheet '{}': Extracted studySetName: '{}'", sheetName, normalizedStudySetName);
 
-                // Check for duplicate using studySetName + domain criteria
-                Optional<String> duplicateId = duplicateChecker.findByStudySetName(
-                        normalizedStudySetName, moduleType, userId, typeName, isPrivate);
+                // Check for duplicate using studySetName
+                Optional<String> duplicateId = duplicateChecker.findExistingContentSet(
+                        normalizedStudySetName, moduleType);
 
                 if (duplicateId.isPresent()) {
                     log.info("Sheet '{}': Found duplicate content by studySetName '{}', reusing ID: {}",

@@ -2,10 +2,10 @@ package com.lms.learningpath.service.impl;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.content.common.dto.response.StudySetResponse;
-import com.lms.learningpath.client.FlashcardServiceClient;
-import com.lms.learningpath.client.KanjiOriginServiceClient;
-import com.lms.learningpath.client.QuizServiceClient;
-import com.lms.learningpath.client.WritingServiceClient;
+import com.lms.learningpath.client.FlashcardClient;
+import com.lms.learningpath.client.KanjiOriginClient;
+import com.lms.learningpath.client.QuizClient;
+import com.lms.learningpath.client.WritingClient;
 import com.lms.learningpath.dto.response.AvailableModuleResponse;
 import com.lms.learningpath.entity.enums.ModuleType;
 import com.lms.learningpath.service.IAvailableModuleService;
@@ -22,10 +22,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AvailableModuleServiceImpl implements IAvailableModuleService {
 
-    private final FlashcardServiceClient flashcardServiceClient;
-    private final WritingServiceClient writingServiceClient;
-    private final KanjiOriginServiceClient kanjiOriginServiceClient;
-    private final QuizServiceClient quizServiceClient;
+    private final FlashcardClient flashcardClient;
+    private final WritingClient writingClient;
+    private final KanjiOriginClient kanjiClient;
+    private final QuizClient quizClient;
 
     @Override
     public List<AvailableModuleResponse> getAllAvailableModules(String query) {
@@ -49,8 +49,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
 
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? flashcardServiceClient.searchStudySets(query)
-                    : flashcardServiceClient.getAllStudySets();
+                    ? flashcardClient.searchStudySets(query)
+                    : flashcardClient.getAllStudySets();
 
             List<StudySetResponse> studySets = response.data();
             if (studySets == null) {
@@ -72,8 +72,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
 
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? writingServiceClient.searchStudySets(query)
-                    : writingServiceClient.getAllStudySets();
+                    ? writingClient.searchStudySets(query)
+                    : writingClient.getAllStudySets();
 
             List<StudySetResponse> studySets = response.data();
             if (studySets == null) {
@@ -95,8 +95,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
 
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? kanjiOriginServiceClient.searchStudySets(query)
-                    : kanjiOriginServiceClient.getAllStudySets();
+                    ? kanjiClient.searchStudySets(query)
+                    : kanjiClient.getAllStudySets();
 
             List<StudySetResponse> studySets = response.data();
             if (studySets == null) {
@@ -118,8 +118,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
 
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? quizServiceClient.searchStudySets(query)
-                    : quizServiceClient.getAllStudySets();
+                    ? quizClient.searchStudySets(query)
+                    : quizClient.getAllStudySets();
 
             List<StudySetResponse> studySets = response.data();
             if (studySets == null) {

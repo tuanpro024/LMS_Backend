@@ -3,11 +3,13 @@ package com.lms.quiz.controller;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.content.common.delegate.api.PackageApiDelegate;
+import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
 import com.lms.content.common.dto.response.TypeResponse;
 import com.lms.content.common.entity.TypeName;
+import com.lms.quiz.service.ExcelImportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -28,6 +31,7 @@ import java.util.List;
 public class PackageController {
 
     private final PackageApiDelegate delegate;
+    private final ExcelImportService excelImportService;
 
     @GetMapping("/types")
     public ResponseEntity<ApiResponse<List<TypeResponse>>> getPackageTypes() {
@@ -100,6 +104,18 @@ public class PackageController {
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         PackageResponse response = delegate.removeFolderFromPackage(packageId, folderId, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PostMapping("/import-excel")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("typeName") TypeName typeName,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, typeName,
+                principal.userId(), false);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

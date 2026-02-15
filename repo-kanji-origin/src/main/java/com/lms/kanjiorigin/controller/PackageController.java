@@ -100,13 +100,13 @@ public class PackageController {
     @PostMapping("/import-excel")
     public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("packageTypeId") String packageTypeId,
+            @RequestParam("typeName") TypeName typeName,
             Authentication authentication) {
         String userId = "test-user-id";
         if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
             userId = principal.userId();
         }
-        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, packageTypeId,
+        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, typeName,
                 userId, false);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

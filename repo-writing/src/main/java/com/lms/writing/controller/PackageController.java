@@ -107,10 +107,10 @@ public class PackageController {
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("packageTypeId") String packageTypeId,
+            @RequestParam("typeName") TypeName typeName,
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, packageTypeId,
+        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, typeName,
                 principal.userId(), false);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

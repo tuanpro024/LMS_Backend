@@ -100,11 +100,17 @@ public class PackageController {
     @PostMapping("/import-excel")
     public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("packageTypeId") String packageTypeId,
+            @RequestParam("typeName") TypeName typeName,
             Authentication authentication) {
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, packageTypeId,
-                principal.userId(), false);
+        // When called via Feign Client (service-to-service), authentication will be
+        // null
+        // Use "system" as default userId in that case
+        String userId = (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal)
+                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
+                : "system";
+
+        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, typeName,
+                userId, false);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

@@ -2,6 +2,7 @@ package com.lms.kanjiorigin.service.impl;
 
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.excel.HierarchicalImportRow;
+import com.lms.content.common.entity.TypeName;
 import com.lms.content.common.repository.*;
 import com.lms.content.common.service.impl.AbstractHierarchicalImportService;
 import com.lms.kanjiorigin.dto.excel.KanjiExtraRowData;
@@ -25,23 +26,24 @@ import java.util.*;
  * - Lesson data comes from Extra Columns (AA, AB).
  * - Kanji data comes from Standard Columns (M-Z) + Remaining Extra Columns.
  * - Rows with same Lesson Title in same StudySet are merged into one Lesson.
- * - Supports inheritance: If Lesson Title is empty, uses the previous valid lesson title.
+ * - Supports inheritance: If Lesson Title is empty, uses the previous valid
+ * lesson title.
  */
 @Service
 @Slf4j
 public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalImportService<KanjiLesson> {
 
     // Extra column indices (from AA onwards)
-    private static final int COL_LESSON_TITLE = 26;          // AA
-    private static final int COL_LESSON_DESC = 27;           // AB
-    private static final int COL_ORIGIN_TEXT_CN = 28;        // AC
-    private static final int COL_ORIGIN_TEXT_EN = 29;        // AD
-    private static final int COL_STROKE_ANIMATION_URL = 30;  // AE
-    private static final int COL_EXAMPLE_MEANING_VI = 31;    // AF
-    private static final int COL_EXAMPLE_MEANING_EN = 32;    // AG
-    private static final int COL_QUESTION_CONTENT = 33;      // AH
-    private static final int COL_CORRECT_ANSWER = 34;        // AI
-    private static final int COL_WRONG_OPTIONS = 35;         // AJ
+    private static final int COL_LESSON_TITLE = 26; // AA
+    private static final int COL_LESSON_DESC = 27; // AB
+    private static final int COL_ORIGIN_TEXT_CN = 28; // AC
+    private static final int COL_ORIGIN_TEXT_EN = 29; // AD
+    private static final int COL_STROKE_ANIMATION_URL = 30; // AE
+    private static final int COL_EXAMPLE_MEANING_VI = 31; // AF
+    private static final int COL_EXAMPLE_MEANING_EN = 32; // AG
+    private static final int COL_QUESTION_CONTENT = 33; // AH
+    private static final int COL_CORRECT_ANSWER = 34; // AI
+    private static final int COL_WRONG_OPTIONS = 35; // AJ
 
     private final KanjiLessonRepository kanjiLessonRepository;
     private final KanjiOriginRepository kanjiOriginRepository;
@@ -87,15 +89,15 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
     @Override
     @Transactional
     public HierarchicalImportResult importFromPackageExcel(
-            MultipartFile file, String packageTypeId, String userId, boolean isPrivate) {
-        
+            MultipartFile file, TypeName typeName, String userId, boolean isPrivate) {
+
         try {
             log.info("Pre-parsing extra kanji columns (AA-AJ)...");
             Map<Integer, KanjiExtraRowData> map = preParseExtraColumns(file);
             contextHolder.set(new ImportContext(map));
             log.info("Found extra data for {} rows", map.size());
 
-            return super.importFromPackageExcel(file, packageTypeId, userId, isPrivate);
+            return super.importFromPackageExcel(file, typeName, userId, isPrivate);
         } finally {
             contextHolder.remove(); // Clean up thread local
         }
@@ -104,8 +106,8 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
     @Override
     protected KanjiLesson createContentItem(HierarchicalImportRow row, int index) {
         ImportContext ctx = contextHolder.get();
-        KanjiExtraRowData extra = (ctx != null && ctx.extraDataMap != null) 
-                ? ctx.extraDataMap.get(row.getRowNumber()) 
+        KanjiExtraRowData extra = (ctx != null && ctx.extraDataMap != null)
+                ? ctx.extraDataMap.get(row.getRowNumber())
                 : null;
 
         String lessonTitle = null;
@@ -115,35 +117,35 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
         if (extra != null && extra.getLessonTitle() != null && !extra.getLessonTitle().isEmpty()) {
             lessonTitle = extra.getLessonTitle();
             lessonDesc = extra.getLessonDescription();
-            
+
             // Update context with new active lesson
             if (ctx != null) {
                 ctx.lastLessonTitle = lessonTitle;
                 ctx.lastLessonDesc = lessonDesc;
             }
-        } 
+        }
         // If not, try to use inherited lesson from context
         else if (ctx != null && ctx.lastLessonTitle != null) {
             lessonTitle = ctx.lastLessonTitle;
             lessonDesc = ctx.lastLessonDesc;
         }
-        
+
         // Fallback: use Term if absolutely no lesson info found anywhere
         if (lessonTitle == null) {
-             lessonTitle = row.getTerm() != null ? row.getTerm().trim() : "Untitled Lesson";
-             lessonDesc = row.getDefinition();
+            lessonTitle = row.getTerm() != null ? row.getTerm().trim() : "Untitled Lesson";
+            lessonDesc = row.getDefinition();
         }
 
         // Create Lesson Object (Transient container)
         KanjiLesson lesson = new KanjiLesson();
-        lesson.setContentIndex(index); 
+        lesson.setContentIndex(index);
         lesson.setTitle(lessonTitle);
         lesson.setDescription(lessonDesc);
 
         // Create KanjiOrigin from Standard Cols + Extra Cols
         KanjiOrigin origin = new KanjiOrigin();
         origin.setTerm(row.getTerm() != null ? row.getTerm().trim() : "");
-        origin.setMeaning(row.getDefinition() != null ? row.getDefinition().trim() : null); 
+        origin.setMeaning(row.getDefinition() != null ? row.getDefinition().trim() : null);
         origin.setPinyin(row.getPinyin() != null ? row.getPinyin().trim() : null);
         origin.setSinoVn(row.getSinoVn() != null ? row.getSinoVn().trim() : null);
         origin.setOriginTextVi(row.getSinoOrigin() != null ? row.getSinoOrigin().trim() : null);
@@ -186,7 +188,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
             // New Lesson
             Integer maxIdx = kanjiLessonRepository.findMaxContentIndexByStudySetId(item.getStudySet().getId());
             int newIdx = (maxIdx == null) ? 1 : maxIdx + 1;
-            item.setContentIndex(newIdx); 
+            item.setContentIndex(newIdx);
             savedLesson = kanjiLessonRepository.save(item);
         }
 
@@ -264,14 +266,15 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
         Map<Integer, KanjiExtraRowData> map = new HashMap<>();
 
         try (InputStream is = file.getInputStream();
-             Workbook workbook = new XSSFWorkbook(is)) {
+                Workbook workbook = new XSSFWorkbook(is)) {
 
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();
 
             for (int i = 1; i <= lastRowNum; i++) {
                 Row row = sheet.getRow(i);
-                if (row == null) continue;
+                if (row == null)
+                    continue;
 
                 int rowNumber = i + 1;
 
@@ -312,7 +315,8 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
 
     private static String getCellStr(Row row, int colIndex) {
         Cell cell = row.getCell(colIndex);
-        if (cell == null) return null;
+        if (cell == null)
+            return null;
 
         return switch (cell.getCellType()) {
             case STRING -> {

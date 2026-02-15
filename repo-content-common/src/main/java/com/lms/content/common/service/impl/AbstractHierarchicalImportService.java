@@ -49,25 +49,30 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
      */
     protected abstract String getContentItemTypeName();
 
-    @Override
     @Transactional
     public HierarchicalImportResult importFromPackageExcel(
             MultipartFile file,
-            String packageTypeId,
+            TypeName typeName,
             String userId,
             boolean isPrivate) {
 
-        log.info("Starting hierarchical Excel import for user: {} with packageTypeId: {}", userId, packageTypeId);
+        log.info("Starting hierarchical Excel import for user: {} with typeName: {}", userId, typeName);
 
-        // Validate packageTypeId
-        if (packageTypeId == null || packageTypeId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Package Type ID is required");
+        // Validate typeName
+        if (typeName == null) {
+            throw new IllegalArgumentException("TypeName is required");
         }
 
-        Type type = typeRepository.findById(packageTypeId).orElse(null);
-        if (type == null) {
-            throw new IllegalArgumentException("Invalid Package Type ID: " + packageTypeId);
-        }
+        // Find or create Type by TypeName
+        Type type = typeRepository.findByName(typeName)
+                .orElseGet(() -> {
+                    log.info("Type '{}' not found, creating default Type", typeName);
+                    Type newType = Type.builder()
+                            .name(typeName)
+                            .description("Auto-created from import")
+                            .build();
+                    return typeRepository.save(newType);
+                });
 
         // Parse file
         List<HierarchicalImportRow> rows;
@@ -335,7 +340,8 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
     /**
      * Create Package entity
      */
-    private Package createPackage(HierarchicalImportRow row, Type packageType, String userId, HierarchicalImportResult result) {
+    private Package createPackage(HierarchicalImportRow row, Type packageType, String userId,
+            HierarchicalImportResult result) {
         return Package.builder()
                 .name(row.getPackageName().trim())
                 .description(row.getPackageDescription() != null ? row.getPackageDescription().trim() : null)

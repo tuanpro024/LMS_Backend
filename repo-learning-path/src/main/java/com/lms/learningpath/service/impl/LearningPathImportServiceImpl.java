@@ -170,7 +170,11 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
 
     /**
      * Resolve content for a single sheet.
-     * Priority: 1) ExistingContentSetId, 2) Duplicate check, 3) Create new.
+     * Priority:
+     * 1) ExistingContentSetId from Excel → reuse immediately
+     * 2) Extract studySetName from sheetBytes → check duplicate by studySetName +
+     * domain criteria
+     * 3) Create new content if no duplicate found
      */
     private ContentReference resolveContentForSheet(
             String sheetName,
@@ -194,17 +198,37 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                     .build();
         }
 
-        // Priority 2: Check for duplicates by title (use sheetName as title proxy)
-        Optional<String> duplicateId = duplicateChecker.findExistingContentSet(sheetName, moduleType);
-        if (duplicateId.isPresent()) {
-            log.info("Sheet '{}': Found duplicate content, reusing ID: {}", sheetName, duplicateId.get());
-            detail.setReused(true);
-            detail.setContentSetId(duplicateId.get());
-            return ContentReference.builder()
-                    .moduleType(moduleType)
-                    .contentSetId(duplicateId.get())
-                    .newlyCreated(false)
-                    .build();
+        // Priority 2: Check for duplicates by studySetName (extracted from sheetBytes)
+        if (sheetBytes != null) {
+            // Extract studySetName from sheetBytes
+            Optional<String> studySetNameOpt = com.lms.learningpath.util.StudySetNameExtractor
+                    .extractStudySetName(sheetBytes, moduleType);
+
+            if (studySetNameOpt.isPresent()) {
+                String normalizedStudySetName = studySetNameOpt.get();
+                log.debug("Sheet '{}': Extracted studySetName: '{}'", sheetName, normalizedStudySetName);
+
+                // Check for duplicate using studySetName + domain criteria
+                Optional<String> duplicateId = duplicateChecker.findByStudySetName(
+                        normalizedStudySetName, moduleType, userId, typeName, isPrivate);
+
+                if (duplicateId.isPresent()) {
+                    log.info("Sheet '{}': Found duplicate content by studySetName '{}', reusing ID: {}",
+                            sheetName, normalizedStudySetName, duplicateId.get());
+                    detail.setReused(true);
+                    detail.setContentSetId(duplicateId.get());
+                    return ContentReference.builder()
+                            .moduleType(moduleType)
+                            .contentSetId(duplicateId.get())
+                            .newlyCreated(false)
+                            .build();
+                }
+
+                log.debug("Sheet '{}': No duplicate found for studySetName '{}'", sheetName, normalizedStudySetName);
+            } else {
+                log.warn("Sheet '{}': Could not extract studySetName from sheetBytes, will create new content",
+                        sheetName);
+            }
         }
 
         // Priority 3: Create new content

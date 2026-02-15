@@ -1,6 +1,7 @@
 package com.lms.flashcard.service;
 
 import com.lms.flashcard.dto.request.CreateCardRequest;
+import com.lms.flashcard.dto.request.UpdateCardRequest;
 import com.lms.flashcard.dto.request.UpdateCardStatusRequest;
 import com.lms.flashcard.dto.response.CardResponse;
 
@@ -23,4 +24,10 @@ public interface CardService {
     List<CardResponse> addCardsToStudySet(String studySetId, List<CreateCardRequest> cards, String userId);
 
     List<CardResponse> getCardsByStudySetId(String studySetId);
+
+    CardResponse getCardById(String id);
+
+    CardResponse updateCard(String id, UpdateCardRequest request, String userId);
+
+    void deleteCard(String id, String userId);
 }

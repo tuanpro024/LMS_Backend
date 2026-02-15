@@ -1,6 +1,7 @@
 package com.lms.pronunciation.entity;
 
-import com.lms.content.common.entity .BaseContentItem;
+import com.lms.content.common.dto.excel.ImportableContentItem;
+import com.lms.content.common.entity.BaseContentItem;
 import com.lms.pronunciation.entity.enums.PronunciationType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,7 +12,7 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PronunciationItem extends BaseContentItem {
+public class PronunciationItem extends BaseContentItem implements ImportableContentItem {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

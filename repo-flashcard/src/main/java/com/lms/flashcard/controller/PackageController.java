@@ -7,6 +7,7 @@ import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
+import com.lms.content.common.dto.response.TypeResponse;
 import com.lms.content.common.entity.TypeName;
 import com.lms.flashcard.service.ExcelImportService;
 import jakarta.validation.Valid;
@@ -33,8 +34,8 @@ public class PackageController {
     private final ExcelImportService excelImportService;
 
     @GetMapping("/types")
-    public ResponseEntity<ApiResponse<List<TypeName>>> getPackageTypes() {
-        List<TypeName> types = delegate.getPackageTypes();
+    public ResponseEntity<ApiResponse<List<TypeResponse>>> getPackageTypes() {
+        List<TypeResponse> types = delegate.getPackageTypes();
         return ResponseEntity.ok(ApiResponse.ok(types));
     }
 
@@ -110,10 +111,10 @@ public class PackageController {
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("packageTypeId") String packageTypeId,
+            @RequestParam("typeName") TypeName typeName,
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, packageTypeId,
+        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, typeName,
                 principal.userId(), false);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

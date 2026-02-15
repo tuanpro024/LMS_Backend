@@ -1,10 +1,12 @@
 package com.lms.kanjiorigin.entity;
 
+import com.lms.content.common.dto.excel.ImportableContentItem;
 import com.lms.content.common.entity.BaseContentItem;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Where;
 
+import com.lms.kanjiorigin.dto.excel.KanjiExtraRowData;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class KanjiLesson extends BaseContentItem {
+public class KanjiLesson extends BaseContentItem implements ImportableContentItem {
 
     @Column(nullable = false)
     private String title;
@@ -32,4 +34,10 @@ public class KanjiLesson extends BaseContentItem {
     @Where(clause = "deleted = false")
     @Builder.Default
     private List<KanjiLessonQuestion> questions = new ArrayList<>();
+
+    @Transient
+    private KanjiOrigin tempImportOrigin;
+
+    @Transient
+    private KanjiExtraRowData tempExtraData;
 }

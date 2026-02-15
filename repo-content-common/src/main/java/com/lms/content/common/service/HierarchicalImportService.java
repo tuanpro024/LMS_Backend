@@ -2,6 +2,7 @@ package com.lms.content.common.service;
 
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.excel.ImportableContentItem;
+import com.lms.content.common.entity.TypeName;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -16,15 +17,16 @@ public interface HierarchicalImportService<T extends ImportableContentItem> {
      * Import data from Excel file with full hierarchy:
      * Package -> Subject -> Slot -> Folder -> StudySet -> ContentItems
      * 
-     * @param file          Excel file
-     * @param packageTypeId ID of the Package Type (all packages will have this type)
-     * @param userId        User performing the import
-     * @param isPrivate     Whether created items should be private
+     * @param file      Excel file
+     * @param typeName  TypeName enum for the Package Type (all packages will have
+     *                  this type)
+     * @param userId    User performing the import
+     * @param isPrivate Whether created items should be private
      * @return Import result with statistics and warnings
      */
     HierarchicalImportResult importFromPackageExcel(
             MultipartFile file,
-            String packageTypeId,
+            TypeName typeName,
             String userId,
             boolean isPrivate);
 }

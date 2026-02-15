@@ -26,16 +26,15 @@ import java.util.List;
 public class ExcelImportServiceImpl implements ExcelImportService {
     private final FlashcardHierarchicalImportService hierarchicalImportService;
 
-    @Override
     @Transactional
     public HierarchicalImportResult importFromPackageExcel(
             MultipartFile file,
-            String packageTypeId,
+            com.lms.content.common.entity.TypeName typeName,
             String userId,
             boolean isPrivate) {
-        log.info("Starting hierarchical Excel import for user: {} with packageTypeId: {}", userId, packageTypeId);
+        log.info("Starting hierarchical Excel import for user: {} with typeName: {}", userId, typeName);
 
-        return hierarchicalImportService.importFromPackageExcel(file, packageTypeId, userId, isPrivate);
+        return hierarchicalImportService.importFromPackageExcel(file, typeName, userId, isPrivate);
     }
 
 }

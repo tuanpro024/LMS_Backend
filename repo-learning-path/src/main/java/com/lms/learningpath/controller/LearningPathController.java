@@ -2,11 +2,14 @@ package com.lms.learningpath.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.content.common.entity.TypeName;
+import com.lms.learningpath.dto.excel.LearningPathImportResult;
 import com.lms.learningpath.dto.request.CreateLearningPathRequest;
 import com.lms.learningpath.dto.request.ReorderItemsRequest;
 import com.lms.learningpath.dto.request.UpdateLearningPathRequest;
 import com.lms.learningpath.dto.response.LearningPathResponse;
 import com.lms.learningpath.service.ILearningPathService;
+import com.lms.learningpath.service.LearningPathImportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -14,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,6 +31,7 @@ import java.util.List;
 public class LearningPathController {
 
     private final ILearningPathService learningPathService;
+    private final LearningPathImportService learningPathImportService;
 
     /**
      * Create a new learning path (Admin/Teacher only)
@@ -106,6 +111,27 @@ public class LearningPathController {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         learningPathService.deleteLearningPath(id, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    /**
+     * Import Learning Path from Excel file (Admin/Teacher only)
+     * Supports hybrid 2-phase import: external content creation + local hierarchy.
+     */
+    @PostMapping("/import-excel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public ResponseEntity<ApiResponse<LearningPathImportResult>> importFromExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("typeName") String typeNameStr,
+            @RequestParam(value = "isPrivate", defaultValue = "false") boolean isPrivate,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        TypeName typeName = TypeName.valueOf(typeNameStr);
+        LearningPathImportResult result = learningPathImportService.importFromExcel(
+                file, typeName, principal.userId(), isPrivate);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(result));
     }
 
 }

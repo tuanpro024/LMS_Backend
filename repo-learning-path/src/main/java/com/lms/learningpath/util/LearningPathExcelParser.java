@@ -39,7 +39,6 @@ public class LearningPathExcelParser {
     private static final int COL_MODULE_ORDER = 13; // N
     private static final int COL_IS_REQUIRED = 14; // O
     private static final int COL_CONTENT_SHEET_NAME = 15; // P
-    private static final int COL_EXISTING_CONTENT_ID = 16; // Q
 
     /**
      * Parse multi-sheet Excel file.
@@ -167,7 +166,6 @@ public class LearningPathExcelParser {
                 .moduleOrder(parseInteger(getCellValue(row, COL_MODULE_ORDER)))
                 .isRequired(parseBoolean(getCellValue(row, COL_IS_REQUIRED)))
                 .contentSheetName(getCellValue(row, COL_CONTENT_SHEET_NAME))
-                .existingContentSetId(getCellValue(row, COL_EXISTING_CONTENT_ID))
                 .build();
     }
 

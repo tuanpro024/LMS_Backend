@@ -13,7 +13,10 @@ public interface FolderRepository extends JpaRepository<Folder, String> {
 
     List<Folder> findByUserId(String userId);
 
-    @Query("SELECT f FROM Folder f WHERE f.packageEntity.id = :packageId")
+    @Query("SELECT f FROM Folder f WHERE " +
+            "f.packageEntity.id = :packageId OR " +
+            "f.subject.packageEntity.id = :packageId OR " +
+            "f.slot.subject.packageEntity.id = :packageId")
     List<Folder> findByPackageId(@Param("packageId") String packageId);
 
     @Query("SELECT f FROM Folder f WHERE f.subject.id = :subjectId")

@@ -12,7 +12,7 @@ import java.util.Optional;
 /**
  * Utility to extract studySetName from Excel sheet bytes.
  * 
- * CRITICAL: This class only parses minimal metadata (first data row, column 0)
+ * CRITICAL: Parses minimal metadata (first non-empty StudySet Name cell)
  * to avoid memory overhead. It does NOT parse the entire sheet content.
  */
 @Slf4j
@@ -23,7 +23,7 @@ public class StudySetNameExtractor {
      * Based on common format across all repos (Flashcard, Writing, Kanji,
      * Pronunciation, Quiz).
      */
-    private static final int STUDY_SET_NAME_COLUMN = 0;
+    private static final int STUDY_SET_NAME_COLUMN = 10;
 
     /**
      * Row index for first data row (row 0 is header).

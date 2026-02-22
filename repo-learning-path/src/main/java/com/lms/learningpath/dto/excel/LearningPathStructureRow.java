@@ -45,7 +45,6 @@ public class LearningPathStructureRow {
     private Integer moduleOrder;
     private Boolean isRequired;
     private String contentSheetName;    // Name of sheet containing content data
-    private String existingContentSetId; // Pre-existing contentSetId to reuse
 
     /**
      * Helper methods to detect hierarchy level changes

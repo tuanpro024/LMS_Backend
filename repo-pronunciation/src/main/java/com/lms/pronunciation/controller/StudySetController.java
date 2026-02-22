@@ -70,6 +70,14 @@ public class StudySetController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @GetMapping("/exact-match")
+    public ResponseEntity<ApiResponse<List<StudySetResponse>>> findByTitleAndUserIdIgnoreCase(
+            @RequestParam("title") String title,
+            @RequestParam("userId") String userId) {
+        List<StudySetResponse> response = delegate.findByTitleAndUserIdIgnoreCase(title, userId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,

@@ -9,6 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface KanjiLessonProgressRepository extends JpaRepository<KanjiLessonProgress, Long> {
-    Optional<KanjiLessonProgress> findByUserIdAndKanjiLessonId(String userId, String kanjiLessonId);
+    Optional<KanjiLessonProgress> findByUserIdAndKanjiLesson_Id(String userId, String kanjiLessonId);
+
     List<KanjiLessonProgress> findByUserId(String userId);
 }

@@ -38,14 +38,17 @@ public class PronunciationItemServiceImpl implements PronunciationItemService {
         log.info("Creating pronunciation item with symbol: {}", request.getSymbol());
 
         StudySet studySet = studySetRepository.findById(request.getStudySetId())
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found with id: " + request.getStudySetId()));
+                .orElseThrow(() -> new ApiException(ErrorCode.E227,
+                        "StudySet not found with id: " + request.getStudySetId()));
 
         if (request.getContentIndex() != null &&
-            pronunciationItemRepository.existsByStudySetIdAndContentIndexAndDeletedFalse(request.getStudySetId(), request.getContentIndex())) {
+                pronunciationItemRepository.existsByStudySetIdAndContentIndexAndDeletedFalse(request.getStudySetId(),
+                        request.getContentIndex())) {
             throw new ApiException(ErrorCode.E227, "Content index already exists: " + request.getContentIndex());
         }
 
-        if (pronunciationItemRepository.existsByStudySetIdAndSymbolAndDeletedFalse(request.getStudySetId(), request.getSymbol())) {
+        if (pronunciationItemRepository.existsByStudySetIdAndSymbolAndDeletedFalse(request.getStudySetId(),
+                request.getSymbol())) {
             throw new ApiException(ErrorCode.E227, "Symbol already exists in this study set: " + request.getSymbol());
         }
 
@@ -67,12 +70,13 @@ public class PronunciationItemServiceImpl implements PronunciationItemService {
         log.info("Updating pronunciation item with id: {}", id);
 
         PronunciationItem item = pronunciationItemRepository.findById(id)
+                .filter(i -> !i.isDeleted())
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "PronunciationItem not found with id: " + id));
 
         if (request.getContentIndex() != null &&
-            !request.getContentIndex().equals(item.getContentIndex()) &&
-            pronunciationItemRepository.existsByStudySetIdAndContentIndexAndIdNotAndDeletedFalse(
-                item.getStudySet().getId(), request.getContentIndex(), id)) {
+                !request.getContentIndex().equals(item.getContentIndex()) &&
+                pronunciationItemRepository.existsByStudySetIdAndContentIndexAndIdNotAndDeletedFalse(
+                        item.getStudySet().getId(), request.getContentIndex(), id)) {
             throw new ApiException(ErrorCode.E227, "Content index already exists: " + request.getContentIndex());
         }
 
@@ -85,8 +89,15 @@ public class PronunciationItemServiceImpl implements PronunciationItemService {
     public void delete(String id) {
         log.info("Deleting pronunciation item with id: {}", id);
 
-        PronunciationItem item = pronunciationItemRepository.findById(id)
-                .orElseThrow(() -> new ApiException(ErrorCode.E227, "PronunciationItem not found with id: " + id));
+        PronunciationItem item = pronunciationItemRepository.findById(id).orElse(null);
+        if (item == null) {
+            log.warn("Delete requested for non-existing pronunciation item id: {}. Treating as no-op.", id);
+            return;
+        }
+        if (item.isDeleted()) {
+            log.warn("Delete requested for already deleted pronunciation item id: {}. Treating as no-op.", id);
+            return;
+        }
 
         item.setDeleted(true);
         pronunciationItemRepository.save(item);
@@ -98,6 +109,7 @@ public class PronunciationItemServiceImpl implements PronunciationItemService {
         log.info("Getting pronunciation item with id: {}", id);
 
         PronunciationItem item = pronunciationItemRepository.findById(id)
+                .filter(i -> !i.isDeleted())
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "PronunciationItem not found with id: " + id));
 
         return pronunciationItemMapper.toResponse(item);

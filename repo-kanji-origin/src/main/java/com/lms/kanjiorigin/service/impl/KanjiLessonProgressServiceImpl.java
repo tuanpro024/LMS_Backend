@@ -32,8 +32,8 @@ public class KanjiLessonProgressServiceImpl implements KanjiLessonProgressServic
         KanjiLesson lesson = kanjiLessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiLesson not found with id: " + lessonId));
 
-        KanjiLessonProgress progress = progressRepository.findByUserIdAndKanjiLessonId(userId, lessonId)
-                .orElse(KanjiLessonProgress.builder()
+        KanjiLessonProgress progress = progressRepository.findByUserIdAndKanjiLesson_Id(userId, lessonId)
+                .orElseGet(() -> KanjiLessonProgress.builder()
                         .userId(userId)
                         .kanjiLesson(lesson)
                         .isLearned(false)
@@ -46,8 +46,8 @@ public class KanjiLessonProgressServiceImpl implements KanjiLessonProgressServic
     @Override
     public void unmarkLessonAsLearned(String lessonId, String userId) {
         log.info("Unmarking lesson {} as learned for user {}", lessonId, userId);
-        
-        progressRepository.findByUserIdAndKanjiLessonId(userId, lessonId)
+
+        progressRepository.findByUserIdAndKanjiLesson_Id(userId, lessonId)
                 .ifPresent(progress -> {
                     progress.setLearned(false);
                     progressRepository.save(progress);

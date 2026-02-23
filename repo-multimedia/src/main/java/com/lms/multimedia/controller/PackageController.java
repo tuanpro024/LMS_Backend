@@ -6,6 +6,7 @@ import com.lms.content.common.delegate.api.PackageApiDelegate;
 import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
+import com.lms.content.common.dto.response.TypeResponse;
 import com.lms.content.common.entity.TypeName;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,8 @@ public class PackageController {
     private final PackageApiDelegate delegate;
 
     @GetMapping("/types")
-    public ResponseEntity<ApiResponse<List<TypeName>>> getPackageTypes() {
-        List<TypeName> types = delegate.getPackageTypes();
+    public ResponseEntity<ApiResponse<List<TypeResponse>>> getPackageTypes() {
+        List<TypeResponse> types = delegate.getPackageTypes();
         return ResponseEntity.ok(ApiResponse.ok(types));
     }
 

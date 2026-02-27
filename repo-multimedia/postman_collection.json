@@ -646,7 +646,7 @@
                             "raw": "{\n  \"code\": \"video_001\",\n  \"name\": \"Introduction to Chinese\",\n  \"duration\": 300,\n  \"masterPlaylistUrl\": \"https://storage.example.com/video_001/master.m3u8\",\n  \"thumbnailUrl\": \"https://storage.example.com/video_001/thumbnail.jpg\",\n  \"status\": \"READY\",\n  \"studySetId\": \"{{study_set_id}}\"\n}"
                         },
                         "url": {
-                            "raw": "{{base_url}}/api/videos/webhook",
+                            "raw": "{{base_url}}/api/media/webhook",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -664,7 +664,7 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{base_url}}/api/videos",
+                            "raw": "{{base_url}}/api/media",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -681,7 +681,7 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{base_url}}/api/videos?studySetId={{study_set_id}}",
+                            "raw": "{{base_url}}/api/media?studySetId={{study_set_id}}",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -704,7 +704,7 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{base_url}}/api/videos/{{video_code}}",
+                            "raw": "{{base_url}}/api/media/{{video_code}}",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -722,7 +722,7 @@
                         "method": "GET",
                         "header": [],
                         "url": {
-                            "raw": "{{base_url}}/api/videos/{{video_id}}/details",
+                            "raw": "{{base_url}}/api/media/{{video_id}}/details",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -746,7 +746,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/videos/{{video_id}}",
+                            "raw": "{{base_url}}/api/media/{{video_id}}",
                             "host": [
                                 "{{base_url}}"
                             ],

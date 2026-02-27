@@ -135,7 +135,7 @@ public class VideoMetadataServiceImpl implements VideoMetadataService {
      */
     private VideoMetadataFromMultimedia fetchVideoFromMultimedia(String videoCode) {
         try {
-            String url = multimediaServiceUrl + "/api/videos/" + videoCode;
+            String url = multimediaServiceUrl + "/api/media/" + videoCode;
             log.info("Fetching video metadata from: {}", url);
 
             // This assumes multimedia service returns a response with data field

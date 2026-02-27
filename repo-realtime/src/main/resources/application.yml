@@ -13,7 +13,7 @@ spring:
       auto-offset-reset: latest
 
 server:
-  port: 8084
+  port: ${SERVER_PORT:8084}
 
 security:
   jwt:

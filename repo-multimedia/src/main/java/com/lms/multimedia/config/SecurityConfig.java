@@ -40,7 +40,7 @@ public class SecurityConfig {
                 "/api/packages",
                 "/api/folders",
                 "/api/study-sets",
-                "/api/videos",
+                "/api/media",
                 "/api/subtitles");
 
         return new BaseJwtFilter(publicKey, skipPatterns, optionalPatterns);
@@ -55,13 +55,13 @@ public class SecurityConfig {
                         // Health and actuator endpoints
                         .requestMatchers("/health", "/actuator/**").permitAll()
                         // Webhook endpoints (internal use only)
-                        .requestMatchers(HttpMethod.POST, "/api/videos/webhook").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/media/webhook").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/subtitles/webhook").permitAll()
                         // Public GET endpoints
                         .requestMatchers(HttpMethod.GET, "/api/packages/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/folders/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/study-sets/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/videos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/media/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/subtitles/**").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated())

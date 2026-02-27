@@ -87,4 +87,6 @@ app:
     from: ${EMAIL_FROM:noreply@lms.com}
     from-name: ${EMAIL_FROM_NAME:LMS System}
   frontend:
-    url: ${FRONTEND_URL:http://localhost:3000}
+#    url: ${FRONTEND_URL:http://localhost:3000}
+     url: ${FRONTEND_URL:https://arin.io.vn}
+

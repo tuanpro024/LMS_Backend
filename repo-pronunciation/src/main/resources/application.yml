@@ -23,7 +23,7 @@ spring:
       max-request-size: 10MB
 
 server:
-  port: 8088
+  port: ${SERVER_PORT:8088}
 
 security:
   jwt:

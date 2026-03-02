@@ -51,7 +51,7 @@ public class EmailServiceImpl implements EmailService {
 
             helper.setFrom(emailFrom, emailFromName);
             helper.setTo(toEmail);
-            helper.setSubject("Xác Thực Tài Khoản LMS - Verification Email");
+            helper.setSubject("Xác Thực Tài Khoản Học Bá");
             helper.setText(htmlContent, true); // true = HTML content
 
             // Gửi email
@@ -85,7 +85,7 @@ public class EmailServiceImpl implements EmailService {
 
             helper.setFrom(emailFrom, emailFromName);
             helper.setTo(toEmail);
-            helper.setSubject("Đặt Lại Mật Khẩu LMS - Password Reset");
+            helper.setSubject("Đặt Lại Mật Khẩu Học Bá");
             helper.setText(htmlContent, true);
 
             mailSender.send(message);

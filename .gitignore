@@ -66,3 +66,11 @@ dump.rdb
 # Docker
 docker-compose.override.yml
 .docker/
+
+# Secrets / sensitive data
+secrets/
+**/secrets/
+*.key
+*.pem
+*.p12
+*.pfx

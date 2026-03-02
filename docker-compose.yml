@@ -2,8 +2,6 @@ services:
   redis:
     image: redis:7.0-alpine
     container_name: lms-redis
-    ports:
-      - "6379:6379"
     networks:
       - lms-network
     healthcheck:
@@ -15,8 +13,6 @@ services:
   kafka:
     image: apache/kafka:3.7.1
     container_name: lms-kafka
-    ports:
-      - "9092:9092"
     environment:
       - KAFKA_NODE_ID=1
       - KAFKA_PROCESS_ROLES=broker,controller
@@ -46,9 +42,8 @@ services:
     build:
       context: .
       dockerfile: repo-eureka/Dockerfile
+    image: lms-eureka
     container_name: lms-eureka
-    ports:
-      - "8761:8761"
     networks:
       - lms-network
     healthcheck:
@@ -84,9 +79,8 @@ services:
     build:
       context: .
       dockerfile: repo-identity/Dockerfile
+    image: lms-identity
     container_name: lms-identity
-    ports:
-      - "8081:8081"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_identity_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
@@ -116,9 +110,10 @@ services:
     build:
       context: .
       dockerfile: repo-api-gateway/Dockerfile
+    image: lms-gateway
     container_name: lms-gateway
     ports:
-      - "8080:8080"
+      - "48080:8080"
     environment:
       - SPRING_DATA_REDIS_HOST=redis
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
@@ -134,12 +129,16 @@ services:
     build:
       context: .
       dockerfile: repo-realtime/Dockerfile
+    image: lms-realtime
     container_name: lms-realtime
-    ports:
-      - "8084:8084"
     environment:
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
     depends_on:
+      setup-keys:
+        condition: service_completed_successfully
       eureka-server:
         condition: service_healthy
     networks:
@@ -148,8 +147,6 @@ services:
   mysql:
     image: mysql:8.0
     container_name: lms-mysql
-    ports:
-      - "3306:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=lms_flashcard_db
@@ -168,9 +165,8 @@ services:
     build:
       context: .
       dockerfile: repo-flashcard/Dockerfile
+    image: lms-flashcard
     container_name: lms-flashcard
-    ports:
-      - "8083:8083"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_flashcard_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
@@ -193,9 +189,8 @@ services:
     build:
       context: .
       dockerfile: repo-writing/Dockerfile
+    image: lms-writing
     container_name: lms-writing
-    ports:
-      - "8085:8085"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_writing_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
@@ -218,9 +213,8 @@ services:
     build:
       context: .
       dockerfile: repo-dictionary/Dockerfile
+    image: lms-dictionary
     container_name: lms-dictionary
-    ports:
-      - "8086:8086"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_flashcard_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
@@ -243,9 +237,8 @@ services:
     build:
       context: .
       dockerfile: repo-kanji-origin/Dockerfile
+    image: lms-kanji-origin
     container_name: lms-kanji-origin
-    ports:
-      - "8087:8087"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_kanji_origin_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
@@ -268,9 +261,8 @@ services:
     build:
       context: .
       dockerfile: repo-pronunciation/Dockerfile
+    image: lms-pronunciation
     container_name: lms-pronunciation
-    ports:
-      - "8088:8088"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_pronunciation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
@@ -293,9 +285,8 @@ services:
     build:
       context: .
       dockerfile: repo-quiz/Dockerfile
+    image: lms-quiz
     container_name: lms-quiz
-    ports:
-      - "8089:8089"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_quiz_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
@@ -318,9 +309,8 @@ services:
     build:
       context: .
       dockerfile: repo-learning-path/Dockerfile
+    image: lms-learning-path
     container_name: lms-learning-path
-    ports:
-      - "8090:8090"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_learning_path_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
@@ -345,3 +335,4 @@ networks:
 
 volumes:
   mysql_data:
+

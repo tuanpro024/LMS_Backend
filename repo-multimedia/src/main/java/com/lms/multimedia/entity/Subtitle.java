@@ -24,7 +24,7 @@ public class Subtitle extends BaseEntity {
     private String name; // "Phụ đề chính", "Phụ đề v2", etc.
 
     @Column(nullable = false, length = 500)
-    private String filePath; // MinIO path: /videos/{videoCode}/subtitles/{id}.json
+    private String filePath; // MinIO path: /media/{videoCode}/subtitles/{id}.json
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

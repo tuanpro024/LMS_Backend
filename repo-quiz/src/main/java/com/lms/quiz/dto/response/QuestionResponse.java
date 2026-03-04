@@ -49,7 +49,7 @@ public class QuestionResponse {
         private Integer optionIndex;
         private String content;
         private String mediaUrl;
-        // KHÔNG có isCorrect!
+        private Boolean isCorrect; // Chỉ populate cho admin view
     }
 
     @Data
@@ -59,7 +59,8 @@ public class QuestionResponse {
     public static class BlankInfo {
         private Integer blankIndex;
         private String hint;
-        // KHÔNG có correctAnswer!
+        private String correctAnswer;    // Chỉ populate cho admin view
+        private String acceptedAnswers;  // JSON array, e.g. ["went","had gone"]
     }
 
     @Data
@@ -82,6 +83,6 @@ public class QuestionResponse {
         private String id;
         private String content;
         private Boolean isDistractor;
-        // KHÔNG có correctPosition!
+        private Integer correctPosition; // Chỉ populate cho admin view
     }
 }

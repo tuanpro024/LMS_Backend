@@ -18,7 +18,7 @@ spring:
     open-in-view: false
 
 server:
-  port: 8090
+  port: ${SERVER_PORT:8099}
 
 security:
   jwt:
@@ -59,4 +59,3 @@ feign:
         connectTimeout: 5000
         readTimeout: 5000
         loggerLevel: basic
-

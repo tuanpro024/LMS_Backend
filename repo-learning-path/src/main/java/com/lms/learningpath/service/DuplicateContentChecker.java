@@ -2,10 +2,7 @@ package com.lms.learningpath.service;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.content.common.dto.response.StudySetResponse;
-import com.lms.learningpath.client.FlashcardClient;
-import com.lms.learningpath.client.KanjiOriginClient;
-import com.lms.learningpath.client.QuizClient;
-import com.lms.learningpath.client.WritingClient;
+import com.lms.learningpath.client.*;
 import com.lms.learningpath.entity.enums.ModuleType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +24,7 @@ public class DuplicateContentChecker {
     private final WritingClient writingClient;
     private final KanjiOriginClient kanjiClient;
     private final QuizClient quizClient;
+    private final PronunciationClient pronunciationClient;
     // Note: PronunciationServiceClient can be added when needed
 
     /**
@@ -55,6 +53,9 @@ public class DuplicateContentChecker {
 
                 case QUIZ:
                     return searchByTitle(quizClient.searchStudySets(title), title);
+
+                case PRONUNCIATION:
+                    return searchByTitle(pronunciationClient.searchStudySets(title), title);
 
                 // Add other types as needed
                 default:

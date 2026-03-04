@@ -260,11 +260,6 @@ public class LearningPathImportTransactionalHelper {
             StudySet currentStudySet,
             LearningPathImportResult result) {
 
-        // Priority 1: ExistingContentSetId
-        if (row.getExistingContentSetId() != null && !row.getExistingContentSetId().isBlank()) {
-            return row.getExistingContentSetId();
-        }
-
         // Priority 2: Lookup from Phase 1 contentRefMap
         if (row.getContentSheetName() != null && !row.getContentSheetName().isBlank()) {
             ContentReference ref = refMap.get(row.getContentSheetName());

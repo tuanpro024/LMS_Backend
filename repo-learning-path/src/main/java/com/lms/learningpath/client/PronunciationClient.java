@@ -2,13 +2,14 @@ package com.lms.learningpath.client;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
+import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.content.common.entity.TypeName;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * Feign client for repo-pronunciation service.
@@ -24,4 +25,32 @@ public interface PronunciationClient {
     ApiResponse<HierarchicalImportResult> importExcel(
             @RequestPart("file") MultipartFile file,
             @RequestParam("typeName") TypeName typeName);
+
+
+    /**
+     * Get study set by ID
+     */
+    @GetMapping("/study-sets/{id}")
+    ApiResponse<StudySetResponse> getStudySetById(@PathVariable("id") String id);
+
+    /**
+     * Get all study sets
+     */
+    @GetMapping("/study-sets")
+    ApiResponse<List<StudySetResponse>> getAllStudySets();
+
+    /**
+     * Search study sets by query
+     */
+    @GetMapping("/study-sets/search")
+    ApiResponse<List<StudySetResponse>> searchStudySets(@RequestParam("q") String query);
+
+    /**
+     * Find study sets by exact title and user ID (case-insensitive)
+     */
+    @GetMapping("/study-sets/exact-match")
+    ApiResponse<List<StudySetResponse>> findByTitleAndUserIdIgnoreCase(
+            @RequestParam("title") String title,
+            @RequestParam("userId") String userId);
 }
+

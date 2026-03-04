@@ -26,6 +26,8 @@ spring:
             allowedOriginPatterns:
               - "http://localhost:*"
               - "http://127.0.0.1:*"
+              - "http://arin.io.vn"
+              - "https://arin.io.vn"
             allowedMethods:
               - GET
               - POST
@@ -133,7 +135,7 @@ config:
   strip-prefix: 2
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 logging:
   level:

@@ -132,12 +132,6 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                 continue;
             }
 
-            // Find row to check for ExistingContentSetId
-            String existingId = rows.stream()
-                    .filter(r -> sheetName.equals(r.getContentSheetName()) && r.getExistingContentSetId() != null)
-                    .map(LearningPathStructureRow::getExistingContentSetId)
-                    .findFirst().orElse(null);
-
             ContentImportDetail detail = ContentImportDetail.builder()
                     .sheetName(sheetName)
                     .moduleType(moduleType)
@@ -145,7 +139,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
 
             try {
                 ContentReference ref = resolveContentForSheet(
-                        sheetName, moduleType, existingId,
+                        sheetName, moduleType,
                         excelData.getContentSheetBytes().get(sheetName),
                         typeName, userId, isPrivate, detail);
 
@@ -179,24 +173,12 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
     private ContentReference resolveContentForSheet(
             String sheetName,
             ModuleType moduleType,
-            String existingId,
             byte[] sheetBytes,
-            com.lms.content.common.entity.TypeName typeName,
+            TypeName typeName,
             String userId,
             boolean isPrivate,
             ContentImportDetail detail) throws IOException {
 
-        // Priority 1: ExistingContentSetId → verify & reuse
-        if (existingId != null && !existingId.isBlank()) {
-            log.info("Sheet '{}': Reusing existing content ID: {}", sheetName, existingId);
-            detail.setReused(true);
-            detail.setContentSetId(existingId);
-            return ContentReference.builder()
-                    .moduleType(moduleType)
-                    .contentSetId(existingId)
-                    .newlyCreated(false)
-                    .build();
-        }
 
         // Priority 2: Check for duplicates by studySetName (extracted from sheetBytes)
         if (sheetBytes != null) {
@@ -250,7 +232,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             String sheetName,
             ModuleType moduleType,
             byte[] sheetBytes,
-            com.lms.content.common.entity.TypeName typeName,
+            TypeName typeName,
             String userId,
             ContentImportDetail detail) throws IOException {
 

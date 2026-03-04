@@ -36,7 +36,9 @@ public class QuestionServiceImpl implements IQuestionService {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new EntityNotFoundException("Quiz not found: " + quizId));
 
-        int nextIndex = (int) quizQuestionRepository.countByQuizId(quizId);
+        int nextIndex = quizQuestionRepository.findMaxQuestionIndexByQuizId(quizId)
+                .map(max -> max + 1)
+                .orElse(0);
         QuizQuestion question = questionMapper.toEntity(request, quiz, nextIndex);
 
         question = quizQuestionRepository.save(question);

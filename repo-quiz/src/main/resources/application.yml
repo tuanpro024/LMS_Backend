@@ -18,11 +18,12 @@ spring:
     open-in-view: false
 
 server:
-  port: 8089
+  port: ${SERVER_PORT:8093}
 
 security:
   jwt:
     public-key-path: file:secrets/jwt-public.pem
+    issuer: repo-identity-api
 
 management:
   endpoints:

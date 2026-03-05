@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  repo-multimedia:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: repo-multimedia
+    ports:
+      - "8091:8091"
+    environment:
+      - SERVER_PORT=8091
+      # Update these environment variables with your production database credentials if needed
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/lms_media_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://host.docker.internal:8761/eureka/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

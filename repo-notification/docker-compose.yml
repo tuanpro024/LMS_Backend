@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  repo-notification:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: repo-notification
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/lms_notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=sa
+      - SPRING_DATASOURCE_PASSWORD=123
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://host.docker.internal:8761/eureka
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=host.docker.internal:9092
+      - SPRING_DATA_REDIS_HOST=host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

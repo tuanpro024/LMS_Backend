@@ -119,6 +119,12 @@ spring:
             - Path=${config.api-prefix}/quiz/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: video-course
+          uri: lb://REPO-VIDEO-COURSE
+          predicates:
+            - Path=${config.api-prefix}/video-course/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

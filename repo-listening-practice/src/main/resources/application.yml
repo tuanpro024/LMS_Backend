@@ -45,4 +45,4 @@ security:
 # Application specific properties
 listening:
   multimedia-service:
-    url: http://localhost:8086
+    url: http://localhost:8091

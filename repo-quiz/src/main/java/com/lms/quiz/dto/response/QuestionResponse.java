@@ -24,6 +24,7 @@ public class QuestionResponse {
     private String questionMediaUrl;
     private Integer points;
     private DifficultyLevel difficulty;
+    private String explanation;
 
     // FILL_IN_BLANK
     private FillBlankMode fillBlankMode;
@@ -38,6 +39,7 @@ public class QuestionResponse {
 
     // SENTENCE_BUILDER
     private String translationHint;
+    private String correctSentence;
     private List<ChunkInfo> chunks;
 
     @Data

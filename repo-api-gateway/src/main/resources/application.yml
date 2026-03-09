@@ -79,7 +79,7 @@ spring:
         - id: multimedia
           uri: lb://REPO-MULTIMEDIA
           predicates:
-            - Path=/api/videos/**,/api/subtitles/**,/api/packages/**,/api/folders/**,/api/study-sets/**
+            - Path=/api/videos/**,/api/media/**,/api/subtitles/**,/api/packages/**,/api/folders/**,/api/study-sets/**
           # No StripPrefix - forward path as-is to multimedia service
 
         - id: dictionary
@@ -117,6 +117,12 @@ spring:
           uri: lb://REPO-QUIZ
           predicates:
             - Path=${config.api-prefix}/quiz/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
+        - id: video-course
+          uri: lb://REPO-VIDEO-COURSE
+          predicates:
+            - Path=${config.api-prefix}/video-course/**
           filters:
             - StripPrefix=${config.strip-prefix}
 

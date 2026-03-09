@@ -1,0 +1,1786 @@
+{
+    "info": {
+        "name": "Video Course API - Complete Test Suite",
+        "_postman_id": "vc-api-2026",
+        "description": "Complete test collection for repo-video-course microservice.\n\nFlow: Login → Package → Folder → StudySet → VideoCourse → VideoStep → VideoModule → Progress\n\nAll IDs are captured automatically via test scripts.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "IDENTITY_URL",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "BASE_URL",
+            "value": "http://localhost:8092",
+            "type": "string"
+        },
+        {
+            "key": "JWT_TOKEN",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "PACKAGE_ID",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "FOLDER_ID",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "STUDY_SET_ID",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "COURSE_ID",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "STEP_ID",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "STEP2_ID",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "MODULE_ID",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "VIDEO_CODE",
+            "value": "",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Authentication",
+            "description": "Login to get JWT token. Token is saved automatically.",
+            "item": [
+                {
+                    "name": "01. Login (get JWT token)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.accessToken) {",
+                                    "    pm.collectionVariables.set('JWT_TOKEN', 'Bearer ' + res.data.accessToken);",
+                                    "    console.log('Token saved successfully');",
+                                    "} else {",
+                                    "    console.error('Failed to get token', JSON.stringify(res));",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"admin@lms.com\",\n  \"password\": \"Admin@123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{IDENTITY_URL}}/auth/login",
+                            "host": [
+                                "{{IDENTITY_URL}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Package Management",
+            "description": "Manage top-level Packages (e.g. 'Video HSK'). Package contains Folders.",
+            "item": [
+                {
+                    "name": "01. Create Package",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "    pm.collectionVariables.set('PACKAGE_ID', res.data.id);",
+                                    "    console.log('PACKAGE_ID saved:', res.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Video HSK\",\n  \"description\": \"Bộ khóa học video tiếng Hán theo chuẩn HSK\",\n  \"thumbnail\": \"https://example.com/hsk-thumb.jpg\",\n  \"type\": \"VIDEO_COURSE\",\n  \"isPrivate\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/packages",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "packages"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Get All Packages",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/packages",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "packages"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Get Packages by Type (VIDEO_COURSE)",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/packages?type=VIDEO_COURSE",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "packages"
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "VIDEO_COURSE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "04. Get Package by ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/packages/{{PACKAGE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "packages",
+                                "{{PACKAGE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "05. Update Package",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Video HSK (Updated)\",\n  \"description\": \"Bộ video HSK đã cập nhật\",\n  \"thumbnail\": \"https://example.com/hsk-thumb-new.jpg\",\n  \"isPrivate\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/packages/{{PACKAGE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "packages",
+                                "{{PACKAGE_ID}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Folder Management",
+            "description": "Manage Folders inside a Package (e.g. 'HSK 1', 'HSK 2').",
+            "item": [
+                {
+                    "name": "01. Create Folder",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "    pm.collectionVariables.set('FOLDER_ID', res.data.id);",
+                                    "    console.log('FOLDER_ID saved:', res.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"HSK 1\",\n  \"description\": \"Khóa học video HSK cấp độ 1\",\n  \"thumbnail\": \"https://example.com/hsk1-thumb.jpg\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/folders",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "folders"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Add Folder to Package",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/packages/{{PACKAGE_ID}}/folders/{{FOLDER_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "packages",
+                                "{{PACKAGE_ID}}",
+                                "folders",
+                                "{{FOLDER_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Get Folders by Package",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/folders/package/{{PACKAGE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "folders",
+                                "package",
+                                "{{PACKAGE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "04. Get Folder by ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/folders/{{FOLDER_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "folders",
+                                "{{FOLDER_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "05. Get My Folders",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/folders/my-folders",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "folders",
+                                "my-folders"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "06. Update Folder",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"HSK 1 (Updated)\",\n  \"description\": \"Đã cập nhật\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/folders/{{FOLDER_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "folders",
+                                "{{FOLDER_ID}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. StudySet Management",
+            "description": "Manage StudySets inside a Folder (e.g. 'HSK 1 - Bài 1').",
+            "item": [
+                {
+                    "name": "01. Create StudySet",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "    pm.collectionVariables.set('STUDY_SET_ID', res.data.id);",
+                                    "    console.log('STUDY_SET_ID saved:', res.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"HSK 1 - Video Bài 1: Chào hỏi\",\n  \"description\": \"Bài học video đầu tiên về chào hỏi trong tiếng Hán\",\n  \"thumbnail\": \"https://example.com/bai1-thumb.jpg\",\n  \"isPrivate\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/study-sets",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "study-sets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Add StudySet to Folder",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/folders/{{FOLDER_ID}}/study-sets/{{STUDY_SET_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "folders",
+                                "{{FOLDER_ID}}",
+                                "study-sets",
+                                "{{STUDY_SET_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Get All StudySets",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/study-sets",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "study-sets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "04. Search StudySets",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/study-sets?q=HSK",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "study-sets"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "HSK"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "05. Get StudySets by Folder",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/study-sets/folder/{{FOLDER_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "study-sets",
+                                "folder",
+                                "{{FOLDER_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "06. Get StudySet by ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/study-sets/{{STUDY_SET_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "study-sets",
+                                "{{STUDY_SET_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "07. Get My StudySets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/study-sets/my-sets",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "study-sets",
+                                "my-sets"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "08. Update StudySet",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"HSK 1 - Video Bài 1 (Updated)\",\n  \"description\": \"Đã cập nhật mô tả\",\n  \"isPrivate\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/study-sets/{{STUDY_SET_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "study-sets",
+                                "{{STUDY_SET_ID}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Video Course (Khóa học)",
+            "description": "Manage VideoCourses linked to a StudySet.",
+            "item": [
+                {
+                    "name": "01. Create Video Course",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "    pm.collectionVariables.set('COURSE_ID', res.data.id);",
+                                    "    console.log('COURSE_ID saved:', res.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Khóa học video HSK 1\",\n  \"description\": \"Toàn bộ bài học video HSK cấp 1\",\n  \"thumbnail\": \"https://example.com/course-thumb.jpg\",\n  \"studySetId\": \"{{STUDY_SET_ID}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-courses",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-courses"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Get All Video Courses",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-courses",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-courses"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Get Courses by StudySet",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-courses/study-set/{{STUDY_SET_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-courses",
+                                "study-set",
+                                "{{STUDY_SET_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "04. Get Video Course by ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-courses/{{COURSE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-courses",
+                                "{{COURSE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "05. Update Video Course",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Khóa học video HSK 1 (Updated)\",\n  \"description\": \"Đã cập nhật\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-courses/{{COURSE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-courses",
+                                "{{COURSE_ID}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Video Step (Chương học)",
+            "description": "Steps group VideoModules. Steps unlock sequentially — Step 1 is always unlocked, Step N requires Step N-1 completed.",
+            "item": [
+                {
+                    "name": "01. Create Step 1 (always unlocked)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "    pm.collectionVariables.set('STEP_ID', res.data.id);",
+                                    "    console.log('STEP_ID saved:', res.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"courseId\": \"{{COURSE_ID}}\",\n  \"title\": \"Chương 1: Giới thiệu\",\n  \"stepOrder\": 1\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-steps",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-steps"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Create Step 2 (requires Step 1 completed)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "    pm.collectionVariables.set('STEP2_ID', res.data.id);",
+                                    "    console.log('STEP2_ID saved:', res.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"courseId\": \"{{COURSE_ID}}\",\n  \"title\": \"Chương 2: Chào hỏi cơ bản\",\n  \"stepOrder\": 2\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-steps",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-steps"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Get Steps by Course (with unlock status)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-steps/course/{{COURSE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-steps",
+                                "course",
+                                "{{COURSE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "04. Get Step by ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-steps/{{STEP_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-steps",
+                                "{{STEP_ID}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "6. Video Module (Bài học video)",
+            "description": "VideoModules hold the actual video. Can use videoCode to link a video from repo-multimedia.",
+            "item": [
+                {
+                    "name": "01. Create Module (Direct URL)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.id) {",
+                                    "    pm.collectionVariables.set('MODULE_ID', res.data.id);",
+                                    "    console.log('MODULE_ID saved:', res.data.id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"stepId\": \"{{STEP_ID}}\",\n  \"title\": \"Bài 1: 你好 - Xin chào\",\n  \"moduleOrder\": 1,\n  \"videoUrl\": \"https://example.com/hls/bai1/playlist.m3u8\",\n  \"thumbnailUrl\": \"https://example.com/bai1-thumb.jpg\",\n  \"duration\": 600\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-modules",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-modules"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Create Module (from videoCode)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"stepId\": \"{{STEP_ID}}\",\n  \"title\": \"Bài 2: 谢谢 - Cảm ơn\",\n  \"moduleOrder\": 2,\n  \"videoCode\": \"{{VIDEO_CODE}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-modules",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-modules"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Get Modules by Step",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-modules/step/{{STEP_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-modules",
+                                "step",
+                                "{{STEP_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "04. Get Module by ID",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-modules/{{MODULE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-modules",
+                                "{{MODULE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "05. Update Module",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Bài 1: 你好 (Updated)\",\n  \"duration\": 650\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-modules/{{MODULE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-modules",
+                                "{{MODULE_ID}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "7. Watch Progress (80% Auto-Complete)",
+            "description": "Track video watching. When watchedSeconds >= 80% of duration, the module auto-completes and cascades to step/course progress.",
+            "item": [
+                {
+                    "name": "01. Start Watching (0%)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"moduleId\": \"{{MODULE_ID}}\",\n  \"watchedSeconds\": 0,\n  \"duration\": 600\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/watch",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "watch"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Update Progress (60% — not completed)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"moduleId\": \"{{MODULE_ID}}\",\n  \"watchedSeconds\": 360,\n  \"duration\": 600\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/watch",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "watch"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Update Progress (80% — AUTO-COMPLETE!)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Module auto-completed at 80%', function() {",
+                                    "    var res = pm.response.json();",
+                                    "    // The response should reflect module is now COMPLETED",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"moduleId\": \"{{MODULE_ID}}\",\n  \"watchedSeconds\": 480,\n  \"duration\": 600\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/watch",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "watch"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "04. Force Complete Module",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/modules/{{MODULE_ID}}/complete",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "modules",
+                                "{{MODULE_ID}}",
+                                "complete"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "05. Get Module Progress",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/modules/{{MODULE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "modules",
+                                "{{MODULE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "06. Get Step Progress",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/steps/{{STEP_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "steps",
+                                "{{STEP_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "07. Get Course Progress",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/courses/{{COURSE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "courses",
+                                "{{COURSE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "08. Get All Course Progress (user)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/courses",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "courses"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "8. Available Modules (flashcard/writing/kanji/quiz)",
+            "description": "Admin/Teacher browse available study sets from other repos to associate with video steps.",
+            "item": [
+                {
+                    "name": "01. Get All Available Modules",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-modules",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-modules"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Search Available Modules",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-modules?q=HSK",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-modules"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "HSK"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Get Flashcard Study Sets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-modules/flashcard",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-modules",
+                                "flashcard"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "04. Get Writing Study Sets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-modules/writing",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-modules",
+                                "writing"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "05. Get Kanji Study Sets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-modules/kanji",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-modules",
+                                "kanji"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "06. Get Quiz Study Sets",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-modules/quiz",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-modules",
+                                "quiz"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "9. Available Videos (từ repo-multimedia)",
+            "description": "Admin/Teacher browse videos from repo-multimedia to embed in VideoModules.",
+            "item": [
+                {
+                    "name": "01. Get All Available Videos",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var res = pm.response.json();",
+                                    "if (res.data && res.data.length > 0) {",
+                                    "    pm.collectionVariables.set('VIDEO_CODE', res.data[0].videoCode);",
+                                    "    console.log('VIDEO_CODE saved:', res.data[0].videoCode);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-videos",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-videos"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "02. Search Available Videos",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-videos?q=HSK",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-videos"
+                            ],
+                            "query": [
+                                {
+                                    "key": "q",
+                                    "value": "HSK"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "03. Get Video by Code",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/admin/available-videos/{{VIDEO_CODE}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "available-videos",
+                                "{{VIDEO_CODE}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "10. Full Test Flow (Sequential Unlock Demo)",
+            "description": "Demonstrates the full flow: Step 2 is LOCKED until Step 1 is 100% completed (via 80% auto-complete). VIDEO CODE must be set first.",
+            "item": [
+                {
+                    "name": "Step 1: Verify Step 2 is LOCKED",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-steps/course/{{COURSE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-steps",
+                                "course",
+                                "{{COURSE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Step 2: Watch Module 1 to 80% (auto-complete)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"moduleId\": \"{{MODULE_ID}}\",\n  \"watchedSeconds\": 480,\n  \"duration\": 600\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/watch",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "watch"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Step 3: Verify Step 2 is now UNLOCKED",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-steps/course/{{COURSE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-steps",
+                                "course",
+                                "{{COURSE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Step 4: Verify Course Progress",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/progress/courses/{{COURSE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "progress",
+                                "courses",
+                                "{{COURSE_ID}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "11. Cleanup (Delete)",
+            "description": "Run these LAST to clean up test data.",
+            "item": [
+                {
+                    "name": "Delete Video Module",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-modules/{{MODULE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-modules",
+                                "{{MODULE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Video Step 2",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-steps/{{STEP2_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-steps",
+                                "{{STEP2_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Video Step 1",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-steps/{{STEP_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-steps",
+                                "{{STEP_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Video Course",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/video-courses/{{COURSE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "video-courses",
+                                "{{COURSE_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Remove StudySet from Folder",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/folders/{{FOLDER_ID}}/study-sets/{{STUDY_SET_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "folders",
+                                "{{FOLDER_ID}}",
+                                "study-sets",
+                                "{{STUDY_SET_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete StudySet",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/study-sets/{{STUDY_SET_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "study-sets",
+                                "{{STUDY_SET_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Remove Folder from Package",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/packages/{{PACKAGE_ID}}/folders/{{FOLDER_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "packages",
+                                "{{PACKAGE_ID}}",
+                                "folders",
+                                "{{FOLDER_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Folder",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/folders/{{FOLDER_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "folders",
+                                "{{FOLDER_ID}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Package",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "{{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/packages/{{PACKAGE_ID}}",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "packages",
+                                "{{PACKAGE_ID}}"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

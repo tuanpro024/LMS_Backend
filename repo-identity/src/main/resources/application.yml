@@ -52,6 +52,9 @@ security:
     refresh-ttl: P7D
 
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
@@ -89,4 +92,3 @@ app:
   frontend:
 #    url: ${FRONTEND_URL:http://localhost:3000}
      url: ${FRONTEND_URL:https://arin.io.vn}
-

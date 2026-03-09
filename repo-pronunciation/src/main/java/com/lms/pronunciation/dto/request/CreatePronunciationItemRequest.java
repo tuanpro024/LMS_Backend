@@ -3,6 +3,7 @@ package com.lms.pronunciation.dto.request;
 import com.lms.pronunciation.entity.enums.PronunciationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,6 +24,7 @@ public class CreatePronunciationItemRequest {
     private PronunciationType type;
 
     @NotBlank(message = "Symbol is required")
+    @Size(max = 20, message = "Symbol must not exceed 20 characters")
     private String symbol;
 
     private String pinyin;

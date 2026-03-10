@@ -88,5 +88,5 @@ app:
     from-name: ${EMAIL_FROM_NAME:Hệ Thống Học Bá}
   frontend:
 #    url: ${FRONTEND_URL:http://localhost:3000}
-     url: ${FRONTEND_URL:https://arin.io.vn}
+     url: ${FRONTEND_URL:https://lms.dangch.tech}
 

@@ -12,6 +12,7 @@ import com.lms.kanjiorigin.service.KanjiLessonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,11 +26,13 @@ public class KanjiLessonController {
     private final KanjiLessonService kanjiLessonService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<KanjiLessonResponse> createLesson(@Valid @RequestBody CreateKanjiLessonRequest request) {
         return ApiResponse.ok(kanjiLessonService.createLesson(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<KanjiLessonResponse> updateLesson(
             @PathVariable String id,
             @Valid @RequestBody UpdateKanjiLessonRequest request) {
@@ -37,6 +40,7 @@ public class KanjiLessonController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<Void> deleteLesson(@PathVariable String id) {
         kanjiLessonService.deleteLesson(id);
         return ApiResponse.ok(null);
@@ -58,6 +62,7 @@ public class KanjiLessonController {
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<ImportResultResponse> importFromExcel(
             @RequestParam("studySetId") String studySetId,
             @RequestParam("file") MultipartFile file) {

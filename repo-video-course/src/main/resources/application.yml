@@ -3,8 +3,8 @@ spring:
     name: repo-video-course
   datasource:
     url: jdbc:mysql://localhost:3306/lms_video_course_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: root
+    username: sa
+    password: 123
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -18,7 +18,7 @@ spring:
     open-in-view: false
 
 server:
-  port: 8092
+  port: 8094
 
 security:
   jwt:

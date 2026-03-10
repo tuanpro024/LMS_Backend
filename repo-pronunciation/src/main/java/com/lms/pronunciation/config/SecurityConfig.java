@@ -36,13 +36,15 @@ public class SecurityConfig {
     public BaseJwtFilter jwtFilter(RSAPublicKey publicKey) {
         List<String> skipPatterns = List.of(
                 "/health",
-                "/actuator/**",
-                "/packages/import-excel");
+                "/actuator/**");
 
+        // GET endpoints for study sets and pronunciation items support optional auth
         List<String> optionalPatterns = List.of(
                 "/pronunciation/study-sets/**",
                 "/study-sets/**",
-                "/pronunciation-items/**");
+                "/pronunciation-items/**",
+                "/packages/**",
+                "/folders/**");
 
         return new BaseJwtFilter(publicKey, skipPatterns, optionalPatterns);
     }
@@ -54,19 +56,16 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Health endpoints
-                        .requestMatchers("/health", "/actuator/**", "/packages/import-excel").permitAll()
+                        .requestMatchers("/health", "/actuator/**").permitAll()
 
-                        // Public GET endpoints
+                        // Public GET endpoints (read-only access)
                         .requestMatchers(HttpMethod.GET, "/study-sets/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/pronunciation-items/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/packages/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/folders/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/packages/types").permitAll()
 
-                        // Create/Update/Delete require authentication
-                        .requestMatchers(HttpMethod.POST, "/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/**").authenticated()
-
-                        // All other endpoints require authentication
+                        // All other endpoints (POST, PUT, DELETE, import) require authentication
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

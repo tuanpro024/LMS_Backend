@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UserDeviceRepository extends JpaRepository<UserDevice, String> {
+    Optional<UserDevice> findByDeviceId(String deviceId);
+
     Optional<UserDevice> findByUser_IdAndDeviceId(String userId, String deviceId);
 
     long countByUser_IdAndDeviceType(String userId, DeviceType deviceType);

@@ -1,0 +1,472 @@
+services:
+  redis:
+    image: redis:7.0-alpine
+    container_name: lms-redis
+    networks:
+      - lms-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: apache/kafka:3.7.1
+    container_name: lms-kafka
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=0
+    networks:
+      - lms-network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-topics.sh --bootstrap-server 127.0.0.1:9092 --list || exit 1",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  eureka-server:
+    build:
+      context: .
+      dockerfile: repo-eureka/Dockerfile
+    image: lms-eureka
+    container_name: lms-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - lms-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8761"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+  setup-keys:
+    image: alpine:latest
+    container_name: lms-setup-keys
+    volumes:
+      - ./secrets:/app/secrets
+    command: >
+      sh -c "
+        apk add --no-cache openssl &&
+        mkdir -p /app/secrets &&
+        if [ ! -f /app/secrets/jwt-private.pem ]; then
+          echo 'Generating JWT private key...'
+          openssl genrsa -out /app/secrets/jwt-private.pem 2048
+        fi &&
+        if [ ! -f /app/secrets/jwt-public.pem ]; then
+          echo 'Generating JWT public key...'
+          openssl rsa -in /app/secrets/jwt-private.pem -pubout -out /app/secrets/jwt-public.pem
+        fi &&
+        chmod 644 /app/secrets/*.pem
+      "
+    networks:
+      - lms-network
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: repo-identity/Dockerfile
+    image: lms-identity
+    container_name: lms-identity
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_identity_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+      - SECURITY_JWT_PRIVATE_KEY_PATH=file:/app/secrets/jwt-private.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: repo-api-gateway/Dockerfile
+    image: lms-gateway
+    container_name: lms-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATA_REDIS_HOST=redis
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+    depends_on:
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  realtime-service:
+    build:
+      context: .
+      dockerfile: repo-realtime/Dockerfile
+    image: lms-realtime
+    container_name: lms-realtime
+    ports:
+      - "8084:8084"
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: lms-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=lms_flashcard_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./repo-identity/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - lms-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flashcard-api:
+    build:
+      context: .
+      dockerfile: repo-flashcard/Dockerfile
+    image: lms-flashcard
+    container_name: lms-flashcard
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_flashcard_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  writing-api:
+    build:
+      context: .
+      dockerfile: repo-writing/Dockerfile
+    image: lms-writing
+    container_name: lms-writing
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_writing_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  dictionary-api:
+    build:
+      context: .
+      dockerfile: repo-dictionary/Dockerfile
+    image: lms-dictionary
+    container_name: lms-dictionary
+    ports:
+      - "8086:8086"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_flashcard_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  kanji-origin-api:
+    build:
+      context: .
+      dockerfile: repo-kanji-origin/Dockerfile
+    image: lms-kanji-origin
+    container_name: lms-kanji-origin
+    ports:
+      - "8092:8092"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_kanji_origin_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  pronunciation-api:
+    build:
+      context: .
+      dockerfile: repo-pronunciation/Dockerfile
+    image: lms-pronunciation
+    container_name: lms-pronunciation
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_pronunciation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  quiz-api:
+    build:
+      context: .
+      dockerfile: repo-quiz/Dockerfile
+    image: lms-quiz
+    container_name: lms-quiz
+    ports:
+      - "8093:8093"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_quiz_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  learning-path-api:
+    build:
+      context: .
+      dockerfile: repo-learning-path/Dockerfile
+    image: lms-learning-path
+    container_name: lms-learning-path
+    ports:
+      - "8099:8099"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_learning_path_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  notification-api:
+    build:
+      context: .
+      dockerfile: repo-notification/Dockerfile
+    image: lms-notification
+    container_name: lms-notification
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  multimedia-api:
+    build:
+      context: .
+      dockerfile: repo-multimedia/Dockerfile
+    image: lms-multimedia
+    container_name: lms-multimedia
+    ports:
+      - "8091:8091"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_media_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  listening-practice-api:
+    build:
+      context: .
+      dockerfile: repo-listening-practice/Dockerfile
+    image: lms-listening-practice
+    container_name: lms-listening-practice
+    ports:
+      - "8089:8089"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_listening_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+      - LISTENING_MULTIMEDIA_SERVICE_URL=http://multimedia-api:8091
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      multimedia-api:
+        condition: service_started
+    networks:
+      - lms-network
+
+  video-course-api:
+    build:
+      context: .
+      dockerfile: repo-video-course/Dockerfile
+    image: lms-video-course
+    container_name: lms-video-course
+    ports:
+      - "8094:8094"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_video_course_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      multimedia-api:
+        condition: service_started
+    networks:
+      - lms-network
+
+networks:
+  lms-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

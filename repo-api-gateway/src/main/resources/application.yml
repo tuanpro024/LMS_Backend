@@ -26,8 +26,8 @@ spring:
             allowedOriginPatterns:
               - "http://localhost:*"
               - "http://127.0.0.1:*"
-              - "http://arin.io.vn"
-              - "https://arin.io.vn"
+              - "http://lms.dangch.tech"
+              - "https://lms.dangch.tech"
             allowedMethods:
               - GET
               - POST

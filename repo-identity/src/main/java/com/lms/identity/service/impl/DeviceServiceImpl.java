@@ -19,6 +19,7 @@ import ua_parser.Client;
 import ua_parser.Parser;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,11 @@ public class DeviceServiceImpl implements DeviceService {
     private static final int LIMIT_MOBILE = 2;
     private static final int LIMIT_TABLET = 1;
     private static final int LIMIT_WEBSITE = 2;
+        private static final Set<String> DEVICE_LIMIT_BYPASS_EMAILS = Set.of(
+            "teacher@local.dev",
+            "admin@local.dev",
+            "manager@local.dev"
+        );
 
     private static Parser uaParser;
     static {
@@ -66,6 +72,11 @@ public class DeviceServiceImpl implements DeviceService {
             return true;
         }
 
+        if (isDeviceLimitBypassUser(user)) {
+            saveNewDevice(user, deviceId, userAgent, type, request);
+            return true;
+        }
+
         long currentCount = deviceRepository.countByUser_IdAndDeviceType(user.getId(), type);
         int limit = getLimitByType(type);
 
@@ -75,6 +86,13 @@ public class DeviceServiceImpl implements DeviceService {
 
         saveNewDevice(user, deviceId, userAgent, type, request);
         return true;
+    }
+
+    private boolean isDeviceLimitBypassUser(User user) {
+        if (user == null || user.getEmail() == null) {
+            return false;
+        }
+        return DEVICE_LIMIT_BYPASS_EMAILS.contains(user.getEmail().trim().toLowerCase());
     }
 
     @Override

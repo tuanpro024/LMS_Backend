@@ -6,6 +6,7 @@ import com.lms.kanjiorigin.dto.response.LessonQuestionAssignmentResponse;
 import com.lms.kanjiorigin.service.KanjiLessonQuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,15 +19,16 @@ public class KanjiLessonQuestionController {
     private final KanjiLessonQuestionService lessonQuestionService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<List<LessonQuestionAssignmentResponse>> assignQuestionToLessons(
             @Valid @RequestBody AssignQuestionToMultipleLessonsRequest request) {
         return ApiResponse.ok(lessonQuestionService.assignQuestionToMultipleLessons(request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<Void> removeAssignment(@PathVariable String id) {
         lessonQuestionService.removeQuestionFromLesson(id);
         return ApiResponse.ok(null);
     }
 }
-

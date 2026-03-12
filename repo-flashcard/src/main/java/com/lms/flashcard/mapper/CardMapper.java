@@ -66,4 +66,12 @@ public interface CardMapper {
             card.setCardIndex(request.getCardIndex());
         }
     }
+
+    @AfterMapping
+    default void setDefaultStatus(@MappingTarget CardResponse response) {
+        // Default status to NOT_LEARNED when not set (non-user-specific endpoints)
+        if (response.getStatus() == null) {
+            response.setStatus("NOT_LEARNED");
+        }
+    }
 }

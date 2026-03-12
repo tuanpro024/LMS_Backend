@@ -1,5 +1,6 @@
 package com.lms.kanjiorigin.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +26,7 @@ public class CreateQuestionRequest {
     @NotEmpty(message = "At least one wrong option is required")
     private List<String> wrongOptions;
 
+    @Valid
     private List<LessonAssignment> lessonAssignments;
 
     @Data
@@ -39,4 +41,3 @@ public class CreateQuestionRequest {
         private Integer contentIndex;
     }
 }
-

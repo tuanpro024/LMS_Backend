@@ -10,6 +10,8 @@ import com.lms.identity.service.DeviceService;
 import com.lms.identity.service.OtpService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +25,7 @@ import java.util.Set;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -58,10 +61,14 @@ public class DeviceServiceImpl implements DeviceService {
         String[] info = parseUserAgent(userAgent);
         String ipAddress = request.getRemoteAddr();
 
-        var existingDevice = deviceRepository.findByUser_IdAndDeviceId(user.getId(), deviceId);
+        // Query theo device_id đơn lẻ để khớp đúng với UNIQUE constraint của DB
+        var existingDevice = deviceRepository.findByDeviceId(deviceId);
 
         if (existingDevice.isPresent()) {
+            // Thiết bị đã tồn tại (có thể thuộc user khác hoặc chính user này)
+            // → Chỉ cập nhật thông tin, không insert mới
             UserDevice device = existingDevice.get();
+            device.setUser(user);
             device.setLastLogin(LocalDateTime.now());
             device.setDeviceName(info[0] + " on " + info[1]);
             device.setBrowser(info[0]);
@@ -163,10 +170,12 @@ public class DeviceServiceImpl implements DeviceService {
         String[] info = parseUserAgent(userAgent);
         String ipAddress = request.getRemoteAddr();
 
-        var existingDevice = deviceRepository.findByUser_IdAndDeviceId(user.getId(), deviceId);
+        // Query theo device_id đơn lẻ để khớp đúng với UNIQUE constraint
+        var existingDevice = deviceRepository.findByDeviceId(deviceId);
 
         if (existingDevice.isPresent()) {
             UserDevice device = existingDevice.get();
+            device.setUser(user);
             device.setDeviceType(type);
             device.setDeviceName(info[0] + " on " + info[1]);
             device.setBrowser(info[0]);
@@ -175,18 +184,34 @@ public class DeviceServiceImpl implements DeviceService {
             device.setLastLogin(LocalDateTime.now());
             deviceRepository.save(device);
         } else {
-            UserDevice newDevice = UserDevice.builder()
-                    .user(user)
-                    .deviceId(deviceId)
-                    .deviceType(type)
-                    .deviceName(info[0] + " on " + info[1])
-                    .browser(info[0])
-                    .os(info[1])
-                    .location(ipAddress)
-                    .lastLogin(LocalDateTime.now())
-                    .build();
+            try {
+                UserDevice newDevice = UserDevice.builder()
+                        .user(user)
+                        .deviceId(deviceId)
+                        .deviceType(type)
+                        .deviceName(info[0] + " on " + info[1])
+                        .browser(info[0])
+                        .os(info[1])
+                        .location(ipAddress)
+                        .lastLogin(LocalDateTime.now())
+                        .build();
 
-            deviceRepository.save(newDevice);
+                deviceRepository.saveAndFlush(newDevice);
+            } catch (DataIntegrityViolationException e) {
+                // Race condition: thiết bị vừa được insert bởi request đồng thời
+                // → Fallback: tìm lại và update
+                log.warn("Race condition detected for deviceId={}, falling back to update", deviceId);
+                deviceRepository.findByDeviceId(deviceId).ifPresent(device -> {
+                    device.setUser(user);
+                    device.setDeviceType(type);
+                    device.setDeviceName(info[0] + " on " + info[1]);
+                    device.setBrowser(info[0]);
+                    device.setOs(info[1]);
+                    device.setLocation(ipAddress);
+                    device.setLastLogin(LocalDateTime.now());
+                    deviceRepository.save(device);
+                });
+            }
         }
     }
 

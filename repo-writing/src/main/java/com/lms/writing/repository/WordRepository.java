@@ -6,9 +6,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface WordRepository extends JpaRepository<Word, String> {
+
+    Optional<Word> findByIdAndDeletedFalse(String id);
+
+    List<Word> findByStudySetIdAndDeletedFalse(String studySetId);
+
+    List<Word> findByStudySetIdAndDeletedFalseOrderByIdAsc(String studySetId);
+
+    long countByStudySetIdAndDeletedFalse(String studySetId);
+
     List<Word> findByStudySetId(String studySetId);
 
     List<Word> findByStudySetIdOrderByIdAsc(String studySetId);

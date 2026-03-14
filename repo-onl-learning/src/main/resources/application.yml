@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: repo-onl-learning
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/lms_onl_learning_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: sa
+    password: 123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # Flyway manages schema
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  cache:
+    type: redis
+
+server:
+  port: ${SERVER_PORT:8095}
+
+# CMS integration
+cms:
+  base-url: http://localhost:3006
+
+# JWT RSA (same keypair as identity service)
+security:
+  jwt:
+    public-key-path: file:secrets/jwt-public.pem
+    issuer: repo-identity-api
+
+# Cache TTLs (seconds)
+cache:
+  ttl:
+    syllabus-list: 600      # 10 minutes
+    syllabus-detail: 600    # 10 minutes
+    timetable: 90           # 90 seconds
+
+# Rate limiting
+rate-limit:
+  register:
+    ip-capacity: 10         # requests per minute per IP
+    user-capacity: 5        # requests per minute per userId
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    org.springframework.security: INFO
+    com.lms.onllearning: DEBUG
+    org.hibernate.SQL: DEBUG
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+    hostname: localhost
+    instance-id: ${spring.application.name}:${server.port}

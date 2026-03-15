@@ -25,7 +25,7 @@ public class CardController {
     private final CardService cardService;
 
     @PostMapping("/bulk")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<CardResponse>>> addCardsToStudySet(
             @RequestBody @Valid AddCardsToStudySetRequest request,
             Authentication authentication) {
@@ -53,7 +53,7 @@ public class CardController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<CardResponse>> updateCard(
             @PathVariable String id,
             @Valid @RequestBody UpdateCardRequest request,
@@ -75,7 +75,7 @@ public class CardController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteCard(
             @PathVariable String id,
             Authentication authentication) {

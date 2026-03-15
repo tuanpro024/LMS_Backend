@@ -24,7 +24,7 @@ public class SlotController {
     private final SlotApiDelegate delegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<SlotResponse>> createSlot(
             @RequestBody @Valid CreateSlotRequest request,
             Authentication authentication) {
@@ -53,7 +53,7 @@ public class SlotController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<SlotResponse>> updateSlot(
             @PathVariable String id,
             @RequestBody @Valid UpdateSlotRequest request,
@@ -64,7 +64,7 @@ public class SlotController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSlot(
             @PathVariable String id,
             Authentication authentication) {
@@ -74,7 +74,7 @@ public class SlotController {
     }
 
     @PostMapping("/{slotId}/folders/{folderId}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<SlotResponse>> addFolderToSlot(
             @PathVariable String slotId,
             @PathVariable String folderId,
@@ -85,7 +85,7 @@ public class SlotController {
     }
 
     @DeleteMapping("/{slotId}/folders/{folderId}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<SlotResponse>> removeFolderFromSlot(
             @PathVariable String slotId,
             @PathVariable String folderId,

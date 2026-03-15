@@ -47,6 +47,9 @@ public class PackageServiceImpl implements PackageService {
         Package packageEntity = packageMapper.toEntity(request);
         packageEntity.setUserId(userId);
         packageEntity.setType(type);
+        if (request.getCategory() != null) {
+            packageEntity.setCategory(request.getCategory());
+        }
 
         // Hook: customize before save
         beforeSavePackage(packageEntity, request);
@@ -83,6 +86,14 @@ public class PackageServiceImpl implements PackageService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PackageResponse> getPackagesByTypeAndCategory(TypeName typeName,
+            com.lms.content.common.entity.CategoryType category) {
+        List<Package> packages = packageRepository.findByTypeNameAndCategory(typeName, category);
+        return packageMapper.toResponseList(packages);
+    }
+
+    @Override
     public PackageResponse updatePackage(String id, UpdatePackageRequest request, String userId) {
         Package packageEntity = packageRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
@@ -108,6 +119,18 @@ public class PackageServiceImpl implements PackageService {
         }
         if (request.getDescription() != null) {
             packageEntity.setDescription(request.getDescription());
+        }
+        if (request.getCategory() != null) {
+            packageEntity.setCategory(request.getCategory());
+        }
+        if (request.getThumbnail() != null) {
+            packageEntity.setThumbnail(request.getThumbnail());
+        }
+        if (request.getPrice() != null) {
+            packageEntity.setPrice(request.getPrice());
+        }
+        if (request.getPricingType() != null) {
+            packageEntity.setPricingType(request.getPricingType());
         }
 
         // Hook: before update save

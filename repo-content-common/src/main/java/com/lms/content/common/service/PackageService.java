@@ -17,6 +17,9 @@ public interface PackageService {
 
     List<PackageResponse> getPackagesByType(TypeName type);
 
+    List<PackageResponse> getPackagesByTypeAndCategory(TypeName type,
+            com.lms.content.common.entity.CategoryType category);
+
     PackageResponse updatePackage(String id, UpdatePackageRequest request, String userId);
 
     void deletePackage(String id, String userId);

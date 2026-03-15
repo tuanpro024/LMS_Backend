@@ -93,15 +93,15 @@ public class VideoProgressController {
         return ResponseEntity.ok(ApiResponse.ok(videoProgressService.getStepProgress(userId, stepId)));
     }
 
-    // ===== Course Progress =====
-
-    @GetMapping("/courses/{courseId}")
-    public ResponseEntity<ApiResponse<VideoCourseProgressResponse>> getCourseProgress(
-            @PathVariable String courseId,
+    // ===== StudySet (Overall) Progress =====
+ 
+    @GetMapping("/study-sets/{studySetId}")
+    public ResponseEntity<ApiResponse<VideoCourseProgressResponse>> getStudySetProgress(
+            @PathVariable String studySetId,
             Authentication authentication) {
-
+ 
         String userId = getUserId(authentication);
-        return ResponseEntity.ok(ApiResponse.ok(videoProgressService.getCourseProgress(userId, courseId)));
+        return ResponseEntity.ok(ApiResponse.ok(videoProgressService.getCourseProgress(userId, studySetId)));
     }
 
     @GetMapping("/courses")

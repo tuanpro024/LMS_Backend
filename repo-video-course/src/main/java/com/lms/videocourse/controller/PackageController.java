@@ -7,6 +7,7 @@ import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
 import com.lms.content.common.entity.TypeName;
+import com.lms.content.common.entity.CategoryType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -46,11 +47,30 @@ public class PackageController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllPackages(
-            @RequestParam(required = false) TypeName type) {
-        List<PackageResponse> response = (type != null)
-                ? packageDelegate.getPackagesByType(type)
-                : packageDelegate.getAllPackages();
+            @RequestParam(required = false) TypeName type,
+            @RequestParam(required = false) com.lms.content.common.entity.CategoryType category) {
+
+        List<PackageResponse> response;
+        if (type != null && category != null) {
+            response = packageDelegate.getPackagesByTypeAndCategory(type, category);
+        } else if (type != null) {
+            response = packageDelegate.getPackagesByType(type);
+        } else {
+            response = packageDelegate.getAllPackages();
+        }
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<ApiResponse<List<com.lms.videocourse.dto.response.CategoryResponse>>> getCategories() {
+        List<com.lms.videocourse.dto.response.CategoryResponse> categories = java.util.Arrays
+                .stream(com.lms.content.common.entity.CategoryType.values())
+                .map(cat -> com.lms.videocourse.dto.response.CategoryResponse.builder()
+                        .code(cat.name())
+                        .name(cat.getDisplayName())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+        return ResponseEntity.ok(ApiResponse.ok(categories));
     }
 
     @PutMapping("/{id}")

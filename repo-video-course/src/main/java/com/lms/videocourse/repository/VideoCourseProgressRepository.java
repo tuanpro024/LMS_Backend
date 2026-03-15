@@ -10,9 +10,8 @@ import java.util.Optional;
 @Repository
 public interface VideoCourseProgressRepository extends JpaRepository<VideoCourseProgress, String> {
 
-    Optional<VideoCourseProgress> findByUserIdAndVideoCourseId(String userId, String videoCourseId);
+    Optional<VideoCourseProgress> findByUserIdAndStudySetId(String userId, String studySetId);
 
-    List<VideoCourseProgress> findByUserIdAndStudySetId(String userId, String studySetId);
 
     List<VideoCourseProgress> findByUserId(String userId);
 }

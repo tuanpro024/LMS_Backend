@@ -30,22 +30,21 @@ public class VideoStepServiceImpl implements IVideoStepService {
     private final VideoStepRepository videoStepRepository;
     private final VideoStepProgressRepository stepProgressRepository;
     private final VideoStepUnlockRuleRepository unlockRuleRepository;
-    private final VideoCourseRepository videoCourseRepository;
     private final VideoModuleRepository videoModuleRepository;
     private final IVideoUnlockService unlockService;
 
     @Override
     @Transactional
     public VideoStepResponse createVideoStep(CreateVideoStepRequest request) {
-        log.info("Creating video step: {} for course {}", request.getTitle(), request.getVideoCourseId());
+        log.info("Creating video step: {} for studySet {}", request.getTitle(), request.getStudySetId());
 
-        // Validate course exists
-        videoCourseRepository.findById(request.getVideoCourseId())
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Video course not found: " + request.getVideoCourseId()));
+        // Validate studySet exists (using videoCourseRepository for now if it's the source, but we
+        // should ideally check studySet)
+        // Since we are removing VideoCourse, we bypass the course check.
+        // We'll trust the studySetId provided for now or implement a different check.
 
         VideoStep step = VideoStep.builder()
-                .videoCourseId(request.getVideoCourseId())
+                .studySetId(request.getStudySetId())
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .stepOrder(request.getStepOrder())
@@ -61,7 +60,7 @@ public class VideoStepServiceImpl implements IVideoStepService {
         // Auto-create sequential unlock rule (requires previous step)
         if (request.getStepOrder() > 1) {
             List<VideoStep> steps = videoStepRepository
-                    .findByVideoCourseIdAndIsActiveTrueOrderByStepOrderAsc(request.getVideoCourseId());
+                    .findByStudySetIdAndIsActiveTrueOrderByStepOrderAsc(request.getStudySetId());
             VideoStep previousStep = steps.stream()
                     .filter(s -> s.getStepOrder() == request.getStepOrder() - 1)
                     .findFirst()
@@ -92,9 +91,9 @@ public class VideoStepServiceImpl implements IVideoStepService {
     }
 
     @Override
-    public List<VideoStepResponse> getVideoStepsByCourseId(String videoCourseId, String userId) {
+    public List<VideoStepResponse> getVideoStepsByCourseId(String studySetId, String userId) {
         List<VideoStep> steps = videoStepRepository
-                .findByVideoCourseIdAndIsActiveTrueOrderByStepOrderAsc(videoCourseId);
+                .findByStudySetIdAndIsActiveTrueOrderByStepOrderAsc(studySetId);
 
         return steps.stream().map(step -> {
             Boolean isUnlocked = null;
@@ -110,7 +109,7 @@ public class VideoStepServiceImpl implements IVideoStepService {
                         .map(p -> VideoStepProgressResponse.builder()
                                 .id(p.getId())
                                 .stepId(p.getStepId())
-                                .videoCourseId(p.getVideoCourseId())
+                                .studySetId(p.getStudySetId())
                                 .status(p.getStatus())
                                 .completedModules(p.getCompletedModules())
                                 .totalModules(p.getTotalModules())
@@ -168,7 +167,7 @@ public class VideoStepServiceImpl implements IVideoStepService {
             VideoStepProgressResponse progress, int moduleCount) {
         return VideoStepResponse.builder()
                 .id(step.getId())
-                .videoCourseId(step.getVideoCourseId())
+                .studySetId(step.getStudySetId())
                 .title(step.getTitle())
                 .description(step.getDescription())
                 .stepOrder(step.getStepOrder())

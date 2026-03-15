@@ -11,7 +11,7 @@ import java.time.Instant;
 public class VideoStepProgressResponse {
     private String id;
     private String stepId;
-    private String videoCourseId;
+    private String studySetId;
     private ProgressStatus status;
     private Integer completedModules;
     private Integer totalModules;

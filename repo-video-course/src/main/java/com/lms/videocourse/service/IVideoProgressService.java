@@ -28,8 +28,8 @@ public interface IVideoProgressService {
     /** Get step progress (aggregated from all modules in the step) */
     VideoStepProgressResponse getStepProgress(String userId, String stepId);
 
-    /** Get course progress (aggregated from all steps in the course) */
-    VideoCourseProgressResponse getCourseProgress(String userId, String courseId);
+    /** Get overall progress (aggregated from all steps in the study set) */
+    VideoCourseProgressResponse getCourseProgress(String userId, String studySetId);
 
     /** Get all course progress for a user in a study set */
     List<VideoCourseProgressResponse> getAllCourseProgress(String userId, String studySetId);

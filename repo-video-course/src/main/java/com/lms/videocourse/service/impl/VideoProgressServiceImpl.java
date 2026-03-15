@@ -38,7 +38,6 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         private final VideoStepProgressRepository stepProgressRepository;
         private final VideoCourseProgressRepository courseProgressRepository;
         private final VideoStepRepository videoStepRepository;
-        private final VideoCourseRepository videoCourseRepository;
 
         // ============ Watch Progress ============
 
@@ -142,7 +141,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                         // Trigger rollup to VideoCourseProgress
                         VideoStep step = videoStepRepository.findById(module.getStepId())
                                         .orElseThrow();
-                        updateCourseProgress(userId, step.getVideoCourseId());
+                        updateCourseProgress(userId, step.getStudySetId());
                 } else {
                         progress = watchProgressRepository.save(progress);
                 }
@@ -185,7 +184,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                         // Rollup
                         updateStepProgress(userId, module.getStepId());
                         VideoStep step = videoStepRepository.findById(module.getStepId()).orElseThrow();
-                        updateCourseProgress(userId, step.getVideoCourseId());
+                        updateCourseProgress(userId, step.getStudySetId());
                 }
 
                 return toWatchProgressResponse(progress);
@@ -206,24 +205,18 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         }
 
         @Override
-        public VideoCourseProgressResponse getCourseProgress(String userId, String courseId) {
-                return courseProgressRepository.findByUserIdAndVideoCourseId(userId, courseId)
+        public VideoCourseProgressResponse getCourseProgress(String userId, String studySetId) {
+                return courseProgressRepository.findByUserIdAndStudySetId(userId, studySetId)
                                 .map(this::toCourseProgressResponse)
                                 .orElse(null);
         }
 
         @Override
         public List<VideoCourseProgressResponse> getAllCourseProgress(String userId, String studySetId) {
-                List<VideoCourse> courses = videoCourseRepository
-                                .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
-
-                return courses.stream()
-                                .map(course -> courseProgressRepository
-                                                .findByUserIdAndVideoCourseId(userId, course.getId())
-                                                .map(this::toCourseProgressResponse)
-                                                .orElse(null))
-                                .filter(p -> p != null)
-                                .collect(Collectors.toList());
+                // Return the progress for the study set itself
+                return courseProgressRepository.findByUserIdAndStudySetId(userId, studySetId)
+                                .map(p -> List.of(toCourseProgressResponse(p)))
+                                .orElse(List.of());
         }
 
         // ============ Private rollup helpers ============
@@ -274,7 +267,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                 .orElseGet(() -> VideoStepProgress.builder()
                                                 .userId(userId)
                                                 .stepId(stepId)
-                                                .videoCourseId(step.getVideoCourseId())
+                                                .studySetId(step.getStudySetId())
                                                 .status(ProgressStatus.NOT_STARTED)
                                                 .completedModules(0)
                                                 .totalModules(totalModules)
@@ -304,13 +297,12 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
          * Recalculates VideoCourseProgress from all VideoStepProgress records in the
          * course.
          */
-        private void updateCourseProgress(String userId, String videoCourseId) {
-                VideoCourse course = videoCourseRepository.findById(videoCourseId)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Video course not found: " + videoCourseId));
+        private void updateCourseProgress(String userId, String studySetId) {
+                // VideoCourse is being removed, but we still have studySetId to track overall
+                // progress.
 
                 List<VideoStep> allSteps = videoStepRepository
-                                .findByVideoCourseIdAndIsActiveTrueOrderByStepOrderAsc(videoCourseId);
+                                .findByStudySetIdAndIsActiveTrueOrderByStepOrderAsc(studySetId);
 
                 int totalSteps = allSteps.size();
 
@@ -342,11 +334,10 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                 .orElse(null);
 
                 VideoCourseProgress progress = courseProgressRepository
-                                .findByUserIdAndVideoCourseId(userId, videoCourseId)
+                                .findByUserIdAndStudySetId(userId, studySetId)
                                 .orElseGet(() -> VideoCourseProgress.builder()
                                                 .userId(userId)
-                                                .videoCourseId(videoCourseId)
-                                                .studySetId(course.getStudySetId())
+                                                .studySetId(studySetId)
                                                 .status(ProgressStatus.NOT_STARTED)
                                                 .completedSteps(0)
                                                 .totalSteps(totalSteps)
@@ -365,8 +356,8 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                 }
 
                 courseProgressRepository.save(progress);
-                log.info("Updated course progress for user {} course {}: {}/{} steps, status={}",
-                                userId, videoCourseId, completedSteps, totalSteps, status);
+                log.info("Updated course progress for user {} studySet {}: {}/{} steps, status={}",
+                                userId, studySetId, completedSteps, totalSteps, status);
         }
 
         // ============ Mapping helpers ============
@@ -392,7 +383,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                 return VideoStepProgressResponse.builder()
                                 .id(p.getId())
                                 .stepId(p.getStepId())
-                                .videoCourseId(p.getVideoCourseId())
+                                .studySetId(p.getStudySetId())
                                 .status(p.getStatus())
                                 .completedModules(p.getCompletedModules())
                                 .totalModules(p.getTotalModules())
@@ -407,7 +398,6 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         private VideoCourseProgressResponse toCourseProgressResponse(VideoCourseProgress p) {
                 return VideoCourseProgressResponse.builder()
                                 .id(p.getId())
-                                .videoCourseId(p.getVideoCourseId())
                                 .studySetId(p.getStudySetId())
                                 .status(p.getStatus())
                                 .completedSteps(p.getCompletedSteps())

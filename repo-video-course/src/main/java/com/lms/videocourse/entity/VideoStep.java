@@ -13,8 +13,8 @@ import lombok.*;
  */
 @Entity
 @Table(name = "video_steps", indexes = {
-        @Index(name = "idx_vs_course", columnList = "video_course_id"),
-        @Index(name = "idx_vs_course_order", columnList = "video_course_id, step_order")
+        @Index(name = "idx_vs_study_set", columnList = "study_set_id"),
+        @Index(name = "idx_vs_study_set_order", columnList = "study_set_id, step_order")
 })
 @Getter
 @Setter
@@ -23,8 +23,8 @@ import lombok.*;
 @Builder
 public class VideoStep extends BaseEntity {
 
-    @Column(nullable = false, length = 26)
-    private String videoCourseId; // FK to VideoCourse
+    @Column(name = "study_set_id", nullable = false, length = 26)
+    private String studySetId; // FK to StudySet (denormalized)
 
     @Column(nullable = false, length = 255)
     private String title; // "Bài 1: Giới thiệu", "Chương 2: Ngữ pháp"

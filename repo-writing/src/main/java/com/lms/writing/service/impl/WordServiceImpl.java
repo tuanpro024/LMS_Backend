@@ -21,7 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,7 +41,7 @@ public class WordServiceImpl implements WordService {
     @Override
     @Transactional(readOnly = true)
     public WordResponse getWordById(String id) {
-        Word word = wordRepository.findById(id)
+        Word word = wordRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
         return wordMapper.toResponse(word);
     }
@@ -47,20 +49,19 @@ public class WordServiceImpl implements WordService {
     @Override
     @Transactional(readOnly = true)
     public List<WordResponse> getWordsByStudySetId(String studySetId) {
-        List<Word> words = wordRepository.findByStudySetIdOrderByIdAsc(studySetId);
+        List<Word> words = wordRepository.findByStudySetIdAndDeletedFalseOrderByIdAsc(studySetId);
         return wordMapper.toResponseList(words);
     }
 
     @Override
     public WordResponse updateWord(String id, UpdateWordRequest request, String userId) {
-        Word word = wordRepository.findById(id)
+        Word word = wordRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
-        // Check ownership - DISABLED
-        // Admin and Teacher roles have full access via @PreAuthorize in controller
-        // if (!word.getStudySet().getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to update this word");
-        // }
+        // Check ownership — only the study set owner or an admin can update
+        if (!word.getStudySet().getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to update this word");
+        }
 
         // Update entity (auto-regenerates characters if word changed)
         wordMapper.updateEntity(word, request);
@@ -71,14 +72,17 @@ public class WordServiceImpl implements WordService {
 
     @Override
     public void deleteWord(String id, String userId) {
-        Word word = wordRepository.findById(id)
+        Word word = wordRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
-        // Check ownership - DISABLED
-        // Admin and Teacher roles have full access via @PreAuthorize in controller
-        // if (!word.getStudySet().getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to delete this word");
-        // }
+        // Check ownership — only the study set owner or an admin can delete
+        if (!word.getStudySet().getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to delete this word");
+        }
+
+        // Delete associated user progress records first to avoid FK constraint
+        // violation
+        userWordProgressRepository.deleteByWordId(id);
 
         wordRepository.delete(word);
     }
@@ -97,9 +101,10 @@ public class WordServiceImpl implements WordService {
     @Override
     @Transactional(readOnly = true)
     public List<WordResponse> getNotLearnedWords(String userId, String studySetId) {
-        List<Word> allWords = wordRepository.findByStudySetIdOrderByIdAsc(studySetId);
-        List<String> learnedWordIds = userWordProgressRepository.findWordIdsByUserIdAndStudySetIdAndStatus(userId,
-                studySetId, ContentStatus.LEARNED);
+        List<Word> allWords = wordRepository.findByStudySetIdAndDeletedFalseOrderByIdAsc(studySetId);
+        Set<String> learnedWordIds = new HashSet<>(
+                userWordProgressRepository.findWordIdsByUserIdAndStudySetIdAndStatus(userId,
+                        studySetId, ContentStatus.LEARNED));
 
         List<Word> notLearnedWords = allWords.stream()
                 .filter(w -> !learnedWordIds.contains(w.getId()))
@@ -120,7 +125,7 @@ public class WordServiceImpl implements WordService {
     @Override
     @Transactional(readOnly = true)
     public long countNotLearnedWords(String userId, String studySetId) {
-        long total = wordRepository.countByStudySetId(studySetId);
+        long total = wordRepository.countByStudySetIdAndDeletedFalse(studySetId);
         long learned = countLearnedWords(userId, studySetId);
         return total - learned;
     }
@@ -128,7 +133,7 @@ public class WordServiceImpl implements WordService {
     @Override
     public void updateWordStatus(String userId, String wordId,
             com.lms.writing.dto.request.UpdateWordStatusRequest request) {
-        Word word = wordRepository.findById(wordId)
+        Word word = wordRepository.findByIdAndDeletedFalse(wordId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
         UserWordProgress progress = userWordProgressRepository.findByUserIdAndWordId(userId, wordId)
@@ -151,8 +156,7 @@ public class WordServiceImpl implements WordService {
     @Override
     @Transactional(readOnly = true)
     public long countTotalWords(String studySetId) {
-        List<Word> words = wordRepository.findByStudySetId(studySetId);
-        return words.size();
+        return wordRepository.countByStudySetIdAndDeletedFalse(studySetId);
     }
 
     @Override
@@ -163,6 +167,11 @@ public class WordServiceImpl implements WordService {
 
         log.debug("Adding words to StudySet: studySetId={}, studySetOwnerId={}, requestUserId={}",
                 studySetId, studySet.getUserId(), userId);
+
+        // Check ownership — only the study set owner can add words
+        if (!studySet.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to add words to this study set");
+        }
 
         // Convert and save all words
         List<Word> wordEntities = words.stream()

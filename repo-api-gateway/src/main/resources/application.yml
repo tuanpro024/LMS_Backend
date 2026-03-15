@@ -26,8 +26,8 @@ spring:
             allowedOriginPatterns:
               - "http://localhost:*"
               - "http://127.0.0.1:*"
-              - "http://arin.io.vn"
-              - "https://arin.io.vn"
+              - "http://lms.dangch.tech"
+              - "https://lms.dangch.tech"
             allowedMethods:
               - GET
               - POST
@@ -79,7 +79,7 @@ spring:
         - id: multimedia
           uri: lb://REPO-MULTIMEDIA
           predicates:
-            - Path=/api/videos/**,/api/media/**,/api/subtitles/**,/api/packages/**,/api/folders/**,/api/study-sets/**
+            - Path=/api/media/**,/api/subtitles/**,/api/packages/**,/api/folders/**,/api/study-sets/**
           # No StripPrefix - forward path as-is to multimedia service
 
         - id: dictionary

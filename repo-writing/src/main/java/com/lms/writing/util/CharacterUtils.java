@@ -31,12 +31,11 @@ public final class CharacterUtils {
         }
 
         try {
-            // Convert each character to a string and create array
-            char[] chars = word.toCharArray();
-            String[] charStrings = new String[chars.length];
-            for (int i = 0; i < chars.length; i++) {
-                charStrings[i] = String.valueOf(chars[i]);
-            }
+            // Use codePoints() to properly handle supplementary Unicode characters (e.g.,
+            // CJK Extension B)
+            String[] charStrings = word.codePoints()
+                    .mapToObj(cp -> new String(Character.toChars(cp)))
+                    .toArray(String[]::new);
             return objectMapper.writeValueAsString(charStrings);
         } catch (JsonProcessingException e) {
             return "[]";

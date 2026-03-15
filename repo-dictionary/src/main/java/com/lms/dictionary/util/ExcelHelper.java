@@ -61,11 +61,11 @@ public class ExcelHelper {
                 vocabulary.setPinyin(getCellValueAsString(currentRow.getCell(1)));
 
                 List<VocabularyMeaningRequest> meanings = new ArrayList<>();
-                String meaningViStr = getCellValueAsString(currentRow.getCell(2)); 
-                
+                String meaningViStr = getCellValueAsString(currentRow.getCell(2));
+
                 String exampleCnStr = getCellValueAsString(currentRow.getCell(3));
                 String exampleViStr = getCellValueAsString(currentRow.getCell(4));
-                
+
                 String hskStr = getCellValueAsString(currentRow.getCell(5));
                 if (!hskStr.isEmpty()) {
                     try {
@@ -86,14 +86,14 @@ public class ExcelHelper {
                         String[] parts = comp.split(":");
                         String cHanzi = parts[0].trim();
                         String cPinyin = parts.length > 1 ? parts[1].trim() : "";
-                        
+
                         CreateVocabularyRequest compReq = new CreateVocabularyRequest();
                         compReq.setHanzi(cHanzi);
                         compReq.setPinyin(cPinyin);
-                        compReq.setIsSingleVocab(true); 
+                        compReq.setIsSingleVocab(true);
 
                         components.add(VocabComponentRequest.builder()
-                                .newVocabulary(compReq) 
+                                .newVocabulary(compReq)
                                 .orderIndex(order++)
                                 .build());
                     }
@@ -104,10 +104,11 @@ public class ExcelHelper {
                 vocabulary.setStrokeAnimationUrl(getCellValueAsString(currentRow.getCell(9)));
                 vocabulary.setEtymologyStory(getCellValueAsString(currentRow.getCell(10)));
                 vocabulary.setEtymologyImage(getCellValueAsString(currentRow.getCell(11)));
+                vocabulary.setImageUrl(getCellValueAsString(currentRow.getCell(12)));
 
-                String wordTypeStr = getCellValueAsString(currentRow.getCell(12));
-                String examplePinyinStr = getCellValueAsString(currentRow.getCell(13));
-                String exampleEnStr = getCellValueAsString(currentRow.getCell(14));
+                String wordTypeStr = getCellValueAsString(currentRow.getCell(13));
+                String examplePinyinStr = getCellValueAsString(currentRow.getCell(14));
+                String exampleEnStr = getCellValueAsString(currentRow.getCell(15));
 
                 if (meaningViStr != null && !meaningViStr.isEmpty()) {
                     String[] meaningParts = meaningViStr.split(SPLIT_CHAR);
@@ -116,18 +117,18 @@ public class ExcelHelper {
                     String[] exViParts = exampleViStr.split(SPLIT_CHAR);
                     String[] exPinyinParts = examplePinyinStr.split(SPLIT_CHAR);
                     String[] exEnParts = exampleEnStr.split(SPLIT_CHAR);
-                    
+
                     List<String> collectedWordTypes = new ArrayList<>();
                     if (wordTypeParts != null && wordTypeParts.length > 0) {
-                        for(String wt : wordTypeParts) {
-                            if(!wt.trim().isEmpty()) {
+                        for (String wt : wordTypeParts) {
+                            if (!wt.trim().isEmpty()) {
                                 collectedWordTypes.add(wt.trim());
                             }
                         }
                     }
                     List<String> distinctWordTypes = new ArrayList<>();
-                    for(String wt : collectedWordTypes) {
-                        if(!distinctWordTypes.contains(wt)) {
+                    for (String wt : collectedWordTypes) {
+                        if (!distinctWordTypes.contains(wt)) {
                             distinctWordTypes.add(wt);
                         }
                     }
@@ -141,19 +142,20 @@ public class ExcelHelper {
                         meaningReq.setExampleSentenceVi(getValueAtIndexOrFirst(exViParts, i));
                         meaningReq.setExampleSentencePinyin(getValueAtIndexOrFirst(exPinyinParts, i));
                         meaningReq.setExampleSentenceEn(getValueAtIndexOrFirst(exEnParts, i));
-                        
+
                         meanings.add(meaningReq);
                     }
                 }
-                
+
                 vocabulary.setMeanings(meanings);
                 vocabularies.add(vocabulary);
             }
 
             workbook.close();
-            
+
             // Sort: Single vocab first (TRUE > FALSE)
-            // Note: Boolean.compare(true, false) -> 1, so B.compare(b, a) gives desc order (True first)
+            // Note: Boolean.compare(true, false) -> 1, so B.compare(b, a) gives desc order
+            // (True first)
             vocabularies.sort((v1, v2) -> Boolean.compare(v2.getIsSingleVocab(), v1.getIsSingleVocab()));
 
             return vocabularies;
@@ -174,9 +176,10 @@ public class ExcelHelper {
         }
         return "";
     }
-    
+
     private static String getCellValueAsString(Cell cell) {
-        if (cell == null) return "";
+        if (cell == null)
+            return "";
         switch (cell.getCellType()) {
             case STRING:
                 return cell.getStringCellValue();

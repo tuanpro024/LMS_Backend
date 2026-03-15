@@ -4,6 +4,7 @@ import com.lms.writing.dto.request.CreateWordRequest;
 import com.lms.writing.dto.request.UpdateWordRequest;
 import com.lms.writing.dto.response.WordResponse;
 import com.lms.writing.entity.Word;
+import com.lms.writing.entity.enums.WordStatus;
 import com.lms.writing.util.CharacterUtils;
 import org.mapstruct.*;
 
@@ -50,6 +51,14 @@ public interface WordMapper {
     default void parseCharactersAfterMapping(@MappingTarget WordResponse response, Word word) {
         if (word.getCharacters() != null && !word.getCharacters().isEmpty()) {
             response.setCharacters(CharacterUtils.jsonArrayToList(word.getCharacters()));
+        }
+    }
+
+    // Default status to NOT_LEARNED when not set (non-user-specific endpoints)
+    @AfterMapping
+    default void setDefaultStatus(@MappingTarget WordResponse response) {
+        if (response.getStatus() == null) {
+            response.setStatus(WordStatus.NOT_LEARNED);
         }
     }
 }

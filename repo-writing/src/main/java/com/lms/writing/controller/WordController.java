@@ -58,8 +58,9 @@ public class WordController {
     public ResponseEntity<ApiResponse<WordResponse>> updateWord(
             @PathVariable String id,
             @Valid @RequestBody UpdateWordRequest request,
-            @RequestHeader("X-User-Id") String userId) {
-        WordResponse response = wordService.updateWord(id, request, userId);
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        WordResponse response = wordService.updateWord(id, request, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -77,8 +78,9 @@ public class WordController {
     @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteWord(
             @PathVariable String id,
-            @RequestHeader("X-User-Id") String userId) {
-        wordService.deleteWord(id, userId);
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        wordService.deleteWord(id, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

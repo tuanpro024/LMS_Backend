@@ -2,6 +2,7 @@ package com.lms.flashcard.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,9 +17,11 @@ import java.util.List;
 public class CreateCardRequest {
 
     @NotBlank(message = "Term is required")
+    @Size(max = 100, message = "Term must not exceed 100 characters")
     private String term;
 
     @NotBlank(message = "Definition is required")
+    @Size(max = 500, message = "Definition must not exceed 500 characters")
     private String definition;
 
     @NotNull(message = "Index is required")

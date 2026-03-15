@@ -55,7 +55,8 @@ public interface QuizMapper {
                 .questionText(q.getQuestionText())
                 .questionMediaUrl(q.getQuestionMediaUrl())
                 .points(q.getPoints())
-                .difficulty(q.getDifficulty());
+                .difficulty(q.getDifficulty())
+                .explanation(q.getExplanation());
 
         switch (q.getQuestionType()) {
             case MULTIPLE_CHOICE -> builder.options(
@@ -101,6 +102,7 @@ public interface QuizMapper {
                             .collect(Collectors.toList()));
             case SENTENCE_BUILDER -> {
                 builder.translationHint(q.getTranslationHint());
+                builder.correctSentence(q.getCorrectSentence());
                 builder.chunks(q.getSentenceChunks().stream()
                         .map(c -> QuestionResponse.ChunkInfo.builder()
                                 .id(c.getId())
@@ -127,7 +129,9 @@ public interface QuizMapper {
                 .questionText(q.getQuestionText())
                 .questionMediaUrl(q.getQuestionMediaUrl())
                 .points(q.getPoints())
-                .difficulty(q.getDifficulty());
+                .difficulty(q.getDifficulty())
+                // explanation = null (ẩn với student)
+                .explanation(null);
 
         switch (q.getQuestionType()) {
             case MULTIPLE_CHOICE -> builder.options(
@@ -172,6 +176,8 @@ public interface QuizMapper {
                             .collect(Collectors.toList()));
             case SENTENCE_BUILDER -> {
                 builder.translationHint(q.getTranslationHint());
+                // correctSentence = null (ẩn với student)
+                builder.correctSentence(null);
                 builder.chunks(q.getSentenceChunks().stream()
                         .map(c -> QuestionResponse.ChunkInfo.builder()
                                 .id(c.getId())

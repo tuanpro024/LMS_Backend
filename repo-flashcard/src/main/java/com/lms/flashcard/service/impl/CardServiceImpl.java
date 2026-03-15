@@ -21,7 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,7 +40,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public void updateCardStatus(String userId, String cardId, UpdateCardStatusRequest request) {
-        Card card = cardRepository.findById(cardId)
+        Card card = cardRepository.findByIdAndDeletedFalse(cardId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
 
         UserCardProgress progress = userCardProgressRepository.findByUserIdAndCardId(userId, cardId)
@@ -69,9 +71,10 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public List<CardResponse> getNotLearnedCards(String userId, String studySetId) {
-        List<Card> allCards = cardRepository.findByStudySetId(studySetId);
-        List<String> learnedCardIds = userCardProgressRepository.findCardIdsByUserIdAndStudySetIdAndStatus(userId,
-                studySetId, CardStatus.LEARNED);
+        List<Card> allCards = cardRepository.findByStudySetIdAndDeletedFalse(studySetId);
+        Set<String> learnedCardIds = new HashSet<>(
+                userCardProgressRepository.findCardIdsByUserIdAndStudySetIdAndStatus(userId,
+                        studySetId, CardStatus.LEARNED));
 
         List<Card> notLearnedCards = allCards.stream()
                 .filter(c -> !learnedCardIds.contains(c.getId()))
@@ -89,14 +92,14 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public long countNotLearnedCards(String userId, String studySetId) {
-        long total = cardRepository.countByStudySetId(studySetId);
+        long total = cardRepository.countByStudySetIdAndDeletedFalse(studySetId);
         long learned = countLearnedCards(userId, studySetId);
         return total - learned;
     }
 
     @Override
     public long countTotalCards(String studySetId) {
-        return cardRepository.countByStudySetId(studySetId);
+        return cardRepository.countByStudySetIdAndDeletedFalse(studySetId);
     }
 
     @Override
@@ -107,6 +110,11 @@ public class CardServiceImpl implements CardService {
 
         log.debug("Adding cards to StudySet: studySetId={}, studySetOwnerId={}, requestUserId={}",
                 studySetId, studySet.getUserId(), userId);
+
+        // Check ownership — only the study set owner can add cards
+        if (!studySet.getUserId().equals(userId)) {
+            throw new ApiException(ErrorCode.E240, "No permission to add cards to this study set");
+        }
 
         // Convert and save all cards
         List<Card> cardEntities = cards.stream()
@@ -137,20 +145,20 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public List<CardResponse> getCardsByStudySetId(String studySetId) {
-        List<Card> cards = cardRepository.findByStudySetId(studySetId);
+        List<Card> cards = cardRepository.findByStudySetIdAndDeletedFalse(studySetId);
         return cardMapper.toResponseList(cards);
     }
 
     @Override
     public CardResponse getCardById(String id) {
-        Card card = cardRepository.findById(id)
+        Card card = cardRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
         return cardMapper.toResponse(card);
     }
 
     @Override
     public CardResponse updateCard(String id, UpdateCardRequest request, String userId) {
-        Card card = cardRepository.findById(id)
+        Card card = cardRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
 
         // Verify ownership
@@ -219,7 +227,7 @@ public class CardServiceImpl implements CardService {
 
     @Override
     public void deleteCard(String id, String userId) {
-        Card card = cardRepository.findById(id)
+        Card card = cardRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
 
         // Verify ownership
@@ -227,6 +235,10 @@ public class CardServiceImpl implements CardService {
         if (!studySet.getUserId().equals(userId)) {
             throw new ApiException(ErrorCode.E228, "You don't have permission to delete this card");
         }
+
+        // Delete associated user progress records first to avoid FK constraint
+        // violation
+        userCardProgressRepository.deleteByCardId(id);
 
         cardRepository.delete(card);
         log.info("Deleted card {} by user {}", id, userId);

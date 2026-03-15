@@ -102,12 +102,8 @@ public class PackageController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("typeName") TypeName typeName,
             Authentication authentication) {
-        // When called via Feign Client (service-to-service), authentication will be
-        // null
-        // Use "system" as default userId in that case
-        String userId = (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal)
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : "system";
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        String userId = principal.userId();
 
         HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, typeName,
                 userId, false);

@@ -1,5 +1,6 @@
 package com.lms.content.common.dto.request;
 
+import com.lms.content.common.entity.CategoryType;
 import com.lms.content.common.entity.TypeName;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -7,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -23,4 +26,10 @@ public class CreatePackageRequest {
     private String description;
 
     private String thumbnail;
+
+    private CategoryType category;
+
+    private BigDecimal price;
+
+    private String pricingType;
 }

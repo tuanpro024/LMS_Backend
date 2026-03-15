@@ -35,6 +35,11 @@ public interface SubtitleRepository extends JpaRepository<Subtitle, String> {
     Optional<Subtitle> findByVideoIdAndStatusAndDeletedFalse(String videoId, SubtitleStatus status);
 
     /**
+     * Find the active subtitle for a video by video code
+     */
+    Optional<Subtitle> findByVideoCodeAndStatusAndDeletedFalse(String videoCode, SubtitleStatus status);
+
+    /**
      * Find all subtitles created by a user
      */
 

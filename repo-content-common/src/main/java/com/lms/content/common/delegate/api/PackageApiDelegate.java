@@ -80,6 +80,16 @@ public class PackageApiDelegate {
     }
 
     /**
+     * Get packages by type and category
+     * 
+     * @return List of PackageResponse DTOs
+     */
+    public List<PackageResponse> getPackagesByTypeAndCategory(TypeName type,
+            com.lms.content.common.entity.CategoryType category) {
+        return packageService.getPackagesByTypeAndCategory(type, category);
+    }
+
+    /**
      * Update package
      * 
      * @return Updated PackageResponse DTO

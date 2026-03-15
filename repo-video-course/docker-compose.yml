@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  repo-video-course:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: repo-video-course
+    ports:
+      - "8092:8092"
+    environment:
+      - SERVER_PORT=8092
+      - SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/lms_video_course_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://host.docker.internal:8761/eureka
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

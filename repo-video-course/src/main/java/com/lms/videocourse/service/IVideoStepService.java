@@ -12,7 +12,7 @@ public interface IVideoStepService {
 
     VideoStepResponse getVideoStepById(String id);
 
-    List<VideoStepResponse> getVideoStepsByCourseId(String videoCourseId, String userId);
+    List<VideoStepResponse> getVideoStepsByCourseId(String studySetId, String userId);
 
     VideoStepResponse updateVideoStep(String id, UpdateVideoStepRequest request);
 

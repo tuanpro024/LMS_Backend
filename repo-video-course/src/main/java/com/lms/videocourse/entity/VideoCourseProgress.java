@@ -14,7 +14,7 @@ import java.time.Instant;
  */
 @Entity
 @Table(name = "video_course_progress", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id",
-        "video_course_id" }), indexes = {
+        "study_set_id" }), indexes = {
                 @Index(name = "idx_vcp_user_study_set", columnList = "user_id, study_set_id")
         })
 @Getter
@@ -27,8 +27,6 @@ public class VideoCourseProgress extends BaseEntity {
     @Column(nullable = false, length = 26)
     private String userId;
 
-    @Column(nullable = false, length = 26)
-    private String videoCourseId; // FK to VideoCourse
 
     @Column(nullable = false, length = 26)
     private String studySetId; // Denormalized from VideoCourse

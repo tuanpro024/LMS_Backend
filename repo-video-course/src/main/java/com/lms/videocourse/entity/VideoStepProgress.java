@@ -15,7 +15,7 @@ import java.time.Instant;
 @Entity
 @Table(name = "video_step_progress", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id",
         "step_id" }), indexes = {
-                @Index(name = "idx_vsp_user_course", columnList = "user_id, video_course_id"),
+                @Index(name = "idx_vsp_user_study_set", columnList = "user_id, study_set_id"),
                 @Index(name = "idx_vsp_user_step", columnList = "user_id, step_id")
         })
 @Getter
@@ -31,8 +31,8 @@ public class VideoStepProgress extends BaseEntity {
     @Column(nullable = false, length = 26)
     private String stepId; // FK to VideoStep
 
-    @Column(nullable = false, length = 26)
-    private String videoCourseId; // Denormalized for easier querying
+    @Column(name = "study_set_id", nullable = false, length = 26)
+    private String studySetId; // Denormalized for easier querying
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

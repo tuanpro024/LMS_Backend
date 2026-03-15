@@ -18,6 +18,7 @@ public interface PackageMapper {
     @Mapping(target = "type", ignore = true)
     Package toEntity(CreatePackageRequest request);
 
+    @Mapping(target = "category", source = "category")
     @Mapping(target = "type", expression = "java(mapTypeToTypeName(packageEntity.getType()))")
     PackageResponse toResponse(Package packageEntity);
 

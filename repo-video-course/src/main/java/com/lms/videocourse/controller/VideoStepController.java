@@ -47,16 +47,16 @@ public class VideoStepController {
      * Get all steps for a course.
      * If authenticated, includes unlock status and progress per step.
      */
-    @GetMapping("/course/{videoCourseId}")
-    public ResponseEntity<ApiResponse<List<VideoStepResponse>>> getVideoStepsByCourse(
-            @PathVariable String videoCourseId,
+    @GetMapping("/study-set/{studySetId}")
+    public ResponseEntity<ApiResponse<List<VideoStepResponse>>> getVideoStepsByStudySet(
+            @PathVariable String studySetId,
             Authentication authentication) {
 
         String userId = null;
         if (authentication != null && authentication.isAuthenticated()) {
             userId = ((AuthPrincipal) authentication.getPrincipal()).userId();
         }
-        List<VideoStepResponse> response = videoStepService.getVideoStepsByCourseId(videoCourseId, userId);
+        List<VideoStepResponse> response = videoStepService.getVideoStepsByCourseId(studySetId, userId);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 

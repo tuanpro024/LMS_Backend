@@ -66,11 +66,16 @@ public class SubtitleService {
     }
 
     /**
-     * Get the active subtitle for a video
+     * Get the active subtitle for a video (supports both videoId and videoCode)
      */
     public Optional<SubtitleResponse> getActiveSubtitle(String videoId) {
-        return subtitleRepository.findByVideoIdAndStatusAndDeletedFalse(videoId, SubtitleStatus.ACTIVE)
-                .map(this::mapToResponse);
+        // Try by videoId first (ULID), then by videoCode
+        Optional<Subtitle> result = subtitleRepository.findByVideoIdAndStatusAndDeletedFalse(videoId,
+                SubtitleStatus.ACTIVE);
+        if (result.isEmpty()) {
+            result = subtitleRepository.findByVideoCodeAndStatusAndDeletedFalse(videoId, SubtitleStatus.ACTIVE);
+        }
+        return result.map(this::mapToResponse);
     }
 
     /**

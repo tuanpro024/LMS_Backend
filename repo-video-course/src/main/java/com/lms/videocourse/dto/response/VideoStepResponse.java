@@ -9,7 +9,7 @@ import java.time.Instant;
 @Builder
 public class VideoStepResponse {
     private String id;
-    private String videoCourseId;
+    private String studySetId;
     private String title;
     private String description;
     private Integer stepOrder;

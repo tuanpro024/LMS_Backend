@@ -10,7 +10,6 @@ import java.time.Instant;
 @Builder
 public class VideoCourseProgressResponse {
     private String id;
-    private String videoCourseId;
     private String studySetId;
     private ProgressStatus status;
     private Integer completedSteps;

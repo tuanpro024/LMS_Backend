@@ -125,6 +125,12 @@ spring:
             - Path=${config.api-prefix}/video-course/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: payment
+          uri: lb://REPO-PAYMENT
+          predicates:
+            - Path=${config.api-prefix}/payment/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

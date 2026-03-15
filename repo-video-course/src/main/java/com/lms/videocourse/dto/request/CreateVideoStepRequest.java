@@ -8,8 +8,8 @@ import lombok.Data;
 @Data
 public class CreateVideoStepRequest {
 
-    @NotBlank(message = "VideoCourse ID is required")
-    private String videoCourseId;
+    @NotBlank(message = "StudySet ID is required")
+    private String studySetId;
 
     @NotBlank(message = "Title is required")
     private String title;

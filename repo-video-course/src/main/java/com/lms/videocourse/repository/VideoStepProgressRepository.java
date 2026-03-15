@@ -12,7 +12,7 @@ public interface VideoStepProgressRepository extends JpaRepository<VideoStepProg
 
     Optional<VideoStepProgress> findByUserIdAndStepId(String userId, String stepId);
 
-    List<VideoStepProgress> findByUserIdAndVideoCourseId(String userId, String videoCourseId);
+    List<VideoStepProgress> findByUserIdAndStudySetId(String userId, String studySetId);
 
     List<VideoStepProgress> findByUserIdAndStepIdIn(String userId, List<String> stepIds);
 }

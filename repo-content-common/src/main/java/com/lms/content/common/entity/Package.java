@@ -4,6 +4,7 @@ import com.lms.common.jpa.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +31,18 @@ public class Package extends BaseEntity {
 
     @Column(nullable = false, length = 26)
     private String userId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "category")
+    private CategoryType category;
+
+    @Column(precision = 12, scale = 0)
+    @Builder.Default
+    private BigDecimal price = BigDecimal.ZERO;
+
+    @Column(length = 10)
+    @Builder.Default
+    private String pricingType = "FREE"; // FREE or PAID
 
     @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

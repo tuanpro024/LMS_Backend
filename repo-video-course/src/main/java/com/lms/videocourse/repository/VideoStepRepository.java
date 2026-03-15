@@ -9,9 +9,7 @@ import java.util.List;
 @Repository
 public interface VideoStepRepository extends JpaRepository<VideoStep, String> {
 
-    List<VideoStep> findByVideoCourseIdAndIsActiveTrueOrderByStepOrderAsc(String videoCourseId);
-
-    List<VideoStep> findByVideoCourseIdOrderByStepOrderAsc(String videoCourseId);
-
-    long countByVideoCourseIdAndIsActiveTrue(String videoCourseId);
+    List<VideoStep> findByStudySetIdAndIsActiveTrueOrderByStepOrderAsc(String studySetId);
+    List<VideoStep> findByStudySetIdOrderByStepOrderAsc(String studySetId);
+    long countByStudySetIdAndIsActiveTrue(String studySetId);
 }

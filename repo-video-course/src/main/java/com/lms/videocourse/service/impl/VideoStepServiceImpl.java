@@ -10,7 +10,6 @@ import com.lms.videocourse.exception.ResourceNotFoundException;
 import com.lms.videocourse.repository.VideoStepRepository;
 import com.lms.videocourse.repository.VideoStepProgressRepository;
 import com.lms.videocourse.repository.VideoStepUnlockRuleRepository;
-import com.lms.videocourse.repository.VideoCourseRepository;
 import com.lms.videocourse.repository.VideoModuleRepository;
 import com.lms.videocourse.service.IVideoStepService;
 import com.lms.videocourse.service.IVideoUnlockService;

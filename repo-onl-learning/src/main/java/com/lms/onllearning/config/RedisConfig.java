@@ -1,5 +1,6 @@
 package com.lms.onllearning.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
@@ -27,21 +28,31 @@ public class RedisConfig {
     @Value("${cache.ttl.timetable:90}")
     private long timetableTtl;
 
+    private final ObjectMapper objectMapper;
+
+    public RedisConfig(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+        GenericJackson2JsonRedisSerializer jsonSerializer =
+                new GenericJackson2JsonRedisSerializer(objectMapper);
+
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setValueSerializer(jsonSerializer);
         template.setHashKeySerializer(new StringRedisSerializer());
-        template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        template.setHashValueSerializer(jsonSerializer);
         template.afterPropertiesSet();
         return template;
     }
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory factory) {
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
+        GenericJackson2JsonRedisSerializer jsonSerializer =
+                new GenericJackson2JsonRedisSerializer(objectMapper);
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeKeysWith(

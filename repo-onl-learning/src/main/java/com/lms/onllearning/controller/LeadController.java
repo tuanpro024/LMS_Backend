@@ -1,6 +1,7 @@
 package com.lms.onllearning.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.AuthPrincipal;
 import com.lms.onllearning.dto.request.LeadRegistrationRequest;
 import com.lms.onllearning.dto.response.LeadRegistrationResponse;
 import com.lms.onllearning.service.ExcelExportService;
@@ -25,7 +26,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/api/onl/leads")
+@RequestMapping("/leads")
 @RequiredArgsConstructor
 public class LeadController {
 
@@ -45,7 +46,10 @@ public class LeadController {
             Authentication authentication,
             HttpServletRequest httpRequest) {
 
-        String userId = authentication.getName();
+                String userId = authentication != null ? authentication.getName() : null;
+                if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
+                        userId = principal.userId();
+                }
 
         // Rate-limit check: cả IP và userId
         if (!rateLimitService.tryConsume(httpRequest, userId)) {

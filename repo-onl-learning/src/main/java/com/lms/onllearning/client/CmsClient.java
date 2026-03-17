@@ -1,24 +1,22 @@
 package com.lms.onllearning.client;
 
+import com.lms.onllearning.dto.response.CmsApiResponse;
 import com.lms.onllearning.dto.response.CmsEnvelope;
 import com.lms.onllearning.dto.response.SyllabusDetailResponse;
 import com.lms.onllearning.dto.response.SyllabusResponse;
-import com.lms.onllearning.dto.response.TimetableResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Wrapper quanh CMS WebClient.
+ * Client gọi CMS API: https://cms.dangch.tech
+ * CMS trả format: {"statusCode":200,"data":...,"message":...,"success":true}
  * Mọi call đều có fallback: trả data từ Redis cache nếu CMS down.
  */
 @Component
@@ -31,25 +29,28 @@ public class CmsClient {
 
     private static final String CACHE_KEY_SYLLABUS_LIST   = "syllabus:list:all";
     private static final String CACHE_KEY_SYLLABUS_DETAIL = "syllabus:detail:";
-    private static final String CACHE_KEY_TIMETABLE       = "timetable:";
     private static final long   SYLLABUS_TTL_SEC          = 600L;
-    private static final long   TIMETABLE_TTL_SEC         = 90L;
 
-    // ---------------------------------------------------------------------------
-    // Syllabus
-    // ---------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // Syllabus List — GET /api/erp/syllabus
+    // -----------------------------------------------------------------------
 
     @SuppressWarnings("unchecked")
     public CmsEnvelope<List<SyllabusResponse>> getSyllabuses() {
         String cacheKey = CACHE_KEY_SYLLABUS_LIST;
         try {
-            List<SyllabusResponse> data = cmsWebClient.get()
-                    .uri("/api/v1/syllabuses")
+            CmsApiResponse<List<SyllabusResponse>> resp = cmsWebClient.get()
+                    .uri("/api/erp/syllabus")
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<SyllabusResponse>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<SyllabusResponse>>>() {})
                     .block();
 
-            redisTemplate.opsForValue().set(cacheKey, data, SYLLABUS_TTL_SEC, TimeUnit.SECONDS);
+            List<SyllabusResponse> data = resp != null ? resp.data() : List.of();
+            try {
+                redisTemplate.opsForValue().set(cacheKey, data, SYLLABUS_TTL_SEC, TimeUnit.SECONDS);
+            } catch (Exception cacheEx) {
+                log.warn("CMS getSyllabuses: cache write failed, continue with CMS data: {}", cacheEx.getMessage());
+            }
             return CmsEnvelope.fromCms(data);
 
         } catch (Exception e) {
@@ -62,17 +63,29 @@ public class CmsClient {
         }
     }
 
+    // -----------------------------------------------------------------------
+    // Syllabus Detail — GET /api/erp/syllabus/{id}
+    // -----------------------------------------------------------------------
+
     @SuppressWarnings("unchecked")
     public CmsEnvelope<SyllabusDetailResponse> getSyllabusDetail(String syllabusId) {
         String cacheKey = CACHE_KEY_SYLLABUS_DETAIL + syllabusId;
         try {
-            SyllabusDetailResponse data = cmsWebClient.get()
-                    .uri("/api/v1/syllabuses/{id}", syllabusId)
+            CmsApiResponse<SyllabusDetailResponse> resp = cmsWebClient.get()
+                    .uri("/api/erp/syllabus/{id}", syllabusId)
                     .retrieve()
-                    .bodyToMono(SyllabusDetailResponse.class)
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<SyllabusDetailResponse>>() {})
                     .block();
 
-            redisTemplate.opsForValue().set(cacheKey, data, SYLLABUS_TTL_SEC, TimeUnit.SECONDS);
+            SyllabusDetailResponse data = resp != null ? resp.data() : null;
+            if (data != null) {
+                try {
+                    redisTemplate.opsForValue().set(cacheKey, data, SYLLABUS_TTL_SEC, TimeUnit.SECONDS);
+                } catch (Exception cacheEx) {
+                    log.warn("CMS getSyllabusDetail({}): cache write failed, continue with CMS data: {}",
+                            syllabusId, cacheEx.getMessage());
+                }
+            }
             return CmsEnvelope.fromCms(data);
 
         } catch (Exception e) {
@@ -84,50 +97,4 @@ public class CmsClient {
             return CmsEnvelope.cmsUnavailable();
         }
     }
-
-    // ---------------------------------------------------------------------------
-    // Timetable
-    // ---------------------------------------------------------------------------
-
-    /**
-     * Lấy thời khóa biểu của học viên từ CMS.
-     * CMS trả 404 → học viên chưa có lịch (noSchedule).
-     * CMS down → fallback cache.
-     */
-    @SuppressWarnings("unchecked")
-    public CmsEnvelope<List<TimetableResponse>> getTimetable(String userId) {
-        String cacheKey = CACHE_KEY_TIMETABLE + userId;
-        try {
-            List<TimetableResponse> data = cmsWebClient.get()
-                    .uri("/api/v1/students/{studentId}/timetable", userId)
-                    .retrieve()
-                    .onStatus(HttpStatusCode::is4xxClientError, response -> {
-                        if (response.statusCode().value() == 404) {
-                            // Học viên chưa được xếp lịch — không phải lỗi
-                            return response.createException().map(ex -> new ScheduleNotFoundException());
-                        }
-                        return response.createException();
-                    })
-                    .bodyToMono(new ParameterizedTypeReference<List<TimetableResponse>>() {})
-                    .block();
-
-            redisTemplate.opsForValue().set(cacheKey, data, TIMETABLE_TTL_SEC, TimeUnit.SECONDS);
-            return CmsEnvelope.fromCms(data);
-
-        } catch (ScheduleNotFoundException e) {
-            // CMS đã phản hồi 404 → học viên thực sự chưa có lịch
-            return CmsEnvelope.noSchedule(List.of());
-
-        } catch (Exception e) {
-            log.warn("CMS getTimetable({}) failed, falling back to cache: {}", userId, e.getMessage());
-            Object cached = redisTemplate.opsForValue().get(cacheKey);
-            if (cached != null) {
-                return CmsEnvelope.fromCache((List<TimetableResponse>) cached);
-            }
-            return CmsEnvelope.cmsUnavailable();
-        }
-    }
-
-    /** Sentinel exception khi CMS trả 404 cho timetable */
-    private static class ScheduleNotFoundException extends RuntimeException {}
 }

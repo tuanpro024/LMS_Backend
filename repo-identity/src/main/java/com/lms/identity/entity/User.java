@@ -40,6 +40,7 @@ public class User extends BaseEntity {
 
     private String phoneNumber;
 
+    @Column(name = "avatar_url")
     private String avatarUrl;
 
     private String address;

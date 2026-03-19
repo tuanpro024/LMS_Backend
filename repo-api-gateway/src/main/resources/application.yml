@@ -131,6 +131,12 @@ spring:
             - Path=${config.api-prefix}/payment/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: online-learning
+          uri: lb://REPO-ONL-LEARNING
+          predicates:
+            - Path=${config.api-prefix}/online-learning/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

@@ -36,7 +36,7 @@ server:
 
 # CMS integration
 cms:
-  base-url: http://localhost:3006
+  base-url: https://cms.dangch.tech
 
 # JWT RSA (same keypair as identity service)
 security:

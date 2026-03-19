@@ -13,15 +13,7 @@ public interface FolderRepository extends JpaRepository<Folder, String> {
 
     List<Folder> findByUserId(String userId);
 
-    @Query("SELECT f FROM Folder f " +
-            "LEFT JOIN f.subject s " +
-            "LEFT JOIN s.packageEntity sp " +
-            "LEFT JOIN f.slot sl " +
-            "LEFT JOIN sl.subject sls " +
-            "LEFT JOIN sls.packageEntity slsp " +
-            "WHERE f.packageEntity.id = :packageId " +
-            "OR sp.id = :packageId " +
-            "OR slsp.id = :packageId")
+    @Query("SELECT f FROM Folder f WHERE f.packageEntity.id = :packageId")
     List<Folder> findByPackageId(@Param("packageId") String packageId);
 
     @Query("SELECT f FROM Folder f WHERE f.subject.id = :subjectId")

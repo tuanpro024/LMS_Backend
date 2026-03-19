@@ -41,7 +41,9 @@ public class SecurityConfig {
         // Syllabus endpoints are public — optional auth so auth info is set if present
         List<String> optionalPatterns = List.of(
                 "/api/onl/syllabuses",
-                "/api/onl/syllabuses/**");
+                "/api/onl/syllabuses/**",
+                "/api/onl/courses",
+                "/api/onl/courses/**");
 
         return new BaseJwtFilter(publicKey, skipPatterns, optionalPatterns);
     }
@@ -56,11 +58,21 @@ public class SecurityConfig {
                 // Actuator & health
                 .requestMatchers("/health", "/actuator/**").permitAll()
                 // Public: xem syllabus (catalog quảng cáo)
-                .requestMatchers(HttpMethod.GET, "/api/onl/syllabuses/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/syllabuses/**").permitAll()
+                // Public: xem danh sách & chi tiết khóa học
+                .requestMatchers(HttpMethod.GET, "/courses/**").permitAll()
+                // Course management: ADMIN + TEACHER_MANAGER có thể tạo/chỉnh sửa
+                .requestMatchers(HttpMethod.POST, "/courses")
+                    .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                .requestMatchers(HttpMethod.PUT, "/courses/**")
+                    .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                // Course delete và syllabus sync chỉ ADMIN
+                .requestMatchers(HttpMethod.DELETE, "/courses/**").hasAnyRole("ADMIN","TEACHER_MANAGER")
+                .requestMatchers("/syllabus/**").hasAnyRole("ADMIN","TEACHER_MANAGER")
                 // Admin/Staff: xem leads, export Excel
-                .requestMatchers(HttpMethod.GET, "/api/onl/leads/**")
-                    .hasAnyRole("ADMIN", "STAFF")
-                // Authenticated: đăng ký tư vấn + xem TKB
+                .requestMatchers(HttpMethod.GET, "/leads/**")
+                    .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                // Authenticated: đăng ký tư vấn
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

@@ -1,0 +1,444 @@
+{
+  "info": {
+    "name": "Online Learning APIs (repo-onl-learning)",
+    "description": "Postman test suite for repo-onl-learning APIs via API Gateway. Excludes SyllabusSyncController as requested.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "onl-learning-api-2026"
+  },
+  "variable": [
+    { "key": "gatewayUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "onlBase", "value": "{{gatewayUrl}}/api/online-learning", "type": "string" },
+    { "key": "identityBase", "value": "{{gatewayUrl}}/api/id", "type": "string" },
+
+    { "key": "adminEmail", "value": "admin@lms.com", "type": "string" },
+    { "key": "adminPassword", "value": "Admin@123", "type": "string" },
+    { "key": "userEmail", "value": "teacher@lms.com", "type": "string" },
+    { "key": "userPassword", "value": "Teacher@123", "type": "string" },
+
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "userToken", "value": "", "type": "string" },
+
+    { "key": "courseId", "value": "", "type": "string" },
+    { "key": "syllabusId", "value": "", "type": "string" },
+    { "key": "syllabusName", "value": "", "type": "string" },
+    { "key": "leadId", "value": "", "type": "string" },
+
+    { "key": "fromDate", "value": "2026-01-01", "type": "string" },
+    { "key": "toDate", "value": "2026-12-31", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "0. Authentication",
+      "item": [
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Response has data', function () { pm.expect(json).to.have.property('data'); });",
+                  "var token = (json.data && (json.data.accessToken || json.data.token || json.data.jwtToken)) || '';",
+                  "pm.test('Token exists', function () { pm.expect(token).to.not.eql(''); });",
+                  "pm.collectionVariables.set('adminToken', token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": "{{identityBase}}/auth/login"
+          }
+        },
+        {
+          "name": "Login User (for lead registration)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "var token = (json.data && (json.data.accessToken || json.data.token || json.data.jwtToken)) || '';",
+                  "pm.test('Token exists', function () { pm.expect(token).to.not.eql(''); });",
+                  "pm.collectionVariables.set('userToken', token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": "{{identityBase}}/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Syllabus Public APIs",
+      "item": [
+        {
+          "name": "GET /syllabuses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('success=true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Has envelope data', function () { pm.expect(json.data).to.have.property('data'); pm.expect(json.data).to.have.property('meta'); });",
+                  "var items = (json.data && json.data.data) || [];",
+                  "if (items.length > 0) {",
+                  "  pm.collectionVariables.set('syllabusId', items[0].id || '');",
+                  "  pm.collectionVariables.set('syllabusName', items[0].name || '');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{onlBase}}/syllabuses"
+          }
+        },
+        {
+          "name": "GET /syllabuses/:id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('success=true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Envelope has meta', function () { pm.expect(json.data).to.have.property('meta'); });",
+                  "pm.test('Envelope has syllabus data', function () { pm.expect(json.data).to.have.property('data'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{onlBase}}/syllabuses/{{syllabusId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Course Public APIs",
+      "item": [
+        {
+          "name": "GET /courses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('success=true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Data is array', function () { pm.expect(Array.isArray(json.data)).to.eql(true); });",
+                  "if (json.data.length > 0 && !pm.collectionVariables.get('courseId')) {",
+                  "  pm.collectionVariables.set('courseId', json.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{onlBase}}/courses"
+          }
+        },
+        {
+          "name": "GET /courses/:id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Has course id', function () { pm.expect(json.data.id).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{onlBase}}/courses/{{courseId}}"
+          }
+        },
+        {
+          "name": "GET /courses/:id/full-detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Has course and syllabus envelope', function () {",
+                  "  pm.expect(json.data).to.have.property('course');",
+                  "  pm.expect(json.data).to.have.property('syllabus');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{onlBase}}/courses/{{courseId}}/full-detail"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Course Admin APIs",
+      "item": [
+        {
+          "name": "POST /courses (create)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "pm.test('success=true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.collectionVariables.set('courseId', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HSK 3 Online Intensive\",\n  \"thumbnail\": \"https://cdn.example.com/onl/hsk3.png\",\n  \"description\": \"Lop hoc truc tuyen HSK 3 voi 24 buoi hoc.\",\n  \"syllabusId\": \"{{syllabusId}}\",\n  \"price\": 2990000,\n  \"rating\": 4.6\n}"
+            },
+            "url": "{{onlBase}}/courses"
+          }
+        },
+        {
+          "name": "PUT /courses/:id (update)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Updated name', function () { pm.expect(json.data.name).to.include('(Updated)'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HSK 3 Online Intensive (Updated)\",\n  \"thumbnail\": \"https://cdn.example.com/onl/hsk3-v2.png\",\n  \"description\": \"Cap nhat noi dung va tai lieu hoc tap.\",\n  \"syllabusId\": \"{{syllabusId}}\",\n  \"price\": 3190000,\n  \"rating\": 4.8\n}"
+            },
+            "url": "{{onlBase}}/courses/{{courseId}}"
+          }
+        },
+        {
+          "name": "DELETE /courses/:id (soft delete)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('success=true', function () { pm.expect(json.success).to.eql(true); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{onlBase}}/courses/{{courseId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Lead APIs (Authenticated User)",
+      "item": [
+        {
+          "name": "POST /leads/register (first registration)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 or 429', function () { pm.expect([201, 429]).to.include(pm.response.code); });",
+                  "var json = pm.response.json();",
+                  "if (pm.response.code === 201) {",
+                  "  pm.test('success=true', function () { pm.expect(json.success).to.eql(true); });",
+                  "  pm.collectionVariables.set('leadId', json.data.id);",
+                  "}",
+                  "if (pm.response.code === 429) {",
+                  "  pm.test('rate limit error code', function () { pm.expect(json.errorCode).to.eql('RATE_LIMIT_EXCEEDED'); });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"syllabusId\": \"{{syllabusId}}\",\n  \"syllabusName\": \"{{syllabusName}}\",\n  \"fullName\": \"Nguyen Van Hoc Vien\",\n  \"email\": \"hocvien.onl@example.com\",\n  \"phone\": \"0912345678\",\n  \"note\": \"Can tu van lich hoc buoi toi.\"\n}"
+            },
+            "url": "{{onlBase}}/leads/register"
+          }
+        },
+        {
+          "name": "POST /leads/register (idempotent check)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 or 429', function () { pm.expect([201, 429]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 201) {",
+                  "  var json = pm.response.json();",
+                  "  var oldId = pm.collectionVariables.get('leadId');",
+                  "  if (oldId) {",
+                  "    pm.test('Idempotent return same lead', function () { pm.expect(json.data.id).to.eql(oldId); });",
+                  "  }",
+                  "}",
+                  "if (pm.response.code === 429) {",
+                  "  var body = pm.response.json();",
+                  "  pm.test('rate limit response shape', function () {",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.errorCode).to.eql('RATE_LIMIT_EXCEEDED');",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{userToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"syllabusId\": \"{{syllabusId}}\",\n  \"syllabusName\": \"{{syllabusName}}\",\n  \"fullName\": \"Nguyen Van Hoc Vien\",\n  \"email\": \"hocvien.onl@example.com\",\n  \"phone\": \"0912345678\",\n  \"note\": \"Dang ky lan 2 cung syllabus de test idempotency.\"\n}"
+            },
+            "url": "{{onlBase}}/leads/register"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Lead Admin APIs",
+      "item": [
+        {
+          "name": "GET /leads (paged + filters)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('success=true', function () { pm.expect(json.success).to.eql(true); });",
+                  "pm.test('Has Spring Page fields', function () {",
+                  "  pm.expect(json.data).to.have.property('content');",
+                  "  pm.expect(json.data).to.have.property('totalElements');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{onlBase}}/leads?syllabusId={{syllabusId}}&from={{fromDate}}&to={{toDate}}&page=0&size=20&sort=registeredAt,desc"
+          }
+        },
+        {
+          "name": "GET /leads/export (excel)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Excel content-type', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');",
+                  "});",
+                  "pm.test('Has attachment filename', function () {",
+                  "  var cd = pm.response.headers.get('Content-Disposition') || '';",
+                  "  pm.expect(cd).to.include('attachment;');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": "{{onlBase}}/leads/export?syllabusId={{syllabusId}}&from={{fromDate}}&to={{toDate}}"
+          }
+        }
+      ]
+    }
+  ]
+}

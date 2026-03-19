@@ -1,0 +1,46 @@
+Request URL
+https://cms.dangch.tech/api/erp/students/01KKZZYE2YMCYCCT237QVC12HN/timetable?start=2026-03-16&end=2026-03-23
+Request Method
+GET
+
+Response:
+{
+    "statusCode": 200,
+    "data": [
+        {
+            "id": "01KM00XE1169PZ5X56R236HVEB",
+            "class_id": "01KKG59RN7NSVQFBNCPRXG012R",
+            "class_code": "GT1003-2",
+            "class_name": "Tiếng trung giao tiếp nhập môn",
+            "session_no": 1,
+            "title": "Buổi 1",
+            "date": "2026-03-20T00:00:00.000Z",
+            "session_date": "2026-03-20T00:00:00.000Z",
+            "start_time": "2026-03-20T18:30:00.000Z",
+            "end_time": "2026-03-20T20:30:00.000Z",
+            "status": "PLANING",
+            "tutor_id": null,
+            "tutor_name": "Phan Manh",
+            "instructor_name": "Phan Manh",
+            "class_room": "Zoom-01",
+            "attendance_status": null,
+            "check_in_at": null
+        }
+    ],
+    "message": "Student timetable fetched",
+    "success": true
+}
+
+
+Request URL
+https://cms.dangch.tech/api/erp/students/01KKZZYE2YMCYCCT237QVC12HN/timetable?start=2026-03-02&end=2026-03-09
+Request Method
+GET
+
+Response:
+{
+    "statusCode": 200,
+    "data": [],
+    "message": "Student timetable fetched",
+    "success": true
+}

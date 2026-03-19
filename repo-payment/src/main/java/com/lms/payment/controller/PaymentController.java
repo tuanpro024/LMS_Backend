@@ -5,6 +5,7 @@ import com.lms.common.security.AuthPrincipal;
 import com.lms.payment.dto.request.AddToCartRequest;
 import com.lms.payment.dto.response.AccessCheckResponse;
 import com.lms.payment.dto.response.CartItemResponse;
+import com.lms.payment.dto.response.CheckoutResponse;
 import com.lms.payment.dto.response.OrderResponse;
 import com.lms.payment.service.PaymentService;
 import lombok.RequiredArgsConstructor;
@@ -46,17 +47,17 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
-    // ========== ORDER & CHECKOUT ENDPOINTS ==========
+    // ========== CHECKOUT & ORDER ENDPOINTS ==========
 
     @PostMapping("/checkout")
-    public ResponseEntity<ApiResponse<OrderResponse>> checkout(Authentication authentication) {
+    public ResponseEntity<ApiResponse<CheckoutResponse>> checkout(Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(paymentService.checkout(principal.userId())));
     }
 
-    @PostMapping("/orders/{orderId}/pay")
-    public ResponseEntity<ApiResponse<OrderResponse>> payOrder(@PathVariable String orderId) {
-        return ResponseEntity.ok(ApiResponse.ok(paymentService.payOrder(orderId)));
+    @GetMapping("/orders/{orderId}/status")
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderStatus(@PathVariable String orderId) {
+        return ResponseEntity.ok(ApiResponse.ok(paymentService.getOrderStatus(orderId)));
     }
 
     @GetMapping("/orders/my")

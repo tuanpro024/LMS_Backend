@@ -34,7 +34,8 @@ public class SecurityConfig {
     public BaseJwtFilter jwtFilter(RSAPublicKey publicKey) {
         List<String> skipPatterns = List.of(
                 "/actuator/**",
-                "/health");
+                "/health",
+                "/payos/webhook");
 
         List<String> optionalPatterns = List.of(); // Payment operations usually require auth
 
@@ -52,6 +53,9 @@ public class SecurityConfig {
 
                         // Actuator & Health
                         .requestMatchers("/actuator/**", "/health").permitAll()
+
+                        // PayOS Webhook (called by PayOS server, no JWT)
+                        .requestMatchers("/payos/webhook").permitAll()
 
                         // All payment/cart operations in this service require authentication
                         .anyRequest().authenticated())

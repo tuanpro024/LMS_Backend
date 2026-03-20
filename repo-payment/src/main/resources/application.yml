@@ -63,5 +63,9 @@ payos:
   client-id: ${PAYOS_CLIENT_ID:REDACTED_PAYOS_CLIENT_ID_DEV}
   api-key: ${PAYOS_API_KEY:REDACTED_PAYOS_API_KEY_DEV}
   checksum-key: ${PAYOS_CHECKSUM_KEY:REDACTED_PAYOS_CHECKSUM_DEV}
-  return-url: ${PAYOS_RETURN_URL:http://localhost:3000/payment/success}
-  cancel-url: ${PAYOS_CANCEL_URL:http://localhost:3000/payment/cancel}
+#  local
+#  return-url: ${PAYOS_RETURN_URL:http://localhost:3000/payment/success}
+#  cancel-url: ${PAYOS_CANCEL_URL:http://localhost:3000/payment/cancel}
+#  prod
+  return-url: ${PAYOS_RETURN_URL:https://lms.dangch.tech/payment/success}
+  cancel-url: ${PAYOS_CANCEL_URL:https://lms.dangch.tech/payment/cancel}

@@ -409,6 +409,7 @@ services:
         condition: service_healthy
     networks:
       - lms-network
+      - shared-network
 
   listening-practice-api:
     build:
@@ -490,6 +491,8 @@ services:
 networks:
   lms-network:
     driver: bridge
+  shared-network:
+    external: true
 
 volumes:
   mysql_data:

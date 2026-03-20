@@ -40,6 +40,11 @@ public class LearningPathExcelParser {
     private static final int COL_IS_REQUIRED = 14; // O
     private static final int COL_CONTENT_SHEET_NAME = 15; // P
 
+    // Header markers to detect Structure sheet accidentally used as content sheet
+    private static final String HEADER_MODULE_TYPE = "ModuleType";
+    private static final String HEADER_CONTENT_SHEET_NAME = "ContentSheetName";
+    private static final String HEADER_SUBJECT_NAME = "SubjectName";
+
     /**
      * Parse multi-sheet Excel file.
      * 
@@ -79,6 +84,12 @@ public class LearningPathExcelParser {
                     continue;
                 }
 
+                // Defensive guard: never allow Structure schema to be used as content sheet
+                if (isLikelyStructureSheet(contentSheet)) {
+                    throw new IllegalArgumentException(
+                            "Sheet '" + sheetName + "' matches Structure schema and cannot be used as content sheet");
+                }
+
                 try {
                     byte[] sheetBytes = extractSheetToBytes(contentSheet);
                     contentSheetBytes.put(sheetName, sheetBytes);
@@ -113,6 +124,34 @@ public class LearningPathExcelParser {
         }
 
         return null;
+    }
+
+    /**
+     * Identify whether a sheet appears to follow the Learning Path Structure
+     * schema.
+     *
+     * Structure header contains ModuleType + ContentSheetName, while content sheets
+     * are expected to use SubjectName in the third column.
+     */
+    private static boolean isLikelyStructureSheet(Sheet sheet) {
+        Row headerRow = sheet.getRow(0);
+        if (headerRow == null) {
+            return false;
+        }
+
+        String colC = normalizeHeader(getCellValue(headerRow, COL_FOLDER_NAME)); // index 2
+        String colM = normalizeHeader(getCellValue(headerRow, COL_MODULE_TYPE)); // index 12
+        String colP = normalizeHeader(getCellValue(headerRow, COL_CONTENT_SHEET_NAME)); // index 15
+
+        boolean hasStructureMarkers = HEADER_MODULE_TYPE.equalsIgnoreCase(colM)
+                && HEADER_CONTENT_SHEET_NAME.equalsIgnoreCase(colP);
+        boolean looksLikeContentTemplate = HEADER_SUBJECT_NAME.equalsIgnoreCase(colC);
+
+        return hasStructureMarkers && !looksLikeContentTemplate;
+    }
+
+    private static String normalizeHeader(String value) {
+        return value == null ? "" : value.trim();
     }
 
     /**
@@ -326,8 +365,8 @@ public class LearningPathExcelParser {
             throw new IllegalArgumentException("File name is null");
         }
 
-        if (!filename.endsWith(".xlsx") && !filename.endsWith(".xls")) {
-            throw new IllegalArgumentException("Invalid file format. Only .xlsx and .xls are supported");
+        if (!filename.toLowerCase().endsWith(".xlsx")) {
+            throw new IllegalArgumentException("Invalid file format. Only .xlsx is supported");
         }
     }
 }

@@ -110,8 +110,8 @@ public class LearningPathImportTransactionalHelper {
             // --- Folder ---
             if (row.hasFolderData()) {
                 if (currentPackage == null) {
-                    result.addWarning("Row " + row.getRowNumber() + ": Folder without package. Skipped.");
-                    continue;
+                    throw new IllegalArgumentException(
+                            "Invalid structure at row " + row.getRowNumber() + ": Folder without Package");
                 }
                 currentFolder = Folder.builder()
                         .name(row.getFolderName().trim())
@@ -137,8 +137,8 @@ public class LearningPathImportTransactionalHelper {
             // --- StudySet ---
             if (row.hasStudySetData()) {
                 if (currentFolder == null) {
-                    result.addWarning("Row " + row.getRowNumber() + ": StudySet without folder. Skipped.");
-                    continue;
+                    throw new IllegalArgumentException(
+                            "Invalid structure at row " + row.getRowNumber() + ": StudySet without Folder");
                 }
                 currentStudySet = StudySet.builder()
                         .title(row.getStudySetName().trim())
@@ -163,8 +163,8 @@ public class LearningPathImportTransactionalHelper {
             // --- LearningPath ---
             if (row.hasLearningPathData()) {
                 if (currentStudySet == null) {
-                    result.addWarning("Row " + row.getRowNumber() + ": LearningPath without StudySet. Skipped.");
-                    continue;
+                    throw new IllegalArgumentException(
+                            "Invalid structure at row " + row.getRowNumber() + ": LearningPath without StudySet");
                 }
                 currentLearningPath = LearningPath.builder()
                         .title(row.getLearningPathTitle().trim())
@@ -189,8 +189,8 @@ public class LearningPathImportTransactionalHelper {
             // --- Step ---
             if (row.hasStepData()) {
                 if (currentLearningPath == null) {
-                    result.addWarning("Row " + row.getRowNumber() + ": Step without LearningPath. Skipped.");
-                    continue;
+                    throw new IllegalArgumentException(
+                            "Invalid structure at row " + row.getRowNumber() + ": Step without LearningPath");
                 }
                 autoStepOrder++;
                 currentStep = Step.builder()
@@ -213,8 +213,8 @@ public class LearningPathImportTransactionalHelper {
             // --- Module ---
             if (row.hasModuleData()) {
                 if (currentStep == null) {
-                    result.addWarning("Row " + row.getRowNumber() + ": Module without Step. Skipped.");
-                    continue;
+                    throw new IllegalArgumentException(
+                            "Invalid structure at row " + row.getRowNumber() + ": Module without Step");
                 }
                 autoModuleOrder++;
 
@@ -222,8 +222,14 @@ public class LearningPathImportTransactionalHelper {
                 ModuleType modType = row.getModuleTypeEnum();
 
                 if (modType == null) {
-                    result.addWarning("Row " + row.getRowNumber() + ": Invalid module type. Skipped.");
-                    continue;
+                    throw new IllegalArgumentException(
+                            "Invalid module type at row " + row.getRowNumber() + ": " + row.getModuleType());
+                }
+
+                if (contentSetId == null || contentSetId.isBlank()) {
+                    throw new IllegalStateException(
+                            "Missing contentSetId at row " + row.getRowNumber() +
+                                    " for sheet '" + row.getContentSheetName() + "'");
                 }
 
                 StepModule module = StepModule.builder()
@@ -262,7 +268,7 @@ public class LearningPathImportTransactionalHelper {
 
         // Priority 2: Lookup from Phase 1 contentRefMap
         if (row.getContentSheetName() != null && !row.getContentSheetName().isBlank()) {
-            ContentReference ref = refMap.get(row.getContentSheetName());
+            ContentReference ref = refMap.get(row.getContentSheetName().trim());
             if (ref != null && ref.getContentSetId() != null) {
                 return ref.getContentSetId();
             }

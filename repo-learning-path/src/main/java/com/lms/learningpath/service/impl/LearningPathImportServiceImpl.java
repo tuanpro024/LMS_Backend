@@ -16,11 +16,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 /**
  * Main implementation of Learning Path Excel import.
@@ -117,7 +124,21 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
         Map<String, ModuleType> sheetModuleMap = new LinkedHashMap<>();
         for (LearningPathStructureRow row : rows) {
             if (row.hasModuleData() && row.getContentSheetName() != null && !row.getContentSheetName().isBlank()) {
-                sheetModuleMap.putIfAbsent(row.getContentSheetName(), row.getModuleTypeEnum());
+                String normalizedSheetName = row.getContentSheetName().trim();
+                ModuleType moduleType = row.getModuleTypeEnum();
+                if (moduleType == null) {
+                    throw new IllegalArgumentException(
+                            "Invalid module type at row " + row.getRowNumber() + " for sheet '" + normalizedSheetName
+                                    + "': " + row.getModuleType());
+                }
+
+                ModuleType existingModuleType = sheetModuleMap.get(normalizedSheetName);
+                if (existingModuleType != null && existingModuleType != moduleType) {
+                    throw new IllegalArgumentException(
+                            "Conflicting module type for sheet '" + normalizedSheetName + "': "
+                                    + existingModuleType + " vs " + moduleType + " (row " + row.getRowNumber() + ")");
+                }
+                sheetModuleMap.putIfAbsent(normalizedSheetName, moduleType);
             }
         }
 
@@ -126,11 +147,6 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
         for (Map.Entry<String, ModuleType> entry : sheetModuleMap.entrySet()) {
             String sheetName = entry.getKey();
             ModuleType moduleType = entry.getValue();
-
-            if (moduleType == null) {
-                log.warn("Sheet '{}' has invalid module type, skipping", sheetName);
-                continue;
-            }
 
             ContentImportDetail detail = ContentImportDetail.builder()
                     .sheetName(sheetName)
@@ -143,17 +159,24 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                         excelData.getContentSheetBytes().get(sheetName),
                         typeName, userId, isPrivate, detail);
 
-                if (ref != null) {
-                    refMap.put(sheetName, ref);
-                    if (ref.getContentSetId() != null) {
-                        result.getExternalContentSetIds().add(ref.getContentSetId());
-                    }
+                if (ref == null || ref.getContentSetId() == null || ref.getContentSetId().isBlank()) {
+                    throw new IllegalStateException(
+                            "No contentSetId returned for sheet '" + sheetName + "' (" + moduleType + ")");
+                }
+
+                refMap.put(sheetName, ref);
+                if (ref.getContentSetId() != null) {
+                    result.getExternalContentSetIds().add(ref.getContentSetId());
                 }
             } catch (Exception e) {
                 log.error("Failed to process content sheet '{}': {}", sheetName, e.getMessage(), e);
                 detail.setFailed(true);
                 detail.setErrorMessage(e.getMessage());
                 result.addError("Sheet '" + sheetName + "' (" + moduleType + "): " + e.getMessage());
+                result.getContentImportResults().put(sheetName, detail);
+                throw new IllegalStateException(
+                        "Import failed at content sheet '" + sheetName + "' (" + moduleType + "): " + e.getMessage(),
+                        e);
             }
 
             result.getContentImportResults().put(sheetName, detail);
@@ -178,7 +201,6 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             String userId,
             boolean isPrivate,
             ContentImportDetail detail) throws IOException {
-
 
         // Priority 2: Check for duplicates by studySetName (extracted from sheetBytes)
         if (sheetBytes != null) {
@@ -218,8 +240,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             String error = "Content sheet '" + sheetName + "' not found in workbook";
             detail.setFailed(true);
             detail.setErrorMessage(error);
-            log.warn(error);
-            return null;
+            throw new IllegalArgumentException(error);
         }
 
         return createContentInExternalRepo(sheetName, moduleType, sheetBytes, typeName, userId, detail);
@@ -236,13 +257,14 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             String userId,
             ContentImportDetail detail) throws IOException {
 
+        validateOutboundSheetPayload(sheetName, sheetBytes);
         log.info("Sheet '{}': Creating new {} content", sheetName, moduleType);
 
         switch (moduleType) {
             case FLASHCARD: {
                 MultipartFile sheetFile = LearningPathExcelParser.bytesToMultipartFile(sheetBytes, sheetName);
                 ApiResponse<HierarchicalImportResult> resp = flashcardClient.importExcel(sheetFile, typeName);
-                String setId = resp.data().getStudySetIds().get(0);
+                String setId = extractFirstStudySetId(resp, sheetName, moduleType);
                 detail.setNewlyCreated(true);
                 detail.setContentSetId(setId);
                 detail.setItemCount(resp.data().getTotalContentItems());
@@ -258,7 +280,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             case WRITING: {
                 MultipartFile sheetFile = LearningPathExcelParser.bytesToMultipartFile(sheetBytes, sheetName);
                 ApiResponse<HierarchicalImportResult> resp = writingClient.importExcel(sheetFile, typeName);
-                String setId = resp.data().getStudySetIds().get(0);
+                String setId = extractFirstStudySetId(resp, sheetName, moduleType);
                 detail.setNewlyCreated(true);
                 detail.setContentSetId(setId);
                 detail.setItemCount(resp.data().getTotalContentItems());
@@ -274,7 +296,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             case KANJI: {
                 MultipartFile sheetFile = LearningPathExcelParser.bytesToMultipartFile(sheetBytes, sheetName);
                 ApiResponse<HierarchicalImportResult> resp = kanjiClient.importExcel(sheetFile, typeName);
-                String setId = resp.data().getStudySetIds().get(0);
+                String setId = extractFirstStudySetId(resp, sheetName, moduleType);
                 detail.setNewlyCreated(true);
                 detail.setContentSetId(setId);
                 detail.setItemCount(resp.data().getTotalContentItems());
@@ -291,7 +313,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                 MultipartFile sheetFile = LearningPathExcelParser.bytesToMultipartFile(sheetBytes, sheetName);
                 ApiResponse<HierarchicalImportResult> resp = pronunciationClient.importExcel(sheetFile,
                         typeName);
-                String setId = resp.data().getStudySetIds().get(0);
+                String setId = extractFirstStudySetId(resp, sheetName, moduleType);
                 detail.setNewlyCreated(true);
                 detail.setContentSetId(setId);
                 detail.setItemCount(resp.data().getTotalContentItems());
@@ -307,16 +329,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             case QUIZ: {
                 MultipartFile sheetFile = LearningPathExcelParser.bytesToMultipartFile(sheetBytes, sheetName);
                 ApiResponse<HierarchicalImportResult> resp = quizClient.importExcel(sheetFile, typeName);
-
-                if (resp.data() == null || resp.data().getStudySetIds().isEmpty()) {
-                    String error = "Quiz import returned no study set IDs";
-                    detail.setFailed(true);
-                    detail.setErrorMessage(error);
-                    log.error(error);
-                    return null;
-                }
-
-                String setId = resp.data().getStudySetIds().get(0);
+                String setId = extractFirstStudySetId(resp, sheetName, moduleType);
                 detail.setNewlyCreated(true);
                 detail.setContentSetId(setId);
                 detail.setItemCount(resp.data().getTotalContentItems());
@@ -333,10 +346,29 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                 String error = "Unsupported module type for import: " + moduleType;
                 detail.setFailed(true);
                 detail.setErrorMessage(error);
-                log.warn(error);
-                return null;
+                throw new IllegalArgumentException(error);
             }
         }
+    }
+
+    private String extractFirstStudySetId(
+            ApiResponse<HierarchicalImportResult> response,
+            String sheetName,
+            ModuleType moduleType) {
+
+        if (response == null || response.data() == null) {
+            throw new IllegalStateException(
+                    "External import returned empty response for sheet '" + sheetName + "' (" + moduleType + ")");
+        }
+
+        List<String> studySetIds = Optional.ofNullable(response.data().getStudySetIds())
+                .orElse(Collections.emptyList());
+        if (studySetIds.isEmpty() || studySetIds.get(0) == null || studySetIds.get(0).isBlank()) {
+            throw new IllegalStateException(
+                    "External import returned no studySetId for sheet '" + sheetName + "' (" + moduleType + ")");
+        }
+
+        return studySetIds.get(0);
     }
 
     private void validateFile(MultipartFile file) {
@@ -344,8 +376,61 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             throw new IllegalArgumentException("File is empty");
         }
         String filename = file.getOriginalFilename();
-        if (filename == null || (!filename.endsWith(".xlsx") && !filename.endsWith(".xls"))) {
-            throw new IllegalArgumentException("Invalid file format. Only .xlsx and .xls are supported");
+        if (filename == null || !filename.toLowerCase().endsWith(".xlsx")) {
+            throw new IllegalArgumentException("Invalid file format. Only .xlsx is supported");
+        }
+    }
+
+    /**
+     * Defensive validation to prevent uploading a Structure-like sheet to external
+     * repos.
+     */
+    private void validateOutboundSheetPayload(String sheetName, byte[] sheetBytes) {
+        if (sheetBytes == null || sheetBytes.length == 0) {
+            throw new IllegalArgumentException("Content sheet '" + sheetName + "' is empty");
+        }
+
+        try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(sheetBytes))) {
+            if (workbook.getNumberOfSheets() == 0) {
+                throw new IllegalArgumentException(
+                        "Content sheet '" + sheetName + "' has no sheet data for external import");
+            }
+
+            Sheet sheet = workbook.getSheetAt(0);
+            Row header = sheet.getRow(0);
+            if (header == null) {
+                return;
+            }
+
+            String colC = readHeader(header, 2);
+            String colM = readHeader(header, 12); // ModuleType in Structure template
+            String colP = readHeader(header, 15); // ContentSheetName in Structure template
+
+            if ("ModuleType".equalsIgnoreCase(colM) && "ContentSheetName".equalsIgnoreCase(colP)) {
+                throw new IllegalArgumentException(
+                        "Content sheet '" + sheetName + "' was detected as Structure schema; import aborted");
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Failed to validate content sheet '" + sheetName + "' before external import: " + e.getMessage(),
+                    e);
+        }
+    }
+
+    private String readHeader(Row row, int col) {
+        if (row.getCell(col) == null) {
+            return "";
+        }
+        try {
+            return row.getCell(col).getStringCellValue().trim();
+        } catch (Exception e) {
+            try {
+                return String.valueOf((long) row.getCell(col).getNumericCellValue()).trim();
+            } catch (Exception ignored) {
+                return "";
+            }
         }
     }
 }

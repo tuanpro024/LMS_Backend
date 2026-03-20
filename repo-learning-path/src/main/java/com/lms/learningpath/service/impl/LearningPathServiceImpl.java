@@ -136,7 +136,6 @@ public class LearningPathServiceImpl implements ILearningPathService {
         log.info("Successfully soft-deleted learning path: {}", id);
     }
 
-
     private LearningPath findLearningPathById(String id) {
         return learningPathRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Learning path not found with id: " + id));

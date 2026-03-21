@@ -31,7 +31,10 @@ public class CmsClient {
     private final WebClient cmsWebClient;
     private final RedisTemplate<String, Object> redisTemplate;
 
+    private static final String CACHE_KEY_SYLLABUS_LIST = "syllabus:list:all";
+    private static final String CACHE_KEY_SYLLABUS_DETAIL = "syllabus:detail:";
     private static final String CACHE_KEY_TIMETABLE = "timetable:student:";
+    private static final long SYLLABUS_TTL_SEC = 600L;
 
     @Value("${cache.ttl.timetable:90}")
     private long timetableTtlSec;
@@ -40,19 +43,31 @@ public class CmsClient {
     // Syllabus List — GET /api/erp/syllabus
     // -----------------------------------------------------------------------
 
+    @SuppressWarnings("unchecked")
     public CmsEnvelope<List<SyllabusResponse>> getSyllabuses() {
+        String cacheKey = CACHE_KEY_SYLLABUS_LIST;
         try {
             CmsApiResponse<List<SyllabusResponse>> resp = cmsWebClient.get()
                     .uri("/api/erp/syllabus")
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<SyllabusResponse>>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<SyllabusResponse>>>() {
+                    })
                     .block();
 
             List<SyllabusResponse> data = resp != null ? resp.data() : List.of();
+            try {
+                redisTemplate.opsForValue().set(cacheKey, data, SYLLABUS_TTL_SEC, TimeUnit.SECONDS);
+            } catch (Exception cacheEx) {
+                log.warn("CMS getSyllabuses: cache write failed, continue with CMS data: {}", cacheEx.getMessage());
+            }
             return CmsEnvelope.fromCms(data);
 
         } catch (Exception e) {
-            log.warn("CMS getSyllabuses failed: {}", e.getMessage());
+            log.warn("CMS getSyllabuses failed, falling back to cache: {}", e.getMessage());
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return CmsEnvelope.fromCache((List<SyllabusResponse>) cached);
+            }
             return CmsEnvelope.cmsUnavailable();
         }
     }
@@ -61,19 +76,34 @@ public class CmsClient {
     // Syllabus Detail — GET /api/erp/syllabus/{id}
     // -----------------------------------------------------------------------
 
+    @SuppressWarnings("unchecked")
     public CmsEnvelope<SyllabusDetailResponse> getSyllabusDetail(String syllabusId) {
+        String cacheKey = CACHE_KEY_SYLLABUS_DETAIL + syllabusId;
         try {
             CmsApiResponse<SyllabusDetailResponse> resp = cmsWebClient.get()
                     .uri("/api/erp/syllabus/{id}", syllabusId)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<SyllabusDetailResponse>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<SyllabusDetailResponse>>() {
+                    })
                     .block();
 
             SyllabusDetailResponse data = resp != null ? resp.data() : null;
+            if (data != null) {
+                try {
+                    redisTemplate.opsForValue().set(cacheKey, data, SYLLABUS_TTL_SEC, TimeUnit.SECONDS);
+                } catch (Exception cacheEx) {
+                    log.warn("CMS getSyllabusDetail({}): cache write failed, continue with CMS data: {}",
+                            syllabusId, cacheEx.getMessage());
+                }
+            }
             return CmsEnvelope.fromCms(data);
 
         } catch (Exception e) {
-            log.warn("CMS getSyllabusDetail({}) failed: {}", syllabusId, e.getMessage());
+            log.warn("CMS getSyllabusDetail({}) failed, falling back to cache: {}", syllabusId, e.getMessage());
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return CmsEnvelope.fromCache((SyllabusDetailResponse) cached);
+            }
             return CmsEnvelope.cmsUnavailable();
         }
     }
@@ -97,7 +127,8 @@ public class CmsClient {
                             .queryParam("end", end)
                             .build(studentId))
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<StudentTimetableItemResponse>>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<StudentTimetableItemResponse>>>() {
+                    })
                     .block();
 
             List<StudentTimetableItemResponse> data = resp != null && resp.data() != null ? resp.data() : List.of();

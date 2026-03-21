@@ -14,5 +14,7 @@ public interface SyllabusGradingRepository extends JpaRepository<SyllabusGrading
     @Query("DELETE FROM SyllabusGrading g WHERE g.syllabus.id = :syllabusId")
     void deleteBySyllabusId(String syllabusId);
 
+    @Query("SELECT g FROM SyllabusGrading g WHERE g.syllabus.id = :syllabusId")
     List<SyllabusGrading> findBySyllabusId(String syllabusId);
+
 }

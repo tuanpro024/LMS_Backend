@@ -14,5 +14,8 @@ public interface SyllabusMaterialRepository extends JpaRepository<SyllabusMateri
     @Query("DELETE FROM SyllabusMaterial m WHERE m.syllabus.id = :syllabusId")
     void deleteBySyllabusId(String syllabusId);
 
+
+    @Query("SELECT m FROM SyllabusMaterial m WHERE m.syllabus.id = :syllabusId")
     List<SyllabusMaterial> findBySyllabusId(String syllabusId);
+
 }

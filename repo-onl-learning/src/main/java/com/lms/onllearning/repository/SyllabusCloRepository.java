@@ -14,5 +14,6 @@ public interface SyllabusCloRepository extends JpaRepository<SyllabusClo, String
     @Query("DELETE FROM SyllabusClo c WHERE c.syllabus.id = :syllabusId")
     void deleteBySyllabusId(String syllabusId);
 
+    @Query("SELECT c FROM SyllabusClo c WHERE c.syllabus.id = :syllabusId")
     List<SyllabusClo> findBySyllabusId(String syllabusId);
 }

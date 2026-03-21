@@ -14,9 +14,9 @@ public interface SyllabusScheduleRepository extends JpaRepository<SyllabusSchedu
     @Query("DELETE FROM SyllabusSchedule s WHERE s.syllabus.id = :syllabusId")
     void deleteBySyllabusId(String syllabusId);
 
-    List<SyllabusSchedule> findBySyllabusIdOrderBySessionNoAsc(String syllabusId);
+    /** Alias dùng bởi SyllabusServiceImpl (không cần thứ tự cụ thể). */
+    @Query("SELECT s FROM SyllabusSchedule s WHERE s.syllabus.id = :syllabusId")
+    List<SyllabusSchedule> findBySyllabusId(String syllabusId);
 
-    default List<SyllabusSchedule> findBySyllabusId(String syllabusId) {
-        return findBySyllabusIdOrderBySessionNoAsc(syllabusId);
-    }
+    List<SyllabusSchedule> findBySyllabusIdOrderBySessionNoAsc(String syllabusId);
 }

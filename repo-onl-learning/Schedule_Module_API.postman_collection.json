@@ -1,0 +1,512 @@
+﻿{
+  "info": {
+    "name": "Schedule Module (Ôn Luyện) API",
+    "_postman_id": "schedule-module-collection-v1",
+    "description": "Test các API quản lý module ôn luyện (flashcard, writing, kanji, pronunciation, quiz) trong từng buổi học (syllabus_schedule).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8095",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "{{your_jwt_token_here}}",
+      "type": "string",
+      "description": "JWT token của ADMIN hoặc TEACHER_MANAGER"
+    },
+    {
+      "key": "schedule_id",
+      "value": "01HV1234567890ABCDEF012345",
+      "type": "string",
+      "description": "ID của syllabus_schedule cần gắn module"
+    },
+    {
+      "key": "module_id",
+      "value": "",
+      "type": "string",
+      "description": "Tự động điền từ response của POST (xem Tests tab)"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Browse Modules Có Sẵn",
+      "item": [
+        {
+          "name": "GET - Tất cả repo (search)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-available-modules?q=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "schedule-available-modules"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Từ khoá tìm kiếm (bỏ trống = lấy tất cả)"
+                }
+              ]
+            },
+            "description": "Lấy tất cả study set có sẵn từ 5 repo (flashcard, writing, kanji, pronunciation, quiz).\nChỉ ADMIN / TEACHER_MANAGER."
+          }
+        },
+        {
+          "name": "GET - Chỉ Flashcard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-available-modules/FLASHCARD?q=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "schedule-available-modules", "FLASHCARD"],
+              "query": [{ "key": "q", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "GET - Chỉ Writing",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-available-modules/WRITING?q=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "schedule-available-modules", "WRITING"],
+              "query": [{ "key": "q", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "GET - Chỉ Kanji",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-available-modules/KANJI?q=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "schedule-available-modules", "KANJI"],
+              "query": [{ "key": "q", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "GET - Chỉ Pronunciation",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-available-modules/PRONUNCIATION?q=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "schedule-available-modules", "PRONUNCIATION"],
+              "query": [{ "key": "q", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "GET - Chỉ Quiz",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-available-modules/QUIZ?q=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "schedule-available-modules", "QUIZ"],
+              "query": [{ "key": "q", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Thêm Module (Chọn Có Sẵn - JSON)",
+      "item": [
+        {
+          "name": "POST - Thêm Flashcard Module",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('module_id', json.data.id);",
+                  "    console.log('module_id saved:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"FLASHCARD\",\n  \"moduleOrder\": 1,\n  \"title\": \"Luyện từ vựng buổi 1\",\n  \"description\": \"Ôn luyện từ vựng HSK1 chủ đề gia đình\",\n  \"contentSetId\": \"01HV_FLASHCARD_STUDYSET_ID\",\n  \"contentFolderId\": null,\n  \"isRequired\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules"]
+            },
+            "description": "Thêm một study set flashcard có sẵn vào buổi học.\nLấy contentSetId từ API browse bên trên."
+          }
+        },
+        {
+          "name": "POST - Thêm Writing Module",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('module_id', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"WRITING\",\n  \"moduleOrder\": 2,\n  \"title\": \"Luyện viết chữ Hán\",\n  \"description\": \"Ôn luyện viết 10 chữ Hán cơ bản\",\n  \"contentSetId\": \"01HV_WRITING_STUDYSET_ID\",\n  \"isRequired\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules"]
+            }
+          }
+        },
+        {
+          "name": "POST - Thêm Kanji Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"KANJI\",\n  \"moduleOrder\": 3,\n  \"title\": \"Nguồn gốc hán tự\",\n  \"description\": \"Tìm hiểu nguồn gốc 5 kanji mới\",\n  \"contentSetId\": \"01HV_KANJI_STUDYSET_ID\",\n  \"isRequired\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules"]
+            }
+          }
+        },
+        {
+          "name": "POST - Thêm Pronunciation Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"PRONUNCIATION\",\n  \"moduleOrder\": 4,\n  \"title\": \"Luyện phát âm\",\n  \"description\": \"Luyện phát âm 4 thanh điệu cơ bản\",\n  \"contentSetId\": \"01HV_PRONUNCIATION_STUDYSET_ID\",\n  \"isRequired\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules"]
+            }
+          }
+        },
+        {
+          "name": "POST - Thêm Quiz Module",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"QUIZ\",\n  \"moduleOrder\": 5,\n  \"title\": \"Kiểm tra nhanh\",\n  \"description\": \"10 câu trắc nghiệm từ vựng buổi 1\",\n  \"contentSetId\": \"01HV_QUIZ_STUDYSET_ID\",\n  \"isRequired\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules"]
+            }
+          }
+        },
+        {
+          "name": "POST - Thêm Module (Duplicate Order → 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"QUIZ\",\n  \"moduleOrder\": 1,\n  \"title\": \"Sẽ bị 409 vì order 1 đã tồn tại\",\n  \"contentSetId\": \"01HV_QUIZ_STUDYSET_ID\",\n  \"isRequired\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules"]
+            },
+            "description": "Gửi request trùng moduleOrder → phải nhận 409 CONFLICT"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Import Excel → Tạo Module Mới",
+      "item": [
+        {
+          "name": "POST - Import Excel Flashcard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('module_id', json.data.id);",
+                  "    console.log('module_id set:', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "request",
+                  "value": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"FLASHCARD\",\n  \"moduleOrder\": 10,\n  \"title\": \"Từ vựng import từ Excel\",\n  \"description\": \"Imported từ file Excel\",\n  \"isRequired\": true\n}",
+                  "type": "text",
+                  "contentType": "application/json",
+                  "description": "JSON request (Content-Type: application/json)"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "File Excel (.xlsx) theo cấu trúc import flashcard"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/import",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "import"]
+            },
+            "description": "Import Excel để tạo nội dung mới trong repo-flashcard,\nsau đó tự động lưu module với contentSetId vừa tạo.\n\nValidation:\n- 0 study set → 400\n- >1 study set → 409\n- Đúng 1 study set → 201 Created"
+          }
+        },
+        {
+          "name": "POST - Import Excel Writing",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "request",
+                  "value": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"WRITING\",\n  \"moduleOrder\": 11,\n  \"title\": \"Viết chữ import từ Excel\",\n  \"description\": \"Imported từ file Excel\",\n  \"isRequired\": true\n}",
+                  "type": "text",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/import",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "import"]
+            }
+          }
+        },
+        {
+          "name": "POST - Import Excel Quiz",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "request",
+                  "value": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"moduleType\": \"QUIZ\",\n  \"moduleOrder\": 12,\n  \"title\": \"Quiz import từ Excel\",\n  \"isRequired\": true\n}",
+                  "type": "text",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/import",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "import"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Đọc Modules",
+      "item": [
+        {
+          "name": "GET - Tất cả module của 1 buổi học",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/by-schedule/{{schedule_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "by-schedule", "{{schedule_id}}"]
+            },
+            "description": "Trả về tất cả module active (deleted=false, isActive=true),\nsắp xếp tăng dần theo moduleOrder"
+          }
+        },
+        {
+          "name": "GET - 1 module theo ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/{{module_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "{{module_id}}"]
+            },
+            "description": "module_id được tự động điền từ Tests tab của POST request"
+          }
+        },
+        {
+          "name": "GET - Module không tồn tại → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/NONEXISTENT_ID_HERE",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "NONEXISTENT_ID_HERE"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Sắp Xếp Lại Thứ Tự",
+      "item": [
+        {
+          "name": "PUT - Reorder modules",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"id\": \"{{module_id}}\",\n      \"newOrder\": 1\n    },\n    {\n      \"id\": \"SECOND_MODULE_ID_HERE\",\n      \"newOrder\": 2\n    },\n    {\n      \"id\": \"THIRD_MODULE_ID_HERE\",\n      \"newOrder\": 3\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/by-schedule/{{schedule_id}}/reorder",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "by-schedule", "{{schedule_id}}", "reorder"]
+            },
+            "description": "Cập nhật thứ tự hiển thị của các module trong buổi học.\nDùng pessimistic lock để tránh race condition.\nNếu 2 order trùng nhau → 409 CONFLICT."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Xoá Module (Soft Delete)",
+      "item": [
+        {
+          "name": "DELETE - Xoá mềm module",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/{{module_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "{{module_id}}"]
+            },
+            "description": "Soft delete: set deleted=true, isActive=false.\nModule sẽ không còn xuất hiện trong danh sách nữa.\nGọi GET lại để kiểm tra → phải nhận 404."
+          }
+        },
+        {
+          "name": "GET - Verify đã bị xoá → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/schedule-modules/{{module_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["schedule-modules", "{{module_id}}"]
+            },
+            "description": "Sau khi DELETE, gọi GET → phải nhận 404 (soft deleted)"
+          }
+        }
+      ]
+    }
+  ]
+}

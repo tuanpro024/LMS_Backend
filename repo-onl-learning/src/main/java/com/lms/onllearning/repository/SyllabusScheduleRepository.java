@@ -15,4 +15,8 @@ public interface SyllabusScheduleRepository extends JpaRepository<SyllabusSchedu
     void deleteBySyllabusId(String syllabusId);
 
     List<SyllabusSchedule> findBySyllabusIdOrderBySessionNoAsc(String syllabusId);
+
+    default List<SyllabusSchedule> findBySyllabusId(String syllabusId) {
+        return findBySyllabusIdOrderBySessionNoAsc(syllabusId);
+    }
 }

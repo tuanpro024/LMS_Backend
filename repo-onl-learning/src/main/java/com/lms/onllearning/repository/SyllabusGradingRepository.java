@@ -6,9 +6,13 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 public interface SyllabusGradingRepository extends JpaRepository<SyllabusGrading, String> {
     @Transactional
     @Modifying
     @Query("DELETE FROM SyllabusGrading g WHERE g.syllabus.id = :syllabusId")
     void deleteBySyllabusId(String syllabusId);
+
+    List<SyllabusGrading> findBySyllabusId(String syllabusId);
 }

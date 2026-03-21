@@ -31,10 +31,10 @@ public class CmsClient {
     private final WebClient cmsWebClient;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private static final String CACHE_KEY_SYLLABUS_LIST   = "syllabus:list:all";
+    private static final String CACHE_KEY_SYLLABUS_LIST = "syllabus:list:all";
     private static final String CACHE_KEY_SYLLABUS_DETAIL = "syllabus:detail:";
-    private static final String CACHE_KEY_TIMETABLE       = "timetable:student:";
-    private static final long   SYLLABUS_TTL_SEC          = 600L;
+    private static final String CACHE_KEY_TIMETABLE = "timetable:student:";
+    private static final long SYLLABUS_TTL_SEC = 600L;
 
     @Value("${cache.ttl.timetable:90}")
     private long timetableTtlSec;
@@ -50,7 +50,8 @@ public class CmsClient {
             CmsApiResponse<List<SyllabusResponse>> resp = cmsWebClient.get()
                     .uri("/api/erp/syllabus")
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<SyllabusResponse>>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<SyllabusResponse>>>() {
+                    })
                     .block();
 
             List<SyllabusResponse> data = resp != null ? resp.data() : List.of();
@@ -82,7 +83,8 @@ public class CmsClient {
             CmsApiResponse<SyllabusDetailResponse> resp = cmsWebClient.get()
                     .uri("/api/erp/syllabus/{id}", syllabusId)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<SyllabusDetailResponse>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<SyllabusDetailResponse>>() {
+                    })
                     .block();
 
             SyllabusDetailResponse data = resp != null ? resp.data() : null;
@@ -125,7 +127,8 @@ public class CmsClient {
                             .queryParam("end", end)
                             .build(studentId))
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<StudentTimetableItemResponse>>>() {})
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<StudentTimetableItemResponse>>>() {
+                    })
                     .block();
 
             List<StudentTimetableItemResponse> data = resp != null && resp.data() != null ? resp.data() : List.of();

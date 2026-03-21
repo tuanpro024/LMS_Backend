@@ -2,6 +2,7 @@ package com.lms.writing.service.impl;
 
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.writing.service.ExcelImportService;
+import com.lms.writing.util.CharacterUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -127,6 +127,7 @@ services:
       eureka-server:
         condition: service_healthy
     networks:
+      - shared-network
       - lms-network
 
   realtime-service:
@@ -435,6 +436,7 @@ services:
       multimedia-api:
         condition: service_started
     networks:
+      - shared-network
       - lms-network
 
   video-course-api:
@@ -463,9 +465,11 @@ services:
       multimedia-api:
         condition: service_started
     networks:
+      - shared-network
       - lms-network
 
 networks:
+  - shared-network
   lms-network:
     driver: bridge
   shared-network:

@@ -81,6 +81,8 @@ public class SecurityConfig {
                         // Browse available study sets: chỉ ADMIN/TEACHER_MANAGER
                         .requestMatchers("/schedule-available-modules/**")
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        // DEV-ONLY: seed test data (controller chỉ active khi profile = dev/local)
+                        .requestMatchers("/dev/**").permitAll()
                         // Authenticated: đăng ký tư vấn
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

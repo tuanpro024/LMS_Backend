@@ -63,6 +63,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/listening-practice/packages/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/listening-practice/folders/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/listening-practice/study-sets/**").permitAll()
+                        // Progress endpoints - allow all authenticated users (students included)
+                        .requestMatchers("/api/listening-practice/progress/**").authenticated()
+                        // Video metadata endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/listening-practice/study-sets/*/videos/**").permitAll()
                         // All other endpoints require authentication
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

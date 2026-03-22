@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.kafka.core.KafkaTemplate;
 import com.lms.identity.service.UserService;
 
 @Service
@@ -21,6 +22,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Transactional(readOnly = true)
     @Override
@@ -40,6 +42,14 @@ public class UserServiceImpl implements UserService {
         user.setAvatarUrl(request.getAvatarUrl());
         user.setAddress(request.getAddress());
         User saved = userRepository.save(user);
+
+        // Phát sự kiện Kafka Commit nếu avatar là URL từ file service của chúng ta
+        if (request.getAvatarUrl() != null && request.getAvatarUrl().contains("/api/media/file/")) {
+            String fileId = request.getAvatarUrl().substring(request.getAvatarUrl().lastIndexOf('/') + 1);
+            String jsonPayload = "[\"" + fileId + "\"]";
+            kafkaTemplate.send("storage.file.commit", jsonPayload);
+        }
+
         return userMapper.toProfile(saved);
     }
 

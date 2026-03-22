@@ -18,39 +18,37 @@ import java.util.List;
 @FeignClient(name = "repo-pronunciation", contextId = "pronunciation", configuration = com.lms.learningpath.config.FeignConfig.class)
 public interface PronunciationClient {
 
-    /**
-     * Import pronunciation content from Excel file
-     */
-    @PostMapping(value = "/packages/import-excel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    ApiResponse<HierarchicalImportResult> importExcel(
-            @RequestPart("file") MultipartFile file,
-            @RequestParam("typeName") TypeName typeName);
+        /**
+         * Import pronunciation content from Excel file
+         */
+        @PostMapping(value = "/packages/import-excel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        ApiResponse<HierarchicalImportResult> importExcel(
+                        @RequestPart("file") MultipartFile file,
+                        @RequestParam("typeName") TypeName typeName);
 
+        /**
+         * Get study set by ID
+         */
+        @GetMapping("/study-sets/{id}")
+        ApiResponse<StudySetResponse> getStudySetById(@PathVariable("id") String id);
 
-    /**
-     * Get study set by ID
-     */
-    @GetMapping("/study-sets/{id}")
-    ApiResponse<StudySetResponse> getStudySetById(@PathVariable("id") String id);
+        /**
+         * Get all study sets
+         */
+        @GetMapping("/study-sets")
+        ApiResponse<List<StudySetResponse>> getAllStudySets();
 
-    /**
-     * Get all study sets
-     */
-    @GetMapping("/study-sets")
-    ApiResponse<List<StudySetResponse>> getAllStudySets();
+        /**
+         * Search study sets by query
+         */
+        @GetMapping("/study-sets/search")
+        ApiResponse<List<StudySetResponse>> searchStudySets(@RequestParam("q") String query);
 
-    /**
-     * Search study sets by query
-     */
-    @GetMapping("/study-sets/search")
-    ApiResponse<List<StudySetResponse>> searchStudySets(@RequestParam("q") String query);
-
-    /**
-     * Find study sets by exact title and user ID (case-insensitive)
-     */
-    @GetMapping("/study-sets/exact-match")
-    ApiResponse<List<StudySetResponse>> findByTitleAndUserIdIgnoreCase(
-            @RequestParam("title") String title,
-            @RequestParam("userId") String userId);
+        /**
+         * Find study sets by exact title and user ID (case-insensitive)
+         */
+        @GetMapping("/study-sets/exact-match")
+        ApiResponse<List<StudySetResponse>> findByTitleAndUserIdIgnoreCase(
+                        @RequestParam("title") String title,
+                        @RequestParam("userId") String userId);
 }
-

@@ -103,7 +103,16 @@ public class QuizExcelImportRow {
      * Row has sub-data only (option/blank/pair/chunk for previous question)
      */
     public boolean hasSubDataOnly() {
-        return !hasQuestionData() && data1 != null && !data1.trim().isEmpty();
+        return !hasQuestionData() && hasAnySubData();
+    }
+
+    private boolean hasAnySubData() {
+        return isNotBlank(data1) || isNotBlank(data2) || isNotBlank(data3)
+                || isNotBlank(data4) || isNotBlank(data5);
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     public boolean isEmpty() {

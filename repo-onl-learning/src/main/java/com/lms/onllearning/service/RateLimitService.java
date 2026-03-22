@@ -6,6 +6,7 @@ import io.github.bucket4j.distributed.proxy.ProxyManager;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class RateLimitService {
 
+    @Lazy
     private final ProxyManager<String> bucketProxyManager;
     private final BucketConfiguration ipBucketConfiguration;
     private final BucketConfiguration userBucketConfiguration;
@@ -29,23 +31,30 @@ public class RateLimitService {
      */
     public boolean tryConsume(HttpServletRequest request, String userId) {
         String clientIp = resolveClientIp(request);
+        String safeUserId = (userId == null || userId.isBlank()) ? "anonymous" : userId;
 
-        Bucket ipBucket   = bucketProxyManager.builder()
-                .build("rate:ip:" + clientIp, () -> ipBucketConfiguration);
-        Bucket userBucket = bucketProxyManager.builder()
-                .build("rate:user:" + userId, () -> userBucketConfiguration);
+        try {
+            Bucket ipBucket   = bucketProxyManager.builder()
+                    .build("rate:ip:" + clientIp, () -> ipBucketConfiguration);
+            Bucket userBucket = bucketProxyManager.builder()
+                    .build("rate:user:" + safeUserId, () -> userBucketConfiguration);
 
-        boolean ipAllowed   = ipBucket.tryConsume(1);
-        boolean userAllowed = userBucket.tryConsume(1);
+            boolean ipAllowed   = ipBucket.tryConsume(1);
+            boolean userAllowed = userBucket.tryConsume(1);
 
-        if (!ipAllowed) {
-            log.warn("Rate limit exceeded for IP: {}", clientIp);
+            if (!ipAllowed) {
+                log.warn("Rate limit exceeded for IP: {}", clientIp);
+            }
+            if (!userAllowed) {
+                log.warn("Rate limit exceeded for userId: {}", safeUserId);
+            }
+
+            return ipAllowed && userAllowed;
+        } catch (Exception ex) {
+            // Keep lead registration available even if Redis/rate-limit backend is temporarily down.
+            log.error("Rate limit backend unavailable, allowing request. ip={}, userId={}", clientIp, safeUserId, ex);
+            return true;
         }
-        if (!userAllowed) {
-            log.warn("Rate limit exceeded for userId: {}", userId);
-        }
-
-        return ipAllowed && userAllowed;
     }
 
     /** Lấy IP thực từ header X-Forwarded-For (proxy/load-balancer) hoặc remote address */

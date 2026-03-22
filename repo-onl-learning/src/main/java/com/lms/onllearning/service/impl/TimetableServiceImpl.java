@@ -7,7 +7,6 @@ import com.lms.onllearning.service.ITimetableService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -17,10 +16,7 @@ public class TimetableServiceImpl implements ITimetableService {
     private final CmsClient cmsClient;
 
     @Override
-    public CmsEnvelope<List<StudentTimetableItemResponse>> getStudentTimetable(
-            String studentId,
-            LocalDate start,
-            LocalDate end) {
-        return cmsClient.getStudentTimetable(studentId, start, end);
+    public CmsEnvelope<List<StudentTimetableItemResponse>> getStudentTimetable(String email) {
+        return cmsClient.getStudentTimetable(email);
     }
 }

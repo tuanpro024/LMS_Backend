@@ -329,6 +329,33 @@ services:
     networks:
       - lms-network
 
+  onl-learning-api:
+    build:
+      context: .
+      dockerfile: repo-onl-learning/Dockerfile
+    image: lms-onl-learning
+    container_name: lms-onl-learning
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_onl_learning_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATA_REDIS_HOST=redis
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
   notification-api:
     build:
       context: .
@@ -382,6 +409,7 @@ services:
         condition: service_healthy
     networks:
       - lms-network
+      - shared-network
 
   listening-practice-api:
     build:
@@ -463,6 +491,8 @@ services:
 networks:
   lms-network:
     driver: bridge
+  shared-network:
+    external: true
 
 volumes:
   mysql_data:

@@ -51,31 +51,41 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, BaseJwtFilter jwtFilter) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Actuator & health
-                .requestMatchers("/health", "/actuator/**").permitAll()
-                // Public: xem syllabus (catalog quảng cáo)
-                .requestMatchers(HttpMethod.GET, "/syllabuses/**").permitAll()
-                // Public: xem danh sách & chi tiết khóa học
-                .requestMatchers(HttpMethod.GET, "/courses/**").permitAll()
-                // Course management: ADMIN + TEACHER_MANAGER có thể tạo/chỉnh sửa
-                .requestMatchers(HttpMethod.POST, "/courses")
-                    .hasAnyRole("ADMIN", "TEACHER_MANAGER")
-                .requestMatchers(HttpMethod.PUT, "/courses/**")
-                    .hasAnyRole("ADMIN", "TEACHER_MANAGER")
-                // Course delete và syllabus sync chỉ ADMIN
-                .requestMatchers(HttpMethod.DELETE, "/courses/**").hasAnyRole("ADMIN","TEACHER_MANAGER")
-                .requestMatchers("/syllabus/**").hasAnyRole("ADMIN","TEACHER_MANAGER")
-                // Admin/Staff: xem leads, export Excel
-                .requestMatchers(HttpMethod.GET, "/leads/**")
-                    .hasAnyRole("ADMIN", "TEACHER_MANAGER")
-                // Authenticated: đăng ký tư vấn
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Actuator & health
+                        .requestMatchers("/health", "/actuator/**").permitAll()
+                        // Public: xem syllabus (catalog quảng cáo)
+                        .requestMatchers(HttpMethod.GET, "/syllabuses/**").permitAll()
+                        // Public: xem danh sách & chi tiết khóa học
+                        .requestMatchers(HttpMethod.GET, "/courses/**").permitAll()
+                        // Course management: ADMIN + TEACHER_MANAGER có thể tạo/chỉnh sửa
+                        .requestMatchers(HttpMethod.POST, "/courses")
+                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/courses/**")
+                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        // Course delete và syllabus sync chỉ ADMIN
+                        .requestMatchers(HttpMethod.DELETE, "/courses/**").hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        .requestMatchers("/syllabus/**").hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        // Admin/Staff: xem leads, export Excel
+                        .requestMatchers(HttpMethod.GET, "/leads/**")
+                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        // Schedule modules: ADMIN/TEACHER_MANAGER quản lý module ôn luyện
+                        .requestMatchers(HttpMethod.POST, "/schedule-modules/**")
+                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        .requestMatchers(HttpMethod.PUT, "/schedule-modules/**")
+                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        .requestMatchers(HttpMethod.DELETE, "/schedule-modules/**")
+                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        // Browse available study sets: chỉ ADMIN/TEACHER_MANAGER
+                        .requestMatchers("/schedule-available-modules/**")
+                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        // DEV-ONLY: seed test data (controller chỉ active khi profile = dev/local)
+                        .requestMatchers("/dev/**").permitAll()
+                        // Authenticated: đăng ký tư vấn
+                        .anyRequest().authenticated())
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

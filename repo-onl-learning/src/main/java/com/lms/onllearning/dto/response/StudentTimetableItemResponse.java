@@ -5,12 +5,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Maps item response từ CMS API:
- * GET /api/erp/students/{studentId}/timetable?start=yyyy-MM-dd&end=yyyy-MM-dd
+ * GET /api/erp/students/timetable-by-email?email={email}
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record StudentTimetableItemResponse(
         String id,
         @JsonProperty("class_id") String classId,
+        @JsonProperty("syllabus_schedule_id") String syllabusScheduleId,
         @JsonProperty("class_code") String classCode,
         @JsonProperty("class_name") String className,
         @JsonProperty("session_no") Integer sessionNo,

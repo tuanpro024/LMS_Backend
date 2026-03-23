@@ -127,6 +127,7 @@ services:
       eureka-server:
         condition: service_healthy
     networks:
+      - shared-network
       - lms-network
 
   realtime-service:
@@ -395,6 +396,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=root
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     volumes:
       - ./secrets:/app/secrets
     depends_on:
@@ -435,6 +437,7 @@ services:
       multimedia-api:
         condition: service_started
     networks:
+      - shared-network
       - lms-network
 
   video-course-api:
@@ -463,9 +466,11 @@ services:
       multimedia-api:
         condition: service_started
     networks:
+      - shared-network
       - lms-network
 
 networks:
+  - shared-network
   lms-network:
     driver: bridge
   shared-network:

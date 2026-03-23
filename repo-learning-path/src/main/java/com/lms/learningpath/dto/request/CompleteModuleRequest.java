@@ -20,5 +20,11 @@ public class CompleteModuleRequest {
     @Min(0)
     private Integer totalStudyTimeSeconds;
 
+    /**
+     * For QUIZ modules, map from repo-quiz submit result `passed`.
+     * If false, module will remain IN_PROGRESS until user passes.
+     */
+    private Boolean passed;
+
     private String metadata; // JSON
 }

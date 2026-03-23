@@ -399,6 +399,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=root
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     volumes:
       - ./secrets:/app/secrets
     depends_on:

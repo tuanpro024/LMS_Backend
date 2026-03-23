@@ -47,6 +47,7 @@ public class QuizExcelImportRow {
 
     // StudySet level (K)
     private String studySetName;
+    private String studySetDescription;
 
     // Quiz level (L-P)
     private String quizTitle;

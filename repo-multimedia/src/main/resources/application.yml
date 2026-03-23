@@ -61,8 +61,13 @@ storage:
   cleanup-cron: "0 0 * * * *"
   delete-object-on-soft-delete: true
   minio:
-    endpoint: ${MINIO_ENDPOINT:http://localhost:49000}
-    console-endpoint: ${MINIO_CONSOLE:http://localhost:49001}
+#    local
+#    endpoint: ${MINIO_ENDPOINT:http://localhost:49000}
+#    console-endpoint: ${MINIO_CONSOLE:http://localhost:49001}
+
+#    prod
+    endpoint: http://lms-video-minio:9000
+    console-endpoint: http://lms-video-minio:9001
     access-key: ${MINIO_ROOT_USER:lms_minio}
     secret-key: ${MINIO_ROOT_PASSWORD:lms_minio}
     bucket: ${MINIO_BUCKET:videos}

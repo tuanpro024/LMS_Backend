@@ -22,6 +22,10 @@ spring:
   sql:
     init:
       mode: always
+
+  kafka:
+    consumer:
+      group-id: multimedia-group
 # Spring boot configuration
 server:
   port: ${SERVER_PORT:8091}
@@ -46,3 +50,20 @@ security:
   jwt:
     public-key-path: file:secrets/jwt-public.pem
 
+
+kafka:
+  topics:
+    file: storage.file.commit
+
+storage:
+  presign-ttl: PT15M
+  pending-ttl: PT12H
+  cleanup-cron: "0 0 * * * *"
+  delete-object-on-soft-delete: true
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:49000}
+    console-endpoint: ${MINIO_CONSOLE:http://localhost:49001}
+    access-key: ${MINIO_ROOT_USER:lms_minio}
+    secret-key: ${MINIO_ROOT_PASSWORD:lms_minio}
+    bucket: ${MINIO_BUCKET:videos}
+    region:

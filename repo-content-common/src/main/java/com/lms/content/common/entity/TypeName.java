@@ -7,7 +7,7 @@ public enum TypeName {
     FREE,
 
     /**
-     * on luyen
+     * lo trinh
      */
     LEARNING_PATH,
 

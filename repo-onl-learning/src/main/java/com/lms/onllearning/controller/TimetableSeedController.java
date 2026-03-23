@@ -59,7 +59,7 @@ public class TimetableSeedController {
                 new StudentTimetableItemResponse(
                         "MOCK-SESSION-001",
                         "MOCK-CLASS-001",
-                        null,
+                        "01KKDH7PRR8XSCYWMWVECM1V9P",
                         "DEMO1",
                         "DEMO1",
                         1,
@@ -79,7 +79,7 @@ public class TimetableSeedController {
                 new StudentTimetableItemResponse(
                         "MOCK-SESSION-002",
                         "MOCK-CLASS-001",
-                        null,
+                        "01KKDH7PRR8XSCYWMWVECM1V9P",
                         "DEMO1",
                         "DEMO1",
                         2,
@@ -99,7 +99,7 @@ public class TimetableSeedController {
                 new StudentTimetableItemResponse(
                         "MOCK-SESSION-003",
                         "MOCK-CLASS-001",
-                        null,
+                        "01KKDH7PRR8XSCYWMWVECM1V9P",
                         "DEMO1",
                         "DEMO1",
                         3,

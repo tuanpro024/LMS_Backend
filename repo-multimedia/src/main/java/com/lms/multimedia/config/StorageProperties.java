@@ -44,5 +44,9 @@ public class StorageProperties {
         private String secretKey;
         @NotBlank
         private String bucket;
+        @NotBlank
+        private String imageBucket;
+        @NotBlank
+        private String audioBucket;
     }
 }

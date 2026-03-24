@@ -57,8 +57,9 @@ public class VideoModule extends BaseEntity {
 
     // ===== Practice Module Link (for non-video modules) =====
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private String moduleType; // FLASHCARD, QUIZ, WRITING, KANJI_ORIGIN, etc.
+    private com.lms.videocourse.entity.enums.ModuleType moduleType; // FLASHCARD, QUIZ, WRITING, KANJI_ORIGIN, etc.
 
     @Column(length = 26)
     private String contentSetId; // target study set / content ID in other services

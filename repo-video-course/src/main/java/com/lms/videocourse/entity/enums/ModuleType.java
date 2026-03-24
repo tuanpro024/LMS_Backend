@@ -7,9 +7,8 @@ package com.lms.videocourse.entity.enums;
 public enum ModuleType {
     FLASHCARD,
     WRITING,
-    KANJI,
+    KANJI_ORIGIN,
     QUIZ,
-    LISTENING_PRACTICE,
-    PRONUNCIATION,
-    LEARNING_PATH
+    LISTENING,
+    PRONUNCIATION
 }

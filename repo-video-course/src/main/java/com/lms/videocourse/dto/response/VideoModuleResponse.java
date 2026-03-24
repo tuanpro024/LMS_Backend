@@ -26,7 +26,7 @@ public class VideoModuleResponse {
     private String videoCode; // optional multimedia reference
 
     // ===== Practice module link =====
-    private String moduleType; // FLASHCARD, QUIZ, WRITING, KANJI_ORIGIN, etc.
+    private com.lms.videocourse.entity.enums.ModuleType moduleType; // FLASHCARD, QUIZ, WRITING, KANJI_ORIGIN, etc.
     private String contentSetId; // target content ID in other services
 
     // ===== Watch progress (populated when authenticated) =====

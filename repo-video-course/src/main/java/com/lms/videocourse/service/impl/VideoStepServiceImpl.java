@@ -8,11 +8,11 @@ import com.lms.videocourse.entity.VideoStep;
 import com.lms.videocourse.entity.VideoStepUnlockRule;
 import com.lms.videocourse.exception.ResourceNotFoundException;
 import com.lms.videocourse.repository.VideoStepRepository;
-import com.lms.videocourse.repository.VideoStepProgressRepository;
 import com.lms.videocourse.repository.VideoStepUnlockRuleRepository;
 import com.lms.videocourse.repository.VideoModuleRepository;
 import com.lms.videocourse.service.IVideoStepService;
 import com.lms.videocourse.service.IVideoUnlockService;
+import com.lms.videocourse.service.IVideoProgressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,10 +27,10 @@ import java.util.stream.Collectors;
 public class VideoStepServiceImpl implements IVideoStepService {
 
     private final VideoStepRepository videoStepRepository;
-    private final VideoStepProgressRepository stepProgressRepository;
     private final VideoStepUnlockRuleRepository unlockRuleRepository;
     private final VideoModuleRepository videoModuleRepository;
     private final IVideoUnlockService unlockService;
+    private final IVideoProgressService progressService;
 
     @Override
     @Transactional
@@ -104,21 +104,7 @@ public class VideoStepServiceImpl implements IVideoStepService {
                 if (!isUnlocked) {
                     lockReason = unlockService.getLockReason(userId, step.getId());
                 }
-                progress = stepProgressRepository.findByUserIdAndStepId(userId, step.getId())
-                        .map(p -> VideoStepProgressResponse.builder()
-                                .id(p.getId())
-                                .stepId(p.getStepId())
-                                .studySetId(p.getStudySetId())
-                                .status(p.getStatus())
-                                .completedModules(p.getCompletedModules())
-                                .totalModules(p.getTotalModules())
-                                .requiredCompletedModules(p.getRequiredCompletedModules())
-                                .totalRequiredModules(p.getTotalRequiredModules())
-                                .progressPercentage(p.getProgressPercentage())
-                                .firstStartedAt(p.getFirstStartedAt())
-                                .completedAt(p.getCompletedAt())
-                                .build())
-                        .orElse(null);
+                progress = progressService.getStepProgress(userId, step.getId());
             }
             int moduleCount = (int) videoModuleRepository.countByStepIdAndIsActiveTrue(step.getId());
             return toResponse(step, isUnlocked, lockReason, progress, moduleCount);

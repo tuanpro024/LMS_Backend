@@ -30,8 +30,16 @@ public record CmsEnvelope<T>(
         return new CmsEnvelope<>(data, new Meta("CACHE", true, false, null));
     }
 
+    public static <T> CmsEnvelope<T> fromDb(T data) {
+        return new CmsEnvelope<>(data, new Meta("DB", false, false, null));
+    }
+
     public static <T> CmsEnvelope<T> cmsUnavailable() {
         return new CmsEnvelope<>(null, new Meta("CACHE", false, true, null));
+    }
+
+    public static <T> CmsEnvelope<T> notFound() {
+        return new CmsEnvelope<>(null, new Meta("DB", false, false, null));
     }
 
     public static <T> CmsEnvelope<T> noSchedule(T emptyData) {

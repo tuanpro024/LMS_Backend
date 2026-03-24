@@ -8,6 +8,7 @@ import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.codec.RedisCodec;
 import io.lettuce.core.codec.StringCodec;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,11 +31,13 @@ public class RateLimitConfig {
     private int redisPort;
 
     @Bean
+    @Lazy
     public RedisClient lettuceRedisClient() {
         return RedisClient.create("redis://" + redisHost + ":" + redisPort);
     }
 
     @Bean
+    @Lazy
     public LettuceBasedProxyManager<String> bucketProxyManager(RedisClient lettuceRedisClient) {
         StatefulRedisConnection<String, byte[]> connection =
                 lettuceRedisClient.connect(RedisCodec.of(StringCodec.UTF8, ByteArrayCodec.INSTANCE));

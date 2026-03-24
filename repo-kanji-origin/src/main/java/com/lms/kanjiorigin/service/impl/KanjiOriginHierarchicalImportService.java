@@ -10,7 +10,6 @@ import com.lms.kanjiorigin.entity.*;
 import com.lms.kanjiorigin.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,7 +39,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
     private static final int COL_ORIGIN_TEXT_EN = 29; // AD
     private static final int COL_STROKE_ANIMATION_URL = 30; // AE
     private static final int COL_EXAMPLE_MEANING_VI = 31; // AF
-    private static final int COL_EXAMPLE_MEANING_EN = 32; // AG
+    private static final int COL_EXAMPLE_MEANING_EN = 32; // AGz
     private static final int COL_QUESTION_CONTENT = 33; // AH
     private static final int COL_CORRECT_ANSWER = 34; // AI
     private static final int COL_WRONG_OPTIONS = 35; // AJ
@@ -266,7 +265,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
         Map<Integer, KanjiExtraRowData> map = new HashMap<>();
 
         try (InputStream is = file.getInputStream();
-                Workbook workbook = new XSSFWorkbook(is)) {
+                Workbook workbook = WorkbookFactory.create(is)) {
 
             Sheet sheet = workbook.getSheetAt(0);
             int lastRowNum = sheet.getLastRowNum();

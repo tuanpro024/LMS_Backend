@@ -190,7 +190,7 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
                         .teacherTasks(s.teacherTasks())
                         .studentMaterialsLink(s.studentMaterialsLink())
                         .teacherMaterialsLink(s.teacherMaterialsLink())
-                        .moduleOnLuyen(s.moduleOnLuyen())
+                        .moduleOnLuyen(s.moduleOnLuyenText())
                         .build());
             }
         }

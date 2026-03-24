@@ -32,8 +32,7 @@ import java.util.List;
  * term-definition),
  * quiz has complex multi-type questions, so we implement a custom import logic
  * that:
- * 1. Builds Package → Subject → Slot → Folder → StudySet hierarchy (same
- * pattern)
+ * 1. Builds Package → Folder → StudySet hierarchy
  * 2. Parses quiz-specific data (questions with options/blanks/pairs/chunks)
  * 3. Creates quizzes via IQuizService.createQuiz()
  */
@@ -43,8 +42,6 @@ import java.util.List;
 public class ExcelImportServiceImpl implements ExcelImportService {
 
     private final PackageRepository packageRepository;
-    private final SubjectRepository subjectRepository;
-    private final SlotRepository slotRepository;
     private final FolderRepository folderRepository;
     private final StudySetRepository studySetRepository;
     private final TypeRepository typeRepository;
@@ -96,10 +93,8 @@ public class ExcelImportServiceImpl implements ExcelImportService {
 
         // Build success message
         result.setMessage(String.format(
-                "Successfully imported %d package(s), %d subject(s), %d slot(s), %d folder(s), %d study set(s), %d quiz(zes)",
+            "Successfully imported %d package(s), %d folder(s), %d study set(s), %d quiz(zes)",
                 result.getTotalPackages(),
-                result.getTotalSubjects(),
-                result.getTotalSlots(),
                 result.getTotalFolders(),
                 result.getTotalStudySets(),
                 result.getTotalContentItems()));
@@ -125,8 +120,6 @@ public class ExcelImportServiceImpl implements ExcelImportService {
 
         // Current hierarchy context
         Package currentPackage = null;
-        Subject currentSubject = null;
-        Slot currentSlot = null;
         Folder currentFolder = null;
         StudySet currentStudySet = null;
 
@@ -180,78 +173,6 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                 result.setTotalPackages(result.getTotalPackages() + 1);
                 log.debug("Created package: {}", currentPackage.getName());
 
-                currentSubject = null;
-                currentSlot = null;
-                currentFolder = null;
-                currentStudySet = null;
-                currentQuizTitle = null;
-                currentQuestions = new ArrayList<>();
-                currentQuestion = null;
-                currentQuestionType = null;
-            }
-
-            // Subject level
-            if (row.hasSubjectData()) {
-                savePendingQuiz(currentStudySet, currentQuizTitle, currentQuizDescription,
-                        currentQuizDifficulty, currentTimeLimitSeconds, currentPassingScore,
-                        currentQuestions, currentQuestion, currentQuestionType,
-                        currentOptions, currentBlanks, currentMatchingPairs, currentChunks,
-                        userId, result);
-
-                if (currentPackage == null) {
-                    result.addWarning(row.getRowNumber(), ImportWarning.WarningType.ORPHAN_SUBJECT,
-                            "Subject found without a package. Skipped.");
-                    continue;
-                }
-                Subject newSubject = Subject.builder()
-                        .name(row.getSubjectName().trim())
-                        .code(row.getSubjectCode() != null ? row.getSubjectCode().trim() : "")
-                        .description(row.getSubjectDescription() != null ? row.getSubjectDescription().trim() : null)
-                        .userId(userId)
-                        .slots(new ArrayList<>())
-                        .folders(new ArrayList<>())
-                        .build();
-                newSubject.setPackageEntity(currentPackage);
-                currentSubject = subjectRepository.save(newSubject);
-                currentPackage.addSubject(currentSubject);
-                result.getSubjectIds().add(currentSubject.getId());
-                result.setTotalSubjects(result.getTotalSubjects() + 1);
-
-                currentSlot = null;
-                currentFolder = null;
-                currentStudySet = null;
-                currentQuizTitle = null;
-                currentQuestions = new ArrayList<>();
-                currentQuestion = null;
-                currentQuestionType = null;
-            }
-
-            // Slot level
-            if (row.hasSlotData()) {
-                savePendingQuiz(currentStudySet, currentQuizTitle, currentQuizDescription,
-                        currentQuizDifficulty, currentTimeLimitSeconds, currentPassingScore,
-                        currentQuestions, currentQuestion, currentQuestionType,
-                        currentOptions, currentBlanks, currentMatchingPairs, currentChunks,
-                        userId, result);
-
-                if (currentSubject == null) {
-                    result.addWarning(row.getRowNumber(), ImportWarning.WarningType.ORPHAN_SLOT,
-                            "Slot found without a subject. Skipped.");
-                    continue;
-                }
-                Slot newSlot = Slot.builder()
-                        .name(row.getSlotName().trim())
-                        .slotNumber(row.getSlotNumber() != null ? row.getSlotNumber().trim() : null)
-                        .description(row.getSlotDescription() != null ? row.getSlotDescription().trim() : null)
-                        .userId(userId)
-                        .folders(new ArrayList<>())
-                        .build();
-                newSlot.setSubject(currentSubject);
-                currentSlot = slotRepository.save(newSlot);
-                currentSubject.addSlot(currentSlot);
-                result.getSlotIds().add(currentSlot.getId());
-                result.setTotalSlots(result.getTotalSlots() + 1);
-
                 currentFolder = null;
                 currentStudySet = null;
                 currentQuizTitle = null;
@@ -282,13 +203,8 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                         .studySets(new ArrayList<>())
                         .build();
 
-                if (currentSlot != null) {
-                    newFolder.setSlot(currentSlot);
-                } else if (currentSubject != null) {
-                    newFolder.setSubject(currentSubject);
-                } else {
-                    newFolder.setPackageEntity(currentPackage);
-                }
+                // Import hierarchy is now Package -> Folder -> StudySet only.
+                newFolder.setPackageEntity(currentPackage);
 
                 currentFolder = folderRepository.save(newFolder);
                 result.getFolderIds().add(currentFolder.getId());

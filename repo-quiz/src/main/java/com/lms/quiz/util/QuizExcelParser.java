@@ -73,12 +73,6 @@ public class QuizExcelParser {
             QuizExcelHeaderValidator.validateRequiredHeaders(headerIndexMap, Arrays.asList(
                     H_PACKAGE_NAME,
                     H_PACKAGE_DESCRIPTION,
-                    H_SUBJECT_NAME,
-                    H_SUBJECT_CODE,
-                    H_SUBJECT_DESCRIPTION,
-                    H_SLOT_NAME,
-                    H_SLOT_NUMBER,
-                    H_SLOT_DESCRIPTION,
                     H_FOLDER_NAME,
                     H_FOLDER_DESCRIPTION,
                     H_STUDY_SET_NAME,

@@ -37,6 +37,7 @@ public class CardServiceImpl implements CardService {
     private final CardMapper cardMapper;
     private final StudySetRepository studySetRepository;
     private final ObjectMapper objectMapper;
+    private final com.lms.flashcard.service.FlashcardProgressService flashcardProgressService;
 
     @Override
     public void updateCardStatus(String userId, String cardId, UpdateCardStatusRequest request) {
@@ -57,6 +58,11 @@ public class CardServiceImpl implements CardService {
         }
 
         userCardProgressRepository.save(progress);
+
+        // Update StudySet progress
+        if (card.getStudySet() != null) {
+            flashcardProgressService.updateStudySetProgress(userId, card.getStudySet().getId());
+        }
     }
 
     @Override
@@ -139,6 +145,9 @@ public class CardServiceImpl implements CardService {
         List<Card> savedCards = cardRepository.saveAll(cardEntities);
 
         log.info("Added {} cards to StudySet {} by user {}", savedCards.size(), studySetId, userId);
+
+        // Update StudySet progress
+        flashcardProgressService.updateStudySetProgress(userId, studySetId);
 
         return cardMapper.toResponseList(savedCards);
     }
@@ -240,7 +249,11 @@ public class CardServiceImpl implements CardService {
         // violation
         userCardProgressRepository.deleteByCardId(id);
 
+        String studySetId = card.getStudySet().getId();
         cardRepository.delete(card);
         log.info("Deleted card {} by user {}", id, userId);
+
+        // Update StudySet progress
+        flashcardProgressService.updateStudySetProgress(userId, studySetId);
     }
 }

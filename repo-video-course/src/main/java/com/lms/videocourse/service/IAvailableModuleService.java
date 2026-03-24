@@ -31,6 +31,4 @@ public interface IAvailableModuleService {
     /** Get available pronunciation study sets */
     List<AvailableModuleResponse> getAvailablePronunciationSets(String query);
 
-    /** Get available learning path study sets */
-    List<AvailableModuleResponse> getAvailableLearningPathSets(String query);
 }

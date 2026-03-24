@@ -164,12 +164,11 @@ public class PackageServiceImpl implements PackageService {
         // handled via listeners
         List<Folder> folders = folderRepository.findByPackageId(id);
         for (Folder folder : folders) {
-            try {
-                folderService.deleteFolder(folder.getId(), userId);
-            } catch (Exception e) {
-                log.error("Failed to delete folder {} during package deletion: {}", folder.getId(), e.getMessage());
-            }
+            folderService.deleteFolder(folder.getId(), userId);
         }
+
+        // Force folder deletes to execute before package cascade deletes subject/slot.
+        folderRepository.flush();
 
         packageRepository.delete(packageEntity);
 

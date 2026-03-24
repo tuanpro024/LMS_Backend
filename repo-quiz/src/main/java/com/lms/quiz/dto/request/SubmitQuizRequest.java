@@ -15,6 +15,7 @@ public class SubmitQuizRequest {
 
     private String quizId;
     private List<SubmitAnswerRequest> answers;
+    private Integer timeTakenSeconds;
 
     @Data
     @Builder

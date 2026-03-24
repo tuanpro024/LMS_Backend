@@ -4,7 +4,6 @@ import com.lms.common.dto.ApiResponse;
 import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.videocourse.client.FlashcardClient;
 import com.lms.videocourse.client.KanjiOriginClient;
-import com.lms.videocourse.client.LearningPathClient;
 import com.lms.videocourse.client.ListeningPracticeClient;
 import com.lms.videocourse.client.PronunciationClient;
 import com.lms.videocourse.client.QuizClient;
@@ -31,7 +30,6 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     private final QuizClient quizClient;
     private final ListeningPracticeClient listeningClient;
     private final PronunciationClient pronunciationClient;
-    private final LearningPathClient learningPathClient;
 
     @Override
     public List<AvailableModuleResponse> getAllAvailableModules(String query) {
@@ -43,7 +41,6 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
         all.addAll(getAvailableQuizSets(query));
         all.addAll(getAvailableListeningSets(query));
         all.addAll(getAvailablePronunciationSets(query));
-        all.addAll(getAvailableLearningPathSets(query));
         log.info("Found {} available modules across all repos", all.size());
         return all;
     }
@@ -80,7 +77,7 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
                     ? kanjiClient.searchStudySets(query)
                     : kanjiClient.getAllStudySets();
-            return toResponseList(response.data(), ModuleType.KANJI, "repo-kanji-origin");
+            return toResponseList(response.data(), ModuleType.KANJI_ORIGIN, "repo-kanji-origin");
         } catch (Exception e) {
             log.error("Error fetching kanji sets: {}", e.getMessage());
             return new ArrayList<>();
@@ -106,7 +103,7 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
                     ? listeningClient.searchStudySets(query)
                     : listeningClient.getAllStudySets();
-            return toResponseList(response.data(), ModuleType.LISTENING_PRACTICE, "repo-listening-practice");
+            return toResponseList(response.data(), ModuleType.LISTENING, "repo-listening-practice");
         } catch (Exception e) {
             log.error("Error fetching listening practice sets: {}", e.getMessage());
             return new ArrayList<>();
@@ -126,18 +123,6 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
         }
     }
 
-    @Override
-    public List<AvailableModuleResponse> getAvailableLearningPathSets(String query) {
-        try {
-            ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? learningPathClient.searchStudySets(query)
-                    : learningPathClient.getAllStudySets();
-            return toResponseList(response.data(), ModuleType.LEARNING_PATH, "repo-learning-path");
-        } catch (Exception e) {
-            log.error("Error fetching learning path sets: {}", e.getMessage());
-            return new ArrayList<>();
-        }
-    }
 
     private List<AvailableModuleResponse> toResponseList(
             List<StudySetResponse> studySets, ModuleType type, String repoName) {

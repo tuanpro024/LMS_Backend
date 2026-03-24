@@ -47,7 +47,7 @@ public class AvailableModuleController {
     }
 
     /** Get available kanji study sets */
-    @GetMapping("/kanji")
+    @GetMapping({"/kanji", "/kanji-origin"})
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableKanjiSets(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailableKanjiSets(q)));
@@ -72,12 +72,5 @@ public class AvailableModuleController {
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailablePronunciationSets(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailablePronunciationSets(q)));
-    }
-
-    /** Get available learning path study sets */
-    @GetMapping("/learning-path")
-    public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableLearningPathSets(
-            @RequestParam(required = false) String q) {
-        return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailableLearningPathSets(q)));
     }
 }

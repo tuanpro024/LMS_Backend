@@ -198,14 +198,22 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         }
 
         @Override
+        @Transactional
         public VideoStepProgressResponse getStepProgress(String userId, String stepId) {
+                if (userId != null) {
+                        updateStepProgress(userId, stepId);
+                }
                 return stepProgressRepository.findByUserIdAndStepId(userId, stepId)
                                 .map(this::toStepProgressResponse)
                                 .orElse(null);
         }
 
         @Override
+        @Transactional
         public VideoCourseProgressResponse getCourseProgress(String userId, String studySetId) {
+                if (userId != null) {
+                        updateCourseProgress(userId, studySetId);
+                }
                 return courseProgressRepository.findByUserIdAndStudySetId(userId, studySetId)
                                 .map(this::toCourseProgressResponse)
                                 .orElse(null);
@@ -275,22 +283,30 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                                 .totalRequiredModules((int) totalRequired)
                                                 .build());
 
-                progress.setStatus(status);
-                progress.setCompletedModules(completedCount);
-                progress.setTotalModules(totalModules);
-                progress.setRequiredCompletedModules((int) completedRequiredCount);
-                progress.setTotalRequiredModules((int) totalRequired);
+                boolean changed = progress.getStatus() != status
+                                || progress.getCompletedModules() != completedCount
+                                || progress.getTotalModules() != totalModules
+                                || progress.getRequiredCompletedModules() != (int) completedRequiredCount
+                                || progress.getTotalRequiredModules() != (int) totalRequired;
 
-                if (progress.getFirstStartedAt() == null && completedCount > 0) {
-                        progress.setFirstStartedAt(Instant.now());
-                }
-                if (status == ProgressStatus.COMPLETED && progress.getCompletedAt() == null) {
-                        progress.setCompletedAt(Instant.now());
-                }
+                if (changed) {
+                        progress.setStatus(status);
+                        progress.setCompletedModules(completedCount);
+                        progress.setTotalModules(totalModules);
+                        progress.setRequiredCompletedModules((int) completedRequiredCount);
+                        progress.setTotalRequiredModules((int) totalRequired);
 
-                stepProgressRepository.save(progress);
-                log.info("Updated step progress for user {} step {}: {}/{} required modules, status={}",
-                                userId, stepId, completedRequiredCount, totalRequired, status);
+                        if (progress.getFirstStartedAt() == null && completedCount > 0) {
+                                progress.setFirstStartedAt(Instant.now());
+                        }
+                        if (status == ProgressStatus.COMPLETED && progress.getCompletedAt() == null) {
+                                progress.setCompletedAt(Instant.now());
+                        }
+
+                        stepProgressRepository.save(progress);
+                        log.info("Updated step progress for user {} step {}: {}/{} required modules, status={}",
+                                        userId, stepId, completedRequiredCount, totalRequired, status);
+                }
         }
 
         /**
@@ -343,21 +359,30 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                                 .totalSteps(totalSteps)
                                                 .build());
 
-                progress.setStatus(status);
-                progress.setCompletedSteps((int) completedSteps);
-                progress.setTotalSteps(totalSteps);
-                progress.setCurrentStepId(currentStepId);
+                // Check if changed
+                boolean changed = progress.getStatus() != status
+                                || progress.getCompletedSteps() != (int) completedSteps
+                                || progress.getTotalSteps() != totalSteps
+                                || (currentStepId != null && !currentStepId.equals(progress.getCurrentStepId()))
+                                || (currentStepId == null && progress.getCurrentStepId() != null);
 
-                if (progress.getFirstStartedAt() == null && completedSteps > 0) {
-                        progress.setFirstStartedAt(Instant.now());
-                }
-                if (status == ProgressStatus.COMPLETED && progress.getCompletedAt() == null) {
-                        progress.setCompletedAt(Instant.now());
-                }
+                if (changed) {
+                        progress.setStatus(status);
+                        progress.setCompletedSteps((int) completedSteps);
+                        progress.setTotalSteps(totalSteps);
+                        progress.setCurrentStepId(currentStepId);
 
-                courseProgressRepository.save(progress);
-                log.info("Updated course progress for user {} studySet {}: {}/{} steps, status={}",
-                                userId, studySetId, completedSteps, totalSteps, status);
+                        if (progress.getFirstStartedAt() == null && completedSteps > 0) {
+                                progress.setFirstStartedAt(Instant.now());
+                        }
+                        if (status == ProgressStatus.COMPLETED && progress.getCompletedAt() == null) {
+                                progress.setCompletedAt(Instant.now());
+                        }
+
+                        courseProgressRepository.save(progress);
+                        log.info("Updated course progress for user {} studySet {}: {}/{} steps, status={}",
+                                        userId, studySetId, completedSteps, totalSteps, status);
+                }
         }
 
         // ============ Mapping helpers ============

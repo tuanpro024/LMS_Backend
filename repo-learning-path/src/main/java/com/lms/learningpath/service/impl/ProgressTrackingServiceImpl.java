@@ -5,10 +5,14 @@ import com.lms.learningpath.dto.request.UpdateProgressRequest;
 import com.lms.learningpath.dto.response.LearningPathProgressResponse;
 import com.lms.learningpath.dto.response.ModuleProgressDto;
 import com.lms.learningpath.dto.response.StepProgressResponse;
+import com.lms.learningpath.entity.ConsumedFlashcardProgressEvent;
+import com.lms.learningpath.entity.ConsumedQuizProgressEvent;
 import com.lms.learningpath.entity.*;
 import com.lms.learningpath.entity.enums.ModuleType;
 import com.lms.learningpath.entity.enums.ProgressStatus;
 import com.lms.learningpath.exception.ResourceNotFoundException;
+import com.lms.learningpath.integration.event.FlashcardProgressEvent;
+import com.lms.learningpath.integration.event.QuizProgressEvent;
 import com.lms.learningpath.mapper.LearningPathProgressMapper;
 import com.lms.learningpath.mapper.StepProgressMapper;
 import com.lms.learningpath.repository.*;
@@ -19,7 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +42,8 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         private final LearningPathProgressRepository learningPathProgressRepository;
         private final StepRepository stepRepository;
         private final LearningPathRepository learningPathRepository;
+        private final ConsumedQuizProgressEventRepository consumedQuizProgressEventRepository;
+        private final ConsumedFlashcardProgressEventRepository consumedFlashcardProgressEventRepository;
         private final StepProgressMapper stepProgressMapper;
         private final LearningPathProgressMapper learningPathProgressMapper;
 
@@ -193,6 +201,226 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                                                 .orElse(null))
                                 .filter(p -> p != null)
                                 .collect(Collectors.toList());
+        }
+
+        @Transactional
+        public void syncQuizProgressEvent(QuizProgressEvent event) {
+                if (event == null
+                                || event.eventId() == null
+                                || event.eventId().isBlank()
+                                || event.userId() == null
+                                || event.userId().isBlank()
+                                || event.studySetId() == null
+                                || event.studySetId().isBlank()) {
+                        return;
+                }
+
+                if (consumedQuizProgressEventRepository.existsByEventId(event.eventId())) {
+                        log.debug("Skip duplicated quiz progress event {}", event.eventId());
+                        return;
+                }
+
+                List<StepModule> quizModules = stepModuleRepository
+                                .findByModuleTypeAndContentSetIdAndIsActiveTrue(ModuleType.QUIZ, event.studySetId());
+
+                if (quizModules.isEmpty()) {
+                        consumedQuizProgressEventRepository.save(ConsumedQuizProgressEvent.builder()
+                                        .eventId(event.eventId())
+                                        .consumedAt(Instant.now())
+                                        .build());
+                        log.debug("No quiz module matched studySet {} for event {}", event.studySetId(),
+                                        event.eventId());
+                        return;
+                }
+
+                Instant now = Instant.now();
+                Integer score = event.scorePercentage() == null ? null : (int) Math.round(event.scorePercentage());
+
+                Set<String> touchedStepIds = new HashSet<>();
+                for (StepModule module : quizModules) {
+                        ModuleProgress progress = moduleProgressRepository
+                                        .findByUserIdAndStepModuleId(event.userId(), module.getId())
+                                        .orElseGet(() -> ModuleProgress.builder()
+                                                        .userId(event.userId())
+                                                        .stepModuleId(module.getId())
+                                                        .stepId(module.getStepId())
+                                                        .status(ProgressStatus.NOT_STARTED)
+                                                        .completedItems(0)
+                                                        .totalItems(1)
+                                                        .score(0)
+                                                        .totalAttempts(0)
+                                                        .studyTimeSeconds(0)
+                                                        .firstStartedAt(now)
+                                                        .startedAt(now)
+                                                        .build());
+
+                        if (Boolean.TRUE.equals(event.passed())) {
+                                progress.setStatus(ProgressStatus.COMPLETED);
+                                progress.setCompletedItems(1);
+                                if (progress.getCompletedAt() == null) {
+                                        progress.setCompletedAt(now);
+                                }
+                        } else {
+                                if (progress.getStatus() == ProgressStatus.NOT_STARTED) {
+                                        progress.setStatus(ProgressStatus.IN_PROGRESS);
+                                }
+                                progress.setCompletedItems(0);
+                        }
+
+                        progress.setTotalItems(1);
+                        progress.setScore(score);
+                        progress.setTotalAttempts(
+                                        (progress.getTotalAttempts() == null ? 0 : progress.getTotalAttempts()) +
+                                                        1);
+                        if (event.timeTakenSeconds() != null && event.timeTakenSeconds() > 0) {
+                                progress.setStudyTimeSeconds(
+                                                (progress.getStudyTimeSeconds() == null ? 0
+                                                                : progress.getStudyTimeSeconds())
+                                                                + event.timeTakenSeconds());
+                        }
+                        progress.setLastAttemptAt(now);
+                        progress.setMetadata(buildQuizMetadata(event));
+
+                        moduleProgressRepository.save(progress);
+                        touchedStepIds.add(module.getStepId());
+                }
+
+                for (String stepId : touchedStepIds) {
+                        updateStepProgress(event.userId(), stepId);
+                        Step step = stepRepository.findById(stepId).orElse(null);
+                        if (step != null) {
+                                updateLearningPathProgress(event.userId(), step.getLearningPathId());
+                        }
+                }
+
+                consumedQuizProgressEventRepository.save(ConsumedQuizProgressEvent.builder()
+                                .eventId(event.eventId())
+                                .consumedAt(now)
+                                .build());
+
+                log.info("Synced quiz progress event {} for user {} and {} module(s)",
+                                event.eventId(), event.userId(), quizModules.size());
+        }
+
+        @Transactional
+        public void syncFlashcardProgressEvent(FlashcardProgressEvent event) {
+                if (event == null
+                                || event.eventId() == null
+                                || event.eventId().isBlank()
+                                || event.userId() == null
+                                || event.userId().isBlank()
+                                || event.studySetId() == null
+                                || event.studySetId().isBlank()) {
+                        return;
+                }
+
+                if (consumedFlashcardProgressEventRepository.existsByEventId(event.eventId())) {
+                        log.debug("Skip duplicated flashcard progress event {}", event.eventId());
+                        return;
+                }
+
+                List<StepModule> flashcardModules = stepModuleRepository
+                                .findByModuleTypeAndContentSetIdAndIsActiveTrue(ModuleType.FLASHCARD,
+                                                event.studySetId());
+
+                if (flashcardModules.isEmpty()) {
+                        consumedFlashcardProgressEventRepository.save(ConsumedFlashcardProgressEvent.builder()
+                                        .eventId(event.eventId())
+                                        .consumedAt(Instant.now())
+                                        .build());
+                        log.debug("No flashcard module matched studySet {} for event {}", event.studySetId(),
+                                        event.eventId());
+                        return;
+                }
+
+                Instant now = Instant.now();
+                Integer learnedCards = event.learnedCards() == null ? 0 : Math.max(event.learnedCards(), 0);
+                Integer totalCards = event.totalCards() == null ? 0 : Math.max(event.totalCards(), 0);
+                Integer score = event.progressPercentage() == null ? null
+                                : (int) Math.round(event.progressPercentage());
+
+                Set<String> touchedStepIds = new HashSet<>();
+                for (StepModule module : flashcardModules) {
+                        ModuleProgress progress = moduleProgressRepository
+                                        .findByUserIdAndStepModuleId(event.userId(), module.getId())
+                                        .orElseGet(() -> ModuleProgress.builder()
+                                                        .userId(event.userId())
+                                                        .stepModuleId(module.getId())
+                                                        .stepId(module.getStepId())
+                                                        .status(ProgressStatus.NOT_STARTED)
+                                                        .completedItems(0)
+                                                        .totalItems(totalCards)
+                                                        .score(0)
+                                                        .totalAttempts(0)
+                                                        .studyTimeSeconds(0)
+                                                        .firstStartedAt(now)
+                                                        .startedAt(now)
+                                                        .build());
+
+                        if (Boolean.TRUE.equals(event.completed())) {
+                                progress.setStatus(ProgressStatus.COMPLETED);
+                                progress.setCompletedItems(totalCards);
+                                if (progress.getCompletedAt() == null) {
+                                        progress.setCompletedAt(now);
+                                }
+                        } else if (learnedCards > 0) {
+                                progress.setStatus(ProgressStatus.IN_PROGRESS);
+                                progress.setCompletedItems(learnedCards);
+                                progress.setCompletedAt(null);
+                        } else {
+                                progress.setStatus(ProgressStatus.NOT_STARTED);
+                                progress.setCompletedItems(0);
+                                progress.setCompletedAt(null);
+                        }
+
+                        progress.setTotalItems(totalCards);
+                        progress.setScore(score);
+                        progress.setTotalAttempts(
+                                        (progress.getTotalAttempts() == null ? 0 : progress.getTotalAttempts())
+                                                        + 1);
+                        progress.setLastAttemptAt(now);
+                        progress.setMetadata(buildFlashcardMetadata(event));
+
+                        moduleProgressRepository.save(progress);
+                        touchedStepIds.add(module.getStepId());
+                }
+
+                for (String stepId : touchedStepIds) {
+                        updateStepProgress(event.userId(), stepId);
+                        Step step = stepRepository.findById(stepId).orElse(null);
+                        if (step != null) {
+                                updateLearningPathProgress(event.userId(), step.getLearningPathId());
+                        }
+                }
+
+                consumedFlashcardProgressEventRepository.save(ConsumedFlashcardProgressEvent.builder()
+                                .eventId(event.eventId())
+                                .consumedAt(now)
+                                .build());
+
+                log.info("Synced flashcard progress event {} for user {} and {} module(s)",
+                                event.eventId(), event.userId(), flashcardModules.size());
+        }
+
+        private String buildQuizMetadata(QuizProgressEvent event) {
+                String attemptId = event.attemptId() == null ? "" : event.attemptId();
+                String quizId = event.quizId() == null ? "" : event.quizId();
+                String passed = Boolean.TRUE.equals(event.passed()) ? "true" : "false";
+                String score = event.scorePercentage() == null ? "" : String.valueOf(event.scorePercentage());
+                return String.format(
+                                "{\"source\":\"repo-quiz\",\"eventId\":\"%s\",\"attemptId\":\"%s\",\"quizId\":\"%s\",\"passed\":%s,\"scorePercentage\":%s}",
+                                event.eventId(), attemptId, quizId, passed, score);
+        }
+
+        private String buildFlashcardMetadata(FlashcardProgressEvent event) {
+                String completed = Boolean.TRUE.equals(event.completed()) ? "true" : "false";
+                String learnedCards = event.learnedCards() == null ? "0" : String.valueOf(event.learnedCards());
+                String totalCards = event.totalCards() == null ? "0" : String.valueOf(event.totalCards());
+                String progressPercentage = event.progressPercentage() == null ? "null"
+                                : String.valueOf(event.progressPercentage());
+                return String.format(
+                                "{\"source\":\"repo-flashcard\",\"eventId\":\"%s\",\"completed\":%s,\"learnedCards\":%s,\"totalCards\":%s,\"progressPercentage\":%s}",
+                                event.eventId(), completed, learnedCards, totalCards, progressPercentage);
         }
 
         // ============ Private Helper Methods ============

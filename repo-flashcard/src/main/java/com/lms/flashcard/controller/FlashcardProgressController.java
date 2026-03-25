@@ -1,10 +1,12 @@
 package com.lms.flashcard.controller;
 
+import com.lms.common.security.AuthPrincipal;
 import com.lms.flashcard.dto.response.FlashcardStudySetProgressResponse;
 import com.lms.flashcard.service.FlashcardProgressService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,9 +21,12 @@ public class FlashcardProgressController {
 
     @GetMapping("/{studySetId}/progress")
     public FlashcardStudySetProgressResponse getStudySetProgress(
-            @AuthenticationPrincipal Jwt jwt,
+            Authentication authentication,
             @PathVariable String studySetId) {
-        String userId = jwt.getSubject();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthPrincipal principal)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
+        String userId = principal.userId();
         return progressService.getStudySetProgress(userId, studySetId);
     }
 }

@@ -1,6 +1,8 @@
 spring:
   application:
     name: repo-quiz
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   datasource:
     url: jdbc:mysql://localhost:3306/lms_quiz_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
@@ -51,3 +53,8 @@ eureka:
     prefer-ip-address: true
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
+
+quiz:
+  progress:
+    kafka:
+      topic: ${QUIZ_PROGRESS_KAFKA_TOPIC:quiz.progress.events}

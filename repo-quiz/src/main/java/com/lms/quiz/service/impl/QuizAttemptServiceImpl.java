@@ -3,16 +3,29 @@ package com.lms.quiz.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.quiz.dto.request.SubmitQuizRequest;
+import com.lms.quiz.dto.response.QuizProgressResponse;
 import com.lms.quiz.dto.response.QuizResultResponse;
-import com.lms.quiz.entity.*;
+import com.lms.quiz.entity.QuizAttempt;
+import com.lms.quiz.entity.UserQuizProgress;
+import com.lms.quiz.entity.MatchingPair;
+import com.lms.quiz.entity.Quiz;
+import com.lms.quiz.entity.QuizBlank;
+import com.lms.quiz.entity.QuizOption;
+import com.lms.quiz.entity.QuizQuestion;
+import com.lms.quiz.entity.SentenceChunk;
+import com.lms.quiz.event.QuizAttemptSubmittedEvent;
+import com.lms.quiz.repository.QuizAttemptRepository;
 import com.lms.quiz.repository.QuizRepository;
+import com.lms.quiz.repository.UserQuizProgressRepository;
 import com.lms.quiz.service.IQuizAttemptService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,10 +35,13 @@ import java.util.stream.Collectors;
 public class QuizAttemptServiceImpl implements IQuizAttemptService {
 
     private final QuizRepository quizRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
+    private final UserQuizProgressRepository userQuizProgressRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public QuizResultResponse submitQuiz(SubmitQuizRequest request, String userId) {
         log.info("User {} submitting quiz {}", userId, request.getQuizId());
 
@@ -99,7 +115,74 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
         }
 
         double scorePercentage = totalPoints > 0 ? (double) earnedPoints / totalPoints * 100 : 0;
+        double roundedScore = Math.round(scorePercentage * 100.0) / 100.0;
         boolean passed = scorePercentage >= quiz.getPassingScore();
+
+        Instant now = Instant.now();
+        QuizAttempt attempt = quizAttemptRepository.save(QuizAttempt.builder()
+                .userId(userId)
+                .quizId(quiz.getId())
+                .studySetId(quiz.getStudySet().getId())
+                .totalQuestions(quiz.getQuestions().size())
+                .correctAnswers(correctCount)
+                .totalPoints(totalPoints)
+                .earnedPoints(earnedPoints)
+                .scorePercentage(roundedScore)
+                .passed(passed)
+                .timeTakenSeconds(request.getTimeTakenSeconds())
+                .submittedAt(now)
+                .build());
+
+        UserQuizProgress progress = userQuizProgressRepository.findByUserIdAndQuizId(userId, quiz.getId())
+                .orElseGet(() -> UserQuizProgress.builder()
+                        .userId(userId)
+                        .quizId(quiz.getId())
+                        .studySetId(quiz.getStudySet().getId())
+                        .attemptsCount(0)
+                        .latestScorePercentage(0.0)
+                        .bestScorePercentage(0.0)
+                        .completed(false)
+                        .build());
+
+        int attemptsCount = progress.getAttemptsCount() == null ? 0 : progress.getAttemptsCount();
+        progress.setAttemptsCount(attemptsCount + 1);
+        progress.setLatestScorePercentage(roundedScore);
+        progress.setLatestAttemptId(attempt.getId());
+
+        if (progress.getFirstAttemptAt() == null) {
+            progress.setFirstAttemptAt(now);
+        }
+        progress.setLastAttemptAt(now);
+
+        if (progress.getBestScorePercentage() == null || roundedScore >= progress.getBestScorePercentage()) {
+            progress.setBestScorePercentage(roundedScore);
+            progress.setBestAttemptId(attempt.getId());
+        }
+
+        if (passed) {
+            progress.setCompleted(true);
+            if (progress.getCompletedAt() == null) {
+                progress.setCompletedAt(now);
+            }
+        }
+
+        progress = userQuizProgressRepository.save(progress);
+
+        eventPublisher.publishEvent(QuizAttemptSubmittedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .attemptId(attempt.getId())
+                .userId(userId)
+                .studySetId(quiz.getStudySet().getId())
+                .quizId(quiz.getId())
+                .quizTitle(quiz.getTitle())
+                .attemptsCount(progress.getAttemptsCount())
+                .earnedPoints(earnedPoints)
+                .totalPoints(totalPoints)
+                .scorePercentage(roundedScore)
+                .passed(passed)
+                .timeTakenSeconds(request.getTimeTakenSeconds())
+                .occurredAt(now)
+                .build());
 
         return QuizResultResponse.builder()
                 .quizId(quiz.getId())
@@ -108,9 +191,41 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
                 .correctAnswers(correctCount)
                 .totalPoints(totalPoints)
                 .earnedPoints(earnedPoints)
-                .scorePercentage(Math.round(scorePercentage * 100.0) / 100.0)
+                .scorePercentage(roundedScore)
                 .passed(passed)
+                .timeTakenSeconds(request.getTimeTakenSeconds())
                 .questionResults(results)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public QuizProgressResponse getQuizProgress(String quizId, String userId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new EntityNotFoundException("Quiz not found: " + quizId));
+
+        UserQuizProgress progress = userQuizProgressRepository.findByUserIdAndQuizId(userId, quizId)
+                .orElseGet(() -> UserQuizProgress.builder()
+                        .userId(userId)
+                        .quizId(quizId)
+                        .studySetId(quiz.getStudySet().getId())
+                        .attemptsCount(0)
+                        .latestScorePercentage(0.0)
+                        .bestScorePercentage(0.0)
+                        .completed(false)
+                        .build());
+
+        return QuizProgressResponse.builder()
+                .userId(progress.getUserId())
+                .quizId(progress.getQuizId())
+                .studySetId(progress.getStudySetId())
+                .attemptsCount(progress.getAttemptsCount())
+                .latestScorePercentage(progress.getLatestScorePercentage())
+                .bestScorePercentage(progress.getBestScorePercentage())
+                .completed(progress.getCompleted())
+                .firstAttemptAt(progress.getFirstAttemptAt())
+                .lastAttemptAt(progress.getLastAttemptAt())
+                .completedAt(progress.getCompletedAt())
                 .build();
     }
 

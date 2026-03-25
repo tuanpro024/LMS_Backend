@@ -1,6 +1,7 @@
 package com.lms.learningpath.repository;
 
 import com.lms.learningpath.entity.StepModule;
+import com.lms.learningpath.entity.enums.ModuleType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -21,4 +22,6 @@ public interface StepModuleRepository extends JpaRepository<StepModule, String> 
     long countByStepId(String stepId);
 
     long countByStepIdAndIsRequiredTrue(String stepId);
+
+    List<StepModule> findByModuleTypeAndContentSetIdAndIsActiveTrue(ModuleType moduleType, String contentSetId);
 }

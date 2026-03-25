@@ -1,6 +1,8 @@
 spring:
   application:
     name: repo-learning-path
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   datasource:
     url: jdbc:mysql://localhost:3306/lms_learning_path_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
@@ -59,3 +61,15 @@ feign:
         connectTimeout: 5000
         readTimeout: 5000
         loggerLevel: basic
+
+quiz:
+  progress:
+    kafka:
+      topic: ${QUIZ_PROGRESS_KAFKA_TOPIC:quiz.progress.events}
+      group: ${QUIZ_PROGRESS_KAFKA_GROUP:repo-learning-path-quiz-progress}
+
+flashcard:
+  progress:
+    kafka:
+      topic: ${FLASHCARD_PROGRESS_KAFKA_TOPIC:flashcard.progress.events}
+      group: ${FLASHCARD_PROGRESS_KAFKA_GROUP:repo-learning-path-flashcard-progress}

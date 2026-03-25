@@ -53,6 +53,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Health and actuator endpoints
                         .requestMatchers("/health", "/actuator/**").permitAll()
+                        // Progress endpoint must be authenticated
+                        .requestMatchers(HttpMethod.GET, "/api/study-sets/*/progress").authenticated()
                         // Public GET endpoints
                         .requestMatchers(HttpMethod.GET, "/api/study-sets/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/folders/**").permitAll()

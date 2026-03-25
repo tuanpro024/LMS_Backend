@@ -63,8 +63,8 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
         }
 
         ScheduleModule entity = moduleRepo
-            .findByScheduleIdAndModuleOrderAndDeletedTrue(req.getScheduleId(), req.getModuleOrder())
-            .orElseGet(ScheduleModule::new);
+                .findByScheduleIdAndModuleOrderAndDeletedTrue(req.getScheduleId(), req.getModuleOrder())
+                .orElseGet(ScheduleModule::new);
 
         entity.setScheduleId(req.getScheduleId());
         entity.setModuleType(req.getModuleType());
@@ -139,8 +139,8 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
         log.info("[ScheduleModule] Import OK, contentSetId={}", contentSetId);
 
         ScheduleModule entity = moduleRepo
-            .findByScheduleIdAndModuleOrderAndDeletedTrue(req.getScheduleId(), req.getModuleOrder())
-            .orElseGet(ScheduleModule::new);
+                .findByScheduleIdAndModuleOrderAndDeletedTrue(req.getScheduleId(), req.getModuleOrder())
+                .orElseGet(ScheduleModule::new);
 
         entity.setScheduleId(req.getScheduleId());
         entity.setModuleType(req.getModuleType());
@@ -240,11 +240,11 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
 
     private String resolveServiceUrl(ScheduleModuleType type) {
         return switch (type) {
-            case FLASHCARD     -> flashcardUrl;
-            case WRITING       -> writingUrl;
-            case KANJI         -> kanjiUrl;
+            case FLASHCARD -> flashcardUrl;
+            case WRITING -> writingUrl;
+            case KANJI -> kanjiUrl;
             case PRONUNCIATION -> pronunciationUrl;
-            case QUIZ          -> quizUrl;
+            case QUIZ -> quizUrl;
         };
     }
 

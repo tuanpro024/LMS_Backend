@@ -111,7 +111,9 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
         syllabusRepo.save(entity);
     }
 
-    /** Upsert đầy đủ syllabus + xóa & tạo lại clo / material / schedule / grading */
+    /**
+     * Upsert đầy đủ syllabus + xóa & tạo lại clo / material / schedule / grading
+     */
     @Transactional
     protected void upsertSyllabusDetail(SyllabusDetailResponse d) {
         // --- 1. Syllabus header ---
@@ -170,7 +172,8 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
         }
 
         // --- 4. Schedule ---
-        // Upsert theo scheduleId từ CMS để giữ liên kết schedule_modules khi id không đổi.
+        // Upsert theo scheduleId từ CMS để giữ liên kết schedule_modules khi id không
+        // đổi.
         List<String> cmsScheduleIds = new ArrayList<>();
         if (d.schedule() != null) {
             for (SyllabusDetailResponse.ScheduleItem s : d.schedule()) {
@@ -227,7 +230,8 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
     }
 
     private Syllabus.SyllabusStatus parseSyllabusStatus(String status) {
-        if (status == null) return Syllabus.SyllabusStatus.DRAFT;
+        if (status == null)
+            return Syllabus.SyllabusStatus.DRAFT;
         try {
             return Syllabus.SyllabusStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -236,7 +240,8 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
     }
 
     private String toJson(Object obj) {
-        if (obj == null) return null;
+        if (obj == null)
+            return null;
         try {
             return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {

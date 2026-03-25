@@ -20,8 +20,20 @@ import java.math.BigDecimal;
 @Builder
 public class OnlineCourse extends BaseEntity {
 
+    @Column(length = 50)
+    private String code;
+
     @Column(length = 255, nullable = false)
     private String name;
+
+    @Column(name = "course_type", length = 20)
+    private String courseType;
+
+    @Column(length = 20)
+    private String level;
+
+    @Column(name = "total_lessons")
+    private Integer totalLessons;
 
     /** URL ảnh thumbnail */
     @Column(columnDefinition = "TEXT")
@@ -39,6 +51,9 @@ public class OnlineCourse extends BaseEntity {
 
     @Column
     private Double rating;
+
+    @Column(name = "cms_synced", nullable = false)
+    private boolean cmsSynced;
 
     public double getRating() {
         return rating == null ? 5.0 : rating;

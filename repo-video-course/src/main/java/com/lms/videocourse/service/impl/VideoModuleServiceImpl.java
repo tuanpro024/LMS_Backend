@@ -39,6 +39,16 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
         videoStepRepository.findById(request.getStepId())
                 .orElseThrow(() -> new ResourceNotFoundException("Video step not found: " + request.getStepId()));
 
+        // Validate module type
+        com.lms.videocourse.entity.enums.ModuleType moduleType = null;
+        if (request.getModuleType() != null) {
+            moduleType = parseModuleType(request.getModuleType());
+            // Practice modules must have contentSetId
+            if (request.getContentSetId() == null || request.getContentSetId().isBlank()) {
+                throw new IllegalArgumentException("Practice modules must have a contentSetId");
+            }
+        }
+
         String videoUrl = request.getVideoUrl();
         String thumbnailUrl = request.getThumbnailUrl();
         Integer duration = request.getDuration();
@@ -77,7 +87,7 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .duration(duration)
                 .subtitles(request.getSubtitles())
                 .videoCode(request.getVideoCode())
-                .moduleType(request.getModuleType())
+                .moduleType(moduleType)
                 .contentSetId(request.getContentSetId())
                 .isRequired(request.getIsRequired() != null ? request.getIsRequired() : true)
                 .isActive(true)
@@ -128,8 +138,10 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
             module.setSubtitles(request.getSubtitles());
         if (request.getVideoCode() != null)
             module.setVideoCode(request.getVideoCode());
-        if (request.getModuleType() != null)
-            module.setModuleType(request.getModuleType());
+        if (request.getModuleType() != null) {
+            com.lms.videocourse.entity.enums.ModuleType type = parseModuleType(request.getModuleType());
+            module.setModuleType(type);
+        }
         if (request.getContentSetId() != null)
             module.setContentSetId(request.getContentSetId());
         if (request.getIsRequired() != null)
@@ -191,5 +203,33 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .updatedAt(module.getUpdatedAt())
                 .watchProgress(watchProgress)
                 .build();
+    }
+
+    private com.lms.videocourse.entity.enums.ModuleType parseModuleType(String typeStr) {
+        if (typeStr == null || typeStr.isBlank()) return null;
+        String type = typeStr.trim().toUpperCase();
+
+        // Handle legacy/alias mapping
+        if ("KANJI".equals(type)) return com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
+        if ("LISTENING_PRACTICE".equals(type)) return com.lms.videocourse.entity.enums.ModuleType.LISTENING;
+
+        try {
+            com.lms.videocourse.entity.enums.ModuleType result = com.lms.videocourse.entity.enums.ModuleType.valueOf(type);
+            // Additionally check if it's one of the 6 allowed types
+            List<com.lms.videocourse.entity.enums.ModuleType> allowed = List.of(
+                    com.lms.videocourse.entity.enums.ModuleType.FLASHCARD,
+                    com.lms.videocourse.entity.enums.ModuleType.QUIZ,
+                    com.lms.videocourse.entity.enums.ModuleType.LISTENING,
+                    com.lms.videocourse.entity.enums.ModuleType.WRITING,
+                    com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN,
+                    com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION
+            );
+            if (!allowed.contains(result)) {
+                throw new IllegalArgumentException("Invalid practice module type: " + typeStr);
+            }
+            return result;
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid practice module type: " + typeStr);
+        }
     }
 }

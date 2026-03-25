@@ -68,8 +68,8 @@ quiz:
       topic: ${QUIZ_PROGRESS_KAFKA_TOPIC:quiz.progress.events}
       group: ${QUIZ_PROGRESS_KAFKA_GROUP:repo-learning-path-quiz-progress}
 
-flashcard:
+writing:
   progress:
     kafka:
-      topic: ${FLASHCARD_PROGRESS_KAFKA_TOPIC:flashcard.progress.events}
-      group: ${FLASHCARD_PROGRESS_KAFKA_GROUP:repo-learning-path-flashcard-progress}
+      topic: ${WRITING_PROGRESS_KAFKA_TOPIC:writing.progress.events}
+      group: ${WRITING_PROGRESS_KAFKA_GROUP:repo-learning-path-writing-progress}

@@ -10,6 +10,7 @@ import com.lms.flashcard.repository.UserCardProgressRepository;
 import com.lms.flashcard.service.impl.FlashcardProgressServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.context.ApplicationEventPublisher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,6 +33,9 @@ class FlashcardProgressServiceTest {
     @Mock
     private CardRepository cardRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private FlashcardProgressServiceImpl progressService;
 
@@ -41,7 +45,8 @@ class FlashcardProgressServiceTest {
     @Test
     void updateStudySetProgress_NoCards_ShouldBeNotStarted() {
         when(cardRepository.countByStudySetIdAndDeletedFalse(studySetId)).thenReturn(0L);
-        when(cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED)).thenReturn(0L);
+        when(cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED))
+                .thenReturn(0L);
         when(progressRepository.findByUserIdAndStudySetId(userId, studySetId)).thenReturn(Optional.empty());
         when(progressRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -56,7 +61,8 @@ class FlashcardProgressServiceTest {
     @Test
     void updateStudySetProgress_SomeCardsLearned_ShouldBeInProgress() {
         when(cardRepository.countByStudySetIdAndDeletedFalse(studySetId)).thenReturn(10L);
-        when(cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED)).thenReturn(5L);
+        when(cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED))
+                .thenReturn(5L);
         when(progressRepository.findByUserIdAndStudySetId(userId, studySetId)).thenReturn(Optional.empty());
         when(progressRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -71,7 +77,8 @@ class FlashcardProgressServiceTest {
     @Test
     void updateStudySetProgress_AllCardsLearned_ShouldBeCompleted() {
         when(cardRepository.countByStudySetIdAndDeletedFalse(studySetId)).thenReturn(10L);
-        when(cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED)).thenReturn(10L);
+        when(cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED))
+                .thenReturn(10L);
         when(progressRepository.findByUserIdAndStudySetId(userId, studySetId)).thenReturn(Optional.empty());
         when(progressRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -96,8 +103,10 @@ class FlashcardProgressServiceTest {
                 .build();
 
         when(cardRepository.countByStudySetIdAndDeletedFalse(studySetId)).thenReturn(10L);
-        when(cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED)).thenReturn(9L);
-        when(progressRepository.findByUserIdAndStudySetId(userId, studySetId)).thenReturn(Optional.of(existingProgress));
+        when(cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED))
+                .thenReturn(9L);
+        when(progressRepository.findByUserIdAndStudySetId(userId, studySetId))
+                .thenReturn(Optional.of(existingProgress));
         when(progressRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         FlashcardStudySetProgressResponse response = progressService.updateStudySetProgress(userId, studySetId);

@@ -62,17 +62,21 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                     HttpStatus.CONFLICT);
         }
 
-        ScheduleModule entity = ScheduleModule.builder()
-                .scheduleId(req.getScheduleId())
-                .moduleType(req.getModuleType())
-                .moduleOrder(req.getModuleOrder())
-                .title(req.getTitle())
-                .description(req.getDescription())
-                .contentSetId(req.getContentSetId())
-                .contentFolderId(req.getContentFolderId())
-                .externalRefJson(req.getExternalRefJson())
-                .isRequired(req.getIsRequired() != null ? req.getIsRequired() : true)
-                .build();
+        ScheduleModule entity = moduleRepo
+            .findByScheduleIdAndModuleOrderAndDeletedTrue(req.getScheduleId(), req.getModuleOrder())
+            .orElseGet(ScheduleModule::new);
+
+        entity.setScheduleId(req.getScheduleId());
+        entity.setModuleType(req.getModuleType());
+        entity.setModuleOrder(req.getModuleOrder());
+        entity.setTitle(req.getTitle());
+        entity.setDescription(req.getDescription());
+        entity.setContentSetId(req.getContentSetId());
+        entity.setContentFolderId(req.getContentFolderId());
+        entity.setExternalRefJson(req.getExternalRefJson());
+        entity.setIsRequired(req.getIsRequired() != null ? req.getIsRequired() : true);
+        entity.setIsActive(true);
+        entity.setDeleted(false);
 
         try {
             entity = moduleRepo.save(entity);
@@ -134,15 +138,21 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
         String contentSetId = studySetIds.get(0);
         log.info("[ScheduleModule] Import OK, contentSetId={}", contentSetId);
 
-        ScheduleModule entity = ScheduleModule.builder()
-                .scheduleId(req.getScheduleId())
-                .moduleType(req.getModuleType())
-                .moduleOrder(req.getModuleOrder())
-                .title(req.getTitle())
-                .description(req.getDescription())
-                .contentSetId(contentSetId)
-                .isRequired(req.getIsRequired() != null ? req.getIsRequired() : true)
-                .build();
+        ScheduleModule entity = moduleRepo
+            .findByScheduleIdAndModuleOrderAndDeletedTrue(req.getScheduleId(), req.getModuleOrder())
+            .orElseGet(ScheduleModule::new);
+
+        entity.setScheduleId(req.getScheduleId());
+        entity.setModuleType(req.getModuleType());
+        entity.setModuleOrder(req.getModuleOrder());
+        entity.setTitle(req.getTitle());
+        entity.setDescription(req.getDescription());
+        entity.setContentSetId(contentSetId);
+        entity.setContentFolderId(null);
+        entity.setExternalRefJson(null);
+        entity.setIsRequired(req.getIsRequired() != null ? req.getIsRequired() : true);
+        entity.setIsActive(true);
+        entity.setDeleted(false);
 
         try {
             entity = moduleRepo.save(entity);

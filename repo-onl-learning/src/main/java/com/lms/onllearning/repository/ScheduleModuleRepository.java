@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ScheduleModuleRepository extends JpaRepository<ScheduleModule, String> {
 
@@ -19,6 +20,8 @@ public interface ScheduleModuleRepository extends JpaRepository<ScheduleModule, 
      * Unique constraint ở DB là safety net cuối cùng.
      */
     boolean existsByScheduleIdAndModuleOrderAndDeletedFalse(String scheduleId, Integer moduleOrder);
+
+    Optional<ScheduleModule> findByScheduleIdAndModuleOrderAndDeletedTrue(String scheduleId, Integer moduleOrder);
 
     /**
      * Pessimistic write lock – dùng trong reorderModules để tránh 2 request

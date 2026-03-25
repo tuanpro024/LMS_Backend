@@ -8,18 +8,23 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record OnlineCourseRequest(
-    @NotBlank @Size(max = 255)
-    String name,
+        @Size(max = 50) String code,
 
-    String thumbnail,
+        @NotBlank @Size(max = 255) String name,
 
-    String description,
+        @Size(max = 20) String courseType,
 
-    @Size(max = 26)
-    String syllabusId,
+        @Size(max = 20) String level,
 
-    @DecimalMin("0") BigDecimal price,
+        Integer totalLessons,
 
-    @DecimalMin("0.0") @DecimalMax("5.0")
-    Double rating
-) {}
+        String thumbnail,
+
+        String description,
+
+        @Size(max = 26) String syllabusId,
+
+        @DecimalMin("0") BigDecimal price,
+
+        @DecimalMin("0.0") @DecimalMax("5.0") Double rating) {
+}

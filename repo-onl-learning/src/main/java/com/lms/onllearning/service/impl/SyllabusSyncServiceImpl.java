@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -110,7 +111,9 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
         syllabusRepo.save(entity);
     }
 
-    /** Upsert đầy đủ syllabus + xóa & tạo lại clo / material / schedule / grading */
+    /**
+     * Upsert đầy đủ syllabus + xóa & tạo lại clo / material / schedule / grading
+     */
     @Transactional
     protected void upsertSyllabusDetail(SyllabusDetailResponse d) {
         // --- 1. Syllabus header ---
@@ -169,30 +172,40 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
         }
 
         // --- 4. Schedule ---
-        scheduleRepo.deleteBySyllabusId(saved.getId());
+        // Upsert theo scheduleId từ CMS để giữ liên kết schedule_modules khi id không
+        // đổi.
+        List<String> cmsScheduleIds = new ArrayList<>();
         if (d.schedule() != null) {
             for (SyllabusDetailResponse.ScheduleItem s : d.schedule()) {
-                scheduleRepo.save(SyllabusSchedule.builder()
-                        .id(s.id())
-                        .syllabus(saved)
-                        .sessionNo(s.sessionNo())
-                        .topic(s.topic())
-                        .content(s.content())
-                        .delivery(s.delivery())
-                        .sessionLo(s.sessionLo())
-                        .coreClo(s.coreClo())
-                        .supportingClo(s.supportingClo())
-                        .evidence(s.evidence())
-                        .itu(s.itu())
-                        .studentMaterials(s.studentMaterials())
-                        .teacherMaterials(s.teacherMaterials())
-                        .studentTasks(s.studentTasks())
-                        .teacherTasks(s.teacherTasks())
-                        .studentMaterialsLink(s.studentMaterialsLink())
-                        .teacherMaterialsLink(s.teacherMaterialsLink())
-                        .moduleOnLuyen(s.moduleOnLuyen())
-                        .build());
+                cmsScheduleIds.add(s.id());
+
+                SyllabusSchedule schedule = scheduleRepo.findById(s.id()).orElse(new SyllabusSchedule());
+                schedule.setId(s.id());
+                schedule.setSyllabus(saved);
+                schedule.setSessionNo(s.sessionNo());
+                schedule.setTopic(s.topic());
+                schedule.setContent(s.content());
+                schedule.setDelivery(s.delivery());
+                schedule.setSessionLo(s.sessionLo());
+                schedule.setCoreClo(s.coreClo());
+                schedule.setSupportingClo(s.supportingClo());
+                schedule.setEvidence(s.evidence());
+                schedule.setItu(s.itu());
+                schedule.setStudentMaterials(s.studentMaterials());
+                schedule.setTeacherMaterials(s.teacherMaterials());
+                schedule.setStudentTasks(s.studentTasks());
+                schedule.setTeacherTasks(s.teacherTasks());
+                schedule.setStudentMaterialsLink(s.studentMaterialsLink());
+                schedule.setTeacherMaterialsLink(s.teacherMaterialsLink());
+                schedule.setModuleOnLuyen(s.moduleOnLuyenText());
+                scheduleRepo.save(schedule);
             }
+        }
+
+        if (cmsScheduleIds.isEmpty()) {
+            scheduleRepo.deleteBySyllabusId(saved.getId());
+        } else {
+            scheduleRepo.deleteBySyllabusIdAndIdNotIn(saved.getId(), cmsScheduleIds);
         }
 
         // --- 5. Grading ---
@@ -217,7 +230,8 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
     }
 
     private Syllabus.SyllabusStatus parseSyllabusStatus(String status) {
-        if (status == null) return Syllabus.SyllabusStatus.DRAFT;
+        if (status == null)
+            return Syllabus.SyllabusStatus.DRAFT;
         try {
             return Syllabus.SyllabusStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -226,7 +240,8 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
     }
 
     private String toJson(Object obj) {
-        if (obj == null) return null;
+        if (obj == null)
+            return null;
         try {
             return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {

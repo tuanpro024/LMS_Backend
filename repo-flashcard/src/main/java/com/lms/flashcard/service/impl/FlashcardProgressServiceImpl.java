@@ -1,6 +1,7 @@
 package com.lms.flashcard.service.impl;
 
 import com.lms.flashcard.dto.response.FlashcardStudySetProgressResponse;
+import com.lms.flashcard.event.FlashcardProgressUpdatedEvent;
 import com.lms.flashcard.entity.FlashcardStudySetProgress;
 import com.lms.flashcard.entity.enums.CardStatus;
 import com.lms.flashcard.entity.enums.ProgressStatus;
@@ -10,6 +11,7 @@ import com.lms.flashcard.repository.UserCardProgressRepository;
 import com.lms.flashcard.service.FlashcardProgressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ import com.lms.content.common.entity.TypeName;
 import com.lms.flashcard.event.FlashcardStudySetProgressUpdatedEvent;
 
 import java.time.Instant;
+import java.util.UUID;
 import java.util.List;
 
 @Service
@@ -32,6 +35,7 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
     private final FlashcardStudySetProgressRepository progressRepository;
     private final UserCardProgressRepository cardProgressRepository;
     private final CardRepository cardRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final FolderApiDelegate folderApiDelegate;
     private final PackageApiDelegate packageApiDelegate;
     private final ApplicationEventPublisher applicationEventPublisher;
@@ -42,7 +46,8 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
         log.info("Updating study set progress for user {} and study set {}", userId, studySetId);
 
         long totalCards = cardRepository.countByStudySetIdAndDeletedFalse(studySetId);
-        long learnedCards = cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED);
+        long learnedCards = cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId,
+                CardStatus.LEARNED);
 
         ProgressStatus status;
         if (totalCards == 0) {
@@ -96,6 +101,17 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
                     .build();
             applicationEventPublisher.publishEvent(event);
         }
+
+        eventPublisher.publishEvent(FlashcardProgressUpdatedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .userId(userId)
+                .studySetId(studySetId)
+                .learnedCards(progress.getLearnedCards())
+                .totalCards(progress.getTotalCards())
+                .progressPercentage(progress.getProgressPercentage())
+                .completed(progress.getStatus() == ProgressStatus.COMPLETED)
+                .occurredAt(Instant.now())
+                .build());
 
         return toResponse(progress);
     }

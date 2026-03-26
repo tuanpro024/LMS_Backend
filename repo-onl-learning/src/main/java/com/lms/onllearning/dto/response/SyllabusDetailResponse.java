@@ -77,7 +77,7 @@ public record SyllabusDetailResponse(
         @JsonProperty("teacher_tasks")          String teacherTasks,
         @JsonProperty("student_materials_link") String studentMaterialsLink,
         @JsonProperty("teacher_materials_link") String teacherMaterialsLink,
-        @JsonProperty("module_on_luyen")        String moduleOnLuyen
+        @JsonProperty("module_on_luyen_text")        String moduleOnLuyenText
     ) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)

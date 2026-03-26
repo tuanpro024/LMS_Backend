@@ -23,10 +23,10 @@ public interface ListeningPracticeClient {
     ApiResponse<StudySetResponse> getStudySetById(@PathVariable("id") String id);
 
     @GetMapping("/api/listening-practice/study-sets")
-    ApiResponse<List<StudySetResponse>> getAllStudySets();
+    ApiResponse<List<StudySetResponse>> getAllStudySets(@RequestParam("packageType") String packageType);
 
     @GetMapping("/api/listening-practice/study-sets")
-    ApiResponse<List<StudySetResponse>> searchStudySets(@RequestParam("q") String query);
+    ApiResponse<List<StudySetResponse>> searchStudySets(@RequestParam("q") String query, @RequestParam("packageType") String packageType);
 
     @GetMapping("/api/listening-practice/packages")
     ApiResponse<List<PackageResponse>> getPackagesByType(@RequestParam("type") TypeName type);

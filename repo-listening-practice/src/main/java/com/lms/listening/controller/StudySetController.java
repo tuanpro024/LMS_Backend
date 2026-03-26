@@ -47,12 +47,15 @@ public class StudySetController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<StudySetResponse>>> getStudySets(
             @RequestParam(required = false) String folderId,
-            @RequestParam(required = false) String userId) {
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String packageType) {
         List<StudySetResponse> response;
         if (folderId != null) {
             response = delegate.getStudySetsByFolderId(folderId);
         } else if (userId != null) {
             response = delegate.getStudySetsByUserId(userId);
+        } else if (packageType != null) {
+            response = delegate.getStudySetsByPackageType(packageType);
         } else {
             response = delegate.getAllStudySets();
         }

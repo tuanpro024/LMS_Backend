@@ -20,6 +20,8 @@ public interface StudySetService {
 
     List<StudySetResponse> getAllStudySets();
 
+    List<StudySetResponse> getStudySetsByPackageType(String packageType);
+
     List<StudySetResponse> findByTitleAndUserIdIgnoreCase(String title, String userId);
 
     StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId);

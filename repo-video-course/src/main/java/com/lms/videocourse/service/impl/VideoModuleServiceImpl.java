@@ -11,6 +11,9 @@ import com.lms.videocourse.exception.ResourceNotFoundException;
 import com.lms.videocourse.repository.VideoModuleRepository;
 import com.lms.videocourse.repository.VideoStepRepository;
 import com.lms.videocourse.repository.VideoWatchProgressRepository;
+import com.lms.videocourse.repository.VideoPracticeModuleProgressRepository;
+import com.lms.videocourse.dto.response.VideoPracticeModuleProgressResponse;
+import com.lms.videocourse.entity.VideoPracticeModuleProgress;
 import com.lms.videocourse.service.IVideoModuleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +31,7 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
     private final VideoModuleRepository videoModuleRepository;
     private final VideoStepRepository videoStepRepository;
     private final VideoWatchProgressRepository watchProgressRepository;
+    private final VideoPracticeModuleProgressRepository practiceProgressRepository;
     private final MultimediaClient multimediaClient;
 
     @Override
@@ -94,7 +98,7 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .build();
 
         module = videoModuleRepository.save(module);
-        return toResponse(module, null);
+        return toResponse(module, null, null);
     }
 
     @Override
@@ -102,7 +106,8 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
         VideoModule module = videoModuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Video module not found: " + id));
         VideoWatchProgressResponse watchProgress = getWatchProgressForUser(userId, id);
-        return toResponse(module, watchProgress);
+        VideoPracticeModuleProgressResponse practiceProgress = getPracticeProgressForUser(userId, id);
+        return toResponse(module, watchProgress, practiceProgress);
     }
 
     @Override
@@ -111,7 +116,8 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .stream()
                 .map(module -> {
                     VideoWatchProgressResponse watchProgress = getWatchProgressForUser(userId, module.getId());
-                    return toResponse(module, watchProgress);
+                    VideoPracticeModuleProgressResponse practiceProgress = getPracticeProgressForUser(userId, module.getId());
+                    return toResponse(module, watchProgress, practiceProgress);
                 })
                 .collect(Collectors.toList());
     }
@@ -150,7 +156,7 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
             module.setIsActive(request.getIsActive());
 
         module = videoModuleRepository.save(module);
-        return toResponse(module, null);
+        return toResponse(module, null, null);
     }
 
     @Override
@@ -183,7 +189,26 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .orElse(null);
     }
 
-    private VideoModuleResponse toResponse(VideoModule module, VideoWatchProgressResponse watchProgress) {
+    private VideoPracticeModuleProgressResponse getPracticeProgressForUser(String userId, String moduleId) {
+        if (userId == null)
+            return null;
+        return practiceProgressRepository.findByUserIdAndVideoModuleId(userId, moduleId)
+                .map(p -> VideoPracticeModuleProgressResponse.builder()
+                        .id(p.getId())
+                        .videoModuleId(p.getVideoModuleId())
+                        .stepId(p.getStepId())
+                        .studySetId(p.getStudySetId())
+                        .moduleType(p.getModuleType())
+                        .contentSetId(p.getContentSetId())
+                        .status(p.getStatus())
+                        .progressPercentage(p.getProgressPercentage())
+                        .firstStartedAt(p.getFirstStartedAt())
+                        .completedAt(p.getCompletedAt())
+                        .build())
+                .orElse(null);
+    }
+
+    private VideoModuleResponse toResponse(VideoModule module, VideoWatchProgressResponse watchProgress, VideoPracticeModuleProgressResponse practiceProgress) {
         return VideoModuleResponse.builder()
                 .id(module.getId())
                 .stepId(module.getStepId())
@@ -202,6 +227,7 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .createdAt(module.getCreatedAt())
                 .updatedAt(module.getUpdatedAt())
                 .watchProgress(watchProgress)
+                .practiceProgress(practiceProgress)
                 .build();
     }
 

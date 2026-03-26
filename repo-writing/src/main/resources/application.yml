@@ -49,3 +49,8 @@ eureka:
     prefer-ip-address: true
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
+
+writing:
+  progress:
+    kafka:
+      topic: ${WRITING_PROGRESS_KAFKA_TOPIC:writing.progress.events}

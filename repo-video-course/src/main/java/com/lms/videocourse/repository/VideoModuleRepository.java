@@ -17,4 +17,6 @@ public interface VideoModuleRepository extends JpaRepository<VideoModule, String
     Optional<VideoModule> findByVideoCode(String videoCode);
 
     long countByStepIdAndIsActiveTrue(String stepId);
+
+    List<VideoModule> findByContentSetIdAndModuleTypeAndIsActiveTrue(String contentSetId, com.lms.videocourse.entity.enums.ModuleType moduleType);
 }

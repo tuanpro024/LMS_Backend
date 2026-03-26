@@ -27,15 +27,21 @@ public class MinioConfig {
     public ApplicationRunner minioBucketInitializer(MinioClient minioClient, StorageProperties properties) {
         return args -> {
             StorageProperties.MinioProperties minio = properties.getMinio();
-            boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(minio.getBucket()).build());
-            if (!exists) {
-                MakeBucketArgs.Builder builder = MakeBucketArgs.builder().bucket(minio.getBucket());
-                if (minio.getRegion() != null && !minio.getRegion().isBlank()) {
-                    builder.region(minio.getRegion());
-                }
-                log.info("Creating MinIO bucket {}", minio.getBucket());
-                minioClient.makeBucket(builder.build());
-            }
+            initializeBucket(minioClient, minio.getBucket(), minio.getRegion());
+            initializeBucket(minioClient, minio.getImageBucket(), minio.getRegion());
+            initializeBucket(minioClient, minio.getAudioBucket(), minio.getRegion());
         };
+    }
+
+    private void initializeBucket(MinioClient minioClient, String bucketName, String region) throws Exception {
+        boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
+        if (!exists) {
+            MakeBucketArgs.Builder builder = MakeBucketArgs.builder().bucket(bucketName);
+            if (region != null && !region.isBlank()) {
+                builder.region(region);
+            }
+            log.info("Creating MinIO bucket {}", bucketName);
+            minioClient.makeBucket(builder.build());
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.lms.flashcard.service.impl;
 
 import com.lms.flashcard.dto.response.FlashcardStudySetProgressResponse;
+import com.lms.flashcard.event.FlashcardProgressUpdatedEvent;
 import com.lms.flashcard.entity.FlashcardStudySetProgress;
 import com.lms.flashcard.entity.enums.CardStatus;
 import com.lms.flashcard.entity.enums.ProgressStatus;
@@ -10,10 +11,21 @@ import com.lms.flashcard.repository.UserCardProgressRepository;
 import com.lms.flashcard.service.FlashcardProgressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.context.ApplicationEventPublisher;
+import com.lms.content.common.delegate.api.FolderApiDelegate;
+import com.lms.content.common.delegate.api.PackageApiDelegate;
+import com.lms.content.common.dto.response.FolderResponse;
+import com.lms.content.common.dto.response.PackageResponse;
+import com.lms.content.common.entity.TypeName;
+import com.lms.flashcard.event.FlashcardStudySetProgressUpdatedEvent;
+
 import java.time.Instant;
+import java.util.UUID;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +35,10 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
     private final FlashcardStudySetProgressRepository progressRepository;
     private final UserCardProgressRepository cardProgressRepository;
     private final CardRepository cardRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final FolderApiDelegate folderApiDelegate;
+    private final PackageApiDelegate packageApiDelegate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -30,7 +46,8 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
         log.info("Updating study set progress for user {} and study set {}", userId, studySetId);
 
         long totalCards = cardRepository.countByStudySetIdAndDeletedFalse(studySetId);
-        long learnedCards = cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId, CardStatus.LEARNED);
+        long learnedCards = cardProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId,
+                CardStatus.LEARNED);
 
         ProgressStatus status;
         if (totalCards == 0) {
@@ -71,6 +88,31 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
 
         progress = progressRepository.save(progress);
 
+        if (isVideoCourseStudySet(studySetId)) {
+            FlashcardStudySetProgressUpdatedEvent event = FlashcardStudySetProgressUpdatedEvent.builder()
+                    .userId(userId)
+                    .studySetId(studySetId)
+                    .learnedCards((int) learnedCards)
+                    .totalCards((int) totalCards)
+                    .progressPercentage(progress.getProgressPercentage())
+                    .completed(status == ProgressStatus.COMPLETED)
+                    .completedAt(progress.getCompletedAt())
+                    .occurredAt(Instant.now())
+                    .build();
+            applicationEventPublisher.publishEvent(event);
+        }
+
+        eventPublisher.publishEvent(FlashcardProgressUpdatedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .userId(userId)
+                .studySetId(studySetId)
+                .learnedCards(progress.getLearnedCards())
+                .totalCards(progress.getTotalCards())
+                .progressPercentage(progress.getProgressPercentage())
+                .completed(progress.getStatus() == ProgressStatus.COMPLETED)
+                .occurredAt(Instant.now())
+                .build());
+
         return toResponse(progress);
     }
 
@@ -93,5 +135,26 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
                 .firstStartedAt(p.getFirstStartedAt())
                 .completedAt(p.getCompletedAt())
                 .build();
+    }
+
+    private boolean isVideoCourseStudySet(String studySetId) {
+        try {
+            List<FolderResponse> folders = folderApiDelegate.getFoldersByStudySetId(studySetId);
+            if (folders == null || folders.isEmpty()) {
+                return false;
+            }
+            
+            for (FolderResponse folder : folders) {
+                if (folder.getPackageId() != null) {
+                    PackageResponse pkg = packageApiDelegate.getPackageById(folder.getPackageId());
+                    if (pkg != null && pkg.getType() == TypeName.VIDEO_COURSE) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error checking if study set {} is video course: {}", studySetId, e.getMessage());
+        }
+        return false;
     }
 }

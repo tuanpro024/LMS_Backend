@@ -53,3 +53,26 @@ FROM user u
 JOIN role r ON r.name = 'ROLE_TEACHER'
 WHERE u.email = 'teacher@local'
   AND NOT EXISTS (SELECT 1 FROM user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+
+INSERT INTO user(id, email, password, full_name, phone_number, avatar_url, address, status, email_verified, created_at, updated_at, deleted)
+SELECT '01STUDENT00000000000000001',
+       'student@local.com',
+       '$2a$12$Dg0z4Hq3ThMWuha3KvJ5/.3FJAPgMLj3pqBNbFbVCP6bZ4VMmz6h.', -- password: admin123
+       'Local Student',
+       NULL,
+       NULL,
+       NULL,
+       'ACTIVE',
+       true,
+       NOW(),
+       NOW(),
+       false
+WHERE NOT EXISTS (SELECT 1 FROM user WHERE email = 'student@local.com');
+
+INSERT INTO user_role(user_id, role_id)
+SELECT u.id, r.id
+FROM user u
+JOIN role r ON r.name = 'ROLE_USER'
+WHERE u.email = 'student@local.com'
+  AND NOT EXISTS (SELECT 1 FROM user_role ur WHERE ur.user_id = u.id AND ur.role_id = r.id);
+

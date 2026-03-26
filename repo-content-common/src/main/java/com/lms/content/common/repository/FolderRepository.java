@@ -38,4 +38,7 @@ public interface FolderRepository extends JpaRepository<Folder, String> {
 
     // Find folders by package entity id ordered by creation date
     List<Folder> findByPackageEntityIdOrderByCreatedAtAsc(String packageId);
+
+    @Query("SELECT f FROM Folder f JOIN f.studySets s WHERE s.id = :studySetId")
+    List<Folder> findByStudySetId(@Param("studySetId") String studySetId);
 }

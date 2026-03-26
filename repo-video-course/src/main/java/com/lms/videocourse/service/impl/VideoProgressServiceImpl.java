@@ -38,6 +38,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         private final VideoStepProgressRepository stepProgressRepository;
         private final VideoCourseProgressRepository courseProgressRepository;
         private final VideoStepRepository videoStepRepository;
+        private final VideoPracticeModuleProgressRepository practiceProgressRepository;
 
         // ============ Watch Progress ============
 
@@ -247,19 +248,31 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                 .map(VideoModule::getId)
                                 .collect(Collectors.toList());
 
-                List<VideoWatchProgress> completedProgress = watchProgressRepository
-                                .findByUserIdAndVideoModuleIdIn(userId, moduleIds)
-                                .stream()
-                                .filter(p -> p.getStatus() == ProgressStatus.COMPLETED)
-                                .collect(Collectors.toList());
+                List<VideoWatchProgress> watchProgressList = watchProgressRepository
+                                .findByUserIdAndVideoModuleIdIn(userId, moduleIds);
+                List<VideoPracticeModuleProgress> practiceProgressList = practiceProgressRepository
+                                .findByUserIdAndStepId(userId, stepId);
 
-                int completedCount = completedProgress.size();
-                long completedRequiredCount = completedProgress.stream()
-                                .filter(wp -> {
-                                        VideoModule vm = videoModuleRepository.findById(wp.getVideoModuleId())
-                                                        .orElse(null);
-                                        return vm != null && vm.getIsRequired();
-                                }).count();
+                int completedCount = 0;
+                long completedRequiredCount = 0;
+
+                for (VideoModule module : allModules) {
+                    boolean isCompleted = false;
+                    if (module.getModuleType() == com.lms.videocourse.entity.enums.ModuleType.FLASHCARD) {
+                        isCompleted = practiceProgressList.stream()
+                                .anyMatch(p -> p.getVideoModuleId().equals(module.getId()) && p.getStatus() == ProgressStatus.COMPLETED);
+                    } else {
+                        isCompleted = watchProgressList.stream()
+                                .anyMatch(p -> p.getVideoModuleId().equals(module.getId()) && p.getStatus() == ProgressStatus.COMPLETED);
+                    }
+
+                    if (isCompleted) {
+                        completedCount++;
+                        if (module.getIsRequired()) {
+                            completedRequiredCount++;
+                        }
+                    }
+                }
 
                 ProgressStatus status;
                 if (completedCount == 0) {

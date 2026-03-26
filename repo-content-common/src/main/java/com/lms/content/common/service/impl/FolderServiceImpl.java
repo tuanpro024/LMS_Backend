@@ -125,6 +125,13 @@ public class FolderServiceImpl implements FolderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<FolderResponse> getFoldersByStudySetId(String studySetId) {
+        List<Folder> folders = folderRepository.findByStudySetId(studySetId);
+        return folderMapper.toResponseList(folders);
+    }
+
+    @Override
     public FolderResponse updateFolder(String id, UpdateFolderRequest request, String userId) {
         Folder folder = folderRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));

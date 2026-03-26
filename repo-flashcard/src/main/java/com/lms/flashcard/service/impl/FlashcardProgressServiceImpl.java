@@ -13,7 +13,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.context.ApplicationEventPublisher;
+import com.lms.content.common.delegate.api.FolderApiDelegate;
+import com.lms.content.common.delegate.api.PackageApiDelegate;
+import com.lms.content.common.dto.response.FolderResponse;
+import com.lms.content.common.dto.response.PackageResponse;
+import com.lms.content.common.entity.TypeName;
+import com.lms.flashcard.event.FlashcardStudySetProgressUpdatedEvent;
+
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +32,9 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
     private final FlashcardStudySetProgressRepository progressRepository;
     private final UserCardProgressRepository cardProgressRepository;
     private final CardRepository cardRepository;
+    private final FolderApiDelegate folderApiDelegate;
+    private final PackageApiDelegate packageApiDelegate;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -71,6 +83,20 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
 
         progress = progressRepository.save(progress);
 
+        if (isVideoCourseStudySet(studySetId)) {
+            FlashcardStudySetProgressUpdatedEvent event = FlashcardStudySetProgressUpdatedEvent.builder()
+                    .userId(userId)
+                    .studySetId(studySetId)
+                    .learnedCards((int) learnedCards)
+                    .totalCards((int) totalCards)
+                    .progressPercentage(progress.getProgressPercentage())
+                    .completed(status == ProgressStatus.COMPLETED)
+                    .completedAt(progress.getCompletedAt())
+                    .occurredAt(Instant.now())
+                    .build();
+            applicationEventPublisher.publishEvent(event);
+        }
+
         return toResponse(progress);
     }
 
@@ -93,5 +119,26 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
                 .firstStartedAt(p.getFirstStartedAt())
                 .completedAt(p.getCompletedAt())
                 .build();
+    }
+
+    private boolean isVideoCourseStudySet(String studySetId) {
+        try {
+            List<FolderResponse> folders = folderApiDelegate.getFoldersByStudySetId(studySetId);
+            if (folders == null || folders.isEmpty()) {
+                return false;
+            }
+            
+            for (FolderResponse folder : folders) {
+                if (folder.getPackageId() != null) {
+                    PackageResponse pkg = packageApiDelegate.getPackageById(folder.getPackageId());
+                    if (pkg != null && pkg.getType() == TypeName.VIDEO_COURSE) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error checking if study set {} is video course: {}", studySetId, e.getMessage());
+        }
+        return false;
     }
 }

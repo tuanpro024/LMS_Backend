@@ -31,4 +31,7 @@ public class VideoModuleResponse {
 
     // ===== Watch progress (populated when authenticated) =====
     private VideoWatchProgressResponse watchProgress;
+
+    // ===== Practice progress (populated when authenticated) =====
+    private VideoPracticeModuleProgressResponse practiceProgress;
 }

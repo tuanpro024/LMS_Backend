@@ -1,7 +1,6 @@
 package com.lms.videocourse.service.impl;
 
-import com.lms.common.dto.ApiResponse;
-import com.lms.content.common.dto.response.StudySetResponse;
+import com.lms.content.common.entity.TypeName;
 import com.lms.videocourse.client.FlashcardClient;
 import com.lms.videocourse.client.KanjiOriginClient;
 import com.lms.videocourse.client.ListeningPracticeClient;
@@ -11,13 +10,13 @@ import com.lms.videocourse.client.WritingClient;
 import com.lms.videocourse.dto.response.AvailableModuleResponse;
 import com.lms.videocourse.entity.enums.ModuleType;
 import com.lms.videocourse.service.IAvailableModuleService;
+import com.lms.videocourse.service.helper.VideoCourseStudySetFetcher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,10 +29,11 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     private final QuizClient quizClient;
     private final ListeningPracticeClient listeningClient;
     private final PronunciationClient pronunciationClient;
+    private final VideoCourseStudySetFetcher studySetFetcher;
 
     @Override
     public List<AvailableModuleResponse> getAllAvailableModules(String query) {
-        log.info("Fetching all available modules with query: {}", query);
+        log.info("Fetching all available modules (VIDEO_COURSE only) with query: {}", query);
         List<AvailableModuleResponse> all = new ArrayList<>();
         all.addAll(getAvailableFlashcardSets(query));
         all.addAll(getAvailableWritingSets(query));
@@ -41,105 +41,55 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
         all.addAll(getAvailableQuizSets(query));
         all.addAll(getAvailableListeningSets(query));
         all.addAll(getAvailablePronunciationSets(query));
-        log.info("Found {} available modules across all repos", all.size());
+        log.info("Found {} available modules across all repos (VIDEO_COURSE filtered)", all.size());
         return all;
     }
 
     @Override
     public List<AvailableModuleResponse> getAvailableFlashcardSets(String query) {
-        try {
-            ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? flashcardClient.searchStudySets(query, "VIDEO_COURSE")
-                    : flashcardClient.getAllStudySets("VIDEO_COURSE");
-            return toResponseList(response.data(), ModuleType.FLASHCARD, "repo-flashcard");
-        } catch (Exception e) {
-            log.error("Error fetching flashcard sets: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        return studySetFetcher.fetch(
+                () -> flashcardClient.getPackagesByType(TypeName.VIDEO_COURSE),
+                flashcardClient::getStudySetsByFolderId,
+                ModuleType.FLASHCARD, "repo-flashcard", query);
     }
 
     @Override
     public List<AvailableModuleResponse> getAvailableWritingSets(String query) {
-        try {
-            ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? writingClient.searchStudySets(query, "VIDEO_COURSE")
-                    : writingClient.getAllStudySets("VIDEO_COURSE");
-            return toResponseList(response.data(), ModuleType.WRITING, "repo-writing");
-        } catch (Exception e) {
-            log.error("Error fetching writing sets: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        return studySetFetcher.fetch(
+                () -> writingClient.getPackagesByType(TypeName.VIDEO_COURSE),
+                writingClient::getStudySetsByFolderId,
+                ModuleType.WRITING, "repo-writing", query);
     }
 
     @Override
     public List<AvailableModuleResponse> getAvailableKanjiSets(String query) {
-        try {
-            ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? kanjiClient.searchStudySets(query, "VIDEO_COURSE")
-                    : kanjiClient.getAllStudySets("VIDEO_COURSE");
-            return toResponseList(response.data(), ModuleType.KANJI_ORIGIN, "repo-kanji-origin");
-        } catch (Exception e) {
-            log.error("Error fetching kanji sets: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        return studySetFetcher.fetch(
+                () -> kanjiClient.getPackagesByType(TypeName.VIDEO_COURSE),
+                kanjiClient::getStudySetsByFolderId,
+                ModuleType.KANJI_ORIGIN, "repo-kanji-origin", query);
     }
 
     @Override
     public List<AvailableModuleResponse> getAvailableQuizSets(String query) {
-        try {
-            ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? quizClient.searchStudySets(query, "VIDEO_COURSE")
-                    : quizClient.getAllStudySets("VIDEO_COURSE");
-            return toResponseList(response.data(), ModuleType.QUIZ, "repo-quiz");
-        } catch (Exception e) {
-            log.error("Error fetching quiz sets: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        return studySetFetcher.fetch(
+                () -> quizClient.getPackagesByType(TypeName.VIDEO_COURSE),
+                quizClient::getStudySetsByFolderId,
+                ModuleType.QUIZ, "repo-quiz", query);
     }
 
     @Override
     public List<AvailableModuleResponse> getAvailableListeningSets(String query) {
-        try {
-            ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? listeningClient.searchStudySets(query, "VIDEO_COURSE")
-                    : listeningClient.getAllStudySets("VIDEO_COURSE");
-            return toResponseList(response.data(), ModuleType.LISTENING, "repo-listening-practice");
-        } catch (Exception e) {
-            log.error("Error fetching listening practice sets: {}", e.getMessage());
-            return new ArrayList<>();
-        }
+        return studySetFetcher.fetch(
+                () -> listeningClient.getPackagesByType(TypeName.VIDEO_COURSE),
+                listeningClient::getStudySetsByFolderId,
+                ModuleType.LISTENING, "repo-listening-practice", query);
     }
 
     @Override
     public List<AvailableModuleResponse> getAvailablePronunciationSets(String query) {
-        try {
-            ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? pronunciationClient.searchStudySets(query, "VIDEO_COURSE")
-                    : pronunciationClient.getAllStudySets("VIDEO_COURSE");
-            return toResponseList(response.data(), ModuleType.PRONUNCIATION, "repo-pronunciation");
-        } catch (Exception e) {
-            log.error("Error fetching pronunciation sets: {}", e.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
-
-    private List<AvailableModuleResponse> toResponseList(
-            List<StudySetResponse> studySets, ModuleType type, String repoName) {
-        if (studySets == null)
-            return new ArrayList<>();
-        return studySets.stream()
-                .map(s -> AvailableModuleResponse.builder()
-                        .id(s.getId())
-                        .title(s.getTitle())
-                        .description(s.getDescription())
-                        .thumbnail(s.getThumbnail())
-                        .moduleType(type)
-                        .repoName(repoName)
-                        .itemCount((long) s.getTotalItems())
-                        .isPrivate(s.isPrivate())
-                        .userId(s.getUserId())
-                        .build())
-                .collect(Collectors.toList());
+        return studySetFetcher.fetch(
+                () -> pronunciationClient.getPackagesByType(TypeName.VIDEO_COURSE),
+                pronunciationClient::getStudySetsByFolderId,
+                ModuleType.PRONUNCIATION, "repo-pronunciation", query);
     }
 }

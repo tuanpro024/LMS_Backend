@@ -1,7 +1,9 @@
 package com.lms.videocourse.client;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.content.common.dto.response.PackageResponse;
 import com.lms.content.common.dto.response.StudySetResponse;
+import com.lms.content.common.entity.TypeName;
 import com.lms.videocourse.config.FeignConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,4 +27,10 @@ public interface ListeningPracticeClient {
 
     @GetMapping("/api/listening-practice/study-sets")
     ApiResponse<List<StudySetResponse>> searchStudySets(@RequestParam("q") String query, @RequestParam("packageType") String packageType);
+
+    @GetMapping("/api/listening-practice/packages")
+    ApiResponse<List<PackageResponse>> getPackagesByType(@RequestParam("type") TypeName type);
+
+    @GetMapping("/api/listening-practice/study-sets")
+    ApiResponse<List<StudySetResponse>> getStudySetsByFolderId(@RequestParam("folderId") String folderId);
 }

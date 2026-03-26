@@ -47,4 +47,6 @@ public interface PronunciationItemRepository extends JpaRepository<Pronunciation
 
     @Query("SELECT MAX(p.contentIndex) FROM PronunciationItem p WHERE p.studySet.id = :studySetId AND p.deleted = false")
     Integer findMaxContentIndexByStudySetId(@Param("studySetId") String studySetId);
+
+    long countByStudySetIdAndDeletedFalse(String studySetId);
 }

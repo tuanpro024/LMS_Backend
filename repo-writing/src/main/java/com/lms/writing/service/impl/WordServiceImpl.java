@@ -1,6 +1,5 @@
 package com.lms.writing.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.entity.StudySet;
@@ -9,21 +8,24 @@ import com.lms.writing.dto.request.CreateWordRequest;
 import com.lms.writing.dto.request.UpdateWordRequest;
 import com.lms.writing.dto.response.WordResponse;
 import com.lms.writing.entity.Word;
-import com.lms.writing.entity.enums.WordStatus;
 import com.lms.writing.entity.UserWordProgress;
+import com.lms.writing.event.WritingProgressUpdatedEvent;
 import com.lms.writing.repository.UserWordProgressRepository;
 import com.lms.content.common.entity.enums.ContentStatus;
 import com.lms.writing.mapper.WordMapper;
 import com.lms.writing.repository.WordRepository;
 import com.lms.writing.service.WordService;
+import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +38,7 @@ public class WordServiceImpl implements WordService {
     private final UserWordProgressRepository userWordProgressRepository;
     private final WordMapper wordMapper;
     private final StudySetRepository studySetRepository;
-    private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional(readOnly = true)
@@ -136,6 +138,9 @@ public class WordServiceImpl implements WordService {
         Word word = wordRepository.findByIdAndDeletedFalse(wordId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
+        String studySetId = word.getStudySet().getId();
+        Instant now = Instant.now();
+
         UserWordProgress progress = userWordProgressRepository.findByUserIdAndWordId(userId, wordId)
                 .orElse(UserWordProgress.builder()
                         .userId(userId)
@@ -144,13 +149,32 @@ public class WordServiceImpl implements WordService {
                         .build());
 
         progress.setStatus(request.getStatus());
-        progress.setLastReviewedAt(java.time.Instant.now());
+        progress.setLastReviewedAt(now);
         // Review count logic if needed
         if (request.getStatus() == ContentStatus.LEARNED) {
             progress.setReviewCount(progress.getReviewCount() + 1);
         }
 
         userWordProgressRepository.save(progress);
+
+        long totalWords = wordRepository.countByStudySetIdAndDeletedFalse(studySetId);
+        long learnedWords = userWordProgressRepository.countByUserIdAndStudySetIdAndStatus(userId, studySetId,
+                ContentStatus.LEARNED);
+
+        double progressPercentage = totalWords == 0
+                ? 0.0
+                : (learnedWords * 100.0) / totalWords;
+
+        eventPublisher.publishEvent(WritingProgressUpdatedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .userId(userId)
+                .studySetId(studySetId)
+                .learnedWords((int) learnedWords)
+                .totalWords((int) totalWords)
+                .progressPercentage(progressPercentage)
+                .completed(totalWords > 0 && learnedWords >= totalWords)
+                .occurredAt(now)
+                .build());
     }
 
     @Override

@@ -1,6 +1,17 @@
 spring:
   application:
     name: repo-video-course
+  kafka:
+#    prod
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
+
+#    local
+#    bootstrap-servers: localhost:9092
+
+    consumer:
+      group-id: video-course-flashcard-progress-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
   datasource:
     url: jdbc:mysql://localhost:3306/lms_video_course_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
@@ -63,3 +74,8 @@ feign:
 multimedia:
   service:
     name: repo-multimedia
+
+app:
+  kafka:
+    topics:
+      flashcard-progress-events: flashcard.progress.events

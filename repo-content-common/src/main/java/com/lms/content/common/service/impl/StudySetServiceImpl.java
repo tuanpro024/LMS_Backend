@@ -100,6 +100,23 @@ public class StudySetServiceImpl implements StudySetService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<StudySetResponse> getStudySetsByPackageType(String packageType) {
+        try {
+            com.lms.content.common.entity.TypeName typeName = com.lms.content.common.entity.TypeName.valueOf(packageType);
+            // Strict exclusivity is only needed by video-course when importing modules for a VIDEO_COURSE step.
+            // Keep other packageType behaviors unchanged to reduce regression risk.
+            List<StudySet> studySets = typeName == com.lms.content.common.entity.TypeName.VIDEO_COURSE
+                    ? studySetRepository.findByPackageTypeNameStrict(typeName)
+                    : studySetRepository.findByPackageTypeName(typeName);
+            return studySetMapper.toResponseList(studySets);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid packageType provided: {}", packageType);
+            return List.of();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<StudySetResponse> findByTitleAndUserIdIgnoreCase(String title, String userId) {
         List<StudySet> studySets = studySetRepository.findByTitleAndUserIdIgnoreCase(title, userId);
         return studySetMapper.toResponseList(studySets);

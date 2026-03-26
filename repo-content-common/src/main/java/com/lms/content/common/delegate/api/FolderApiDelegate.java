@@ -43,6 +43,10 @@ public class FolderApiDelegate {
         return folderService.getAllFolders();
     }
 
+    public List<FolderResponse> getFoldersByStudySetId(String studySetId) {
+        return folderService.getFoldersByStudySetId(studySetId);
+    }
+
     public FolderResponse updateFolder(String id, UpdateFolderRequest request, String userId) {
         return folderService.updateFolder(id, request, userId);
     }

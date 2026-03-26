@@ -168,6 +168,27 @@ services:
       timeout: 5s
       retries: 5
 
+  lms-video-minio:
+    image: quay.io/minio/minio
+    container_name: lms-video-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=lms_minio
+      - MINIO_ROOT_PASSWORD=lms_minio
+    volumes:
+      - minio_data:/data
+    networks:
+      - lms-network
+      - shared-network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
   flashcard-api:
     build:
       context: .
@@ -404,6 +425,8 @@ services:
         condition: service_completed_successfully
       mysql:
         condition: service_healthy
+      lms-video-minio:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
     networks:
@@ -469,8 +492,37 @@ services:
       - shared-network
       - lms-network
 
+  payment-api:
+    build:
+      context: .
+      dockerfile: repo-payment/Dockerfile
+    image: lms-payment
+    container_name: lms-payment
+    ports:
+      - "8079:8079"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+      - PAYOS_CLIENT_ID=${PAYOS_CLIENT_ID:-REDACTED_PAYOS_CLIENT_ID_DEV}
+      - PAYOS_API_KEY=${PAYOS_API_KEY:-REDACTED_PAYOS_API_KEY_DEV}
+      - PAYOS_CHECKSUM_KEY=${PAYOS_CHECKSUM_KEY:-REDACTED_PAYOS_CHECKSUM_DEV}
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - shared-network
+      - lms-network
+
 networks:
-  - shared-network
   lms-network:
     driver: bridge
   shared-network:
@@ -478,3 +530,4 @@ networks:
 
 volumes:
   mysql_data:
+  minio_data:

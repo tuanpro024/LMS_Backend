@@ -46,16 +46,17 @@ public class FileServiceImpl implements FileService {
         String originalName = file.getOriginalFilename();
         String objectKey = buildObjectKey(fileId, originalName);
         String mimeType = file.getContentType();
+        String bucket = getBucketByMimeType(mimeType);
 
         try (InputStream inputStream = file.getInputStream()) {
             minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(storageProperties.getMinio().getBucket())
+                    .bucket(bucket)
                     .object(objectKey)
                     .stream(inputStream, file.getSize(), -1)
                     .contentType(mimeType)
                     .build());
         } catch (Exception ex) {
-            log.error("Failed to upload object {}: {}", objectKey, ex.getMessage());
+            log.error("Failed to upload object {} to bucket {}: {}", objectKey, bucket, ex.getMessage());
             throw new ApiException(ErrorCode.INTERNAL_ERROR, "Unable to upload file", ex);
         }
 
@@ -81,9 +82,10 @@ public class FileServiceImpl implements FileService {
             throw new ApiException(ErrorCode.NOT_FOUND, "File object not found");
         }
 
+        String bucket = getBucketByMimeType(file.getMimeType());
         try {
             InputStream stream = minioClient.getObject(GetObjectArgs.builder()
-                    .bucket(storageProperties.getMinio().getBucket())
+                    .bucket(bucket)
                     .object(file.getObjectKey())
                     .build());
             StatObjectResponse stat = statResponse.get();
@@ -128,16 +130,17 @@ public class FileServiceImpl implements FileService {
         }
         expired.forEach(file -> {
             if (storageProperties.isDeleteObjectOnSoftDelete()) {
-                removeObjectQuietly(file.getObjectKey());
+                removeObjectQuietly(getBucketByMimeType(file.getMimeType()), file.getObjectKey());
             }
         });
         fileRepository.deleteAll(expired);
     }
 
     private Optional<StatObjectResponse> statObject(File file) {
+        String bucket = getBucketByMimeType(file.getMimeType());
         try {
             StatObjectResponse response = minioClient.statObject(StatObjectArgs.builder()
-                    .bucket(storageProperties.getMinio().getBucket())
+                    .bucket(bucket)
                     .object(file.getObjectKey())
                     .build());
             return Optional.ofNullable(response);
@@ -147,15 +150,28 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    private void removeObjectQuietly(String objectKey) {
+    private void removeObjectQuietly(String bucket, String objectKey) {
         try {
             minioClient.removeObject(RemoveObjectArgs.builder()
-                    .bucket(storageProperties.getMinio().getBucket())
+                    .bucket(bucket)
                     .object(objectKey)
                     .build());
         } catch (Exception ex) {
-            log.warn("Failed to remove object {} from MinIO: {}", objectKey, ex.getMessage());
+            log.warn("Failed to remove object {} from bucket {} in MinIO: {}", objectKey, bucket, ex.getMessage());
         }
+    }
+
+    private String getBucketByMimeType(String mimeType) {
+        if (mimeType == null) {
+            return storageProperties.getMinio().getBucket();
+        }
+        if (mimeType.startsWith("image/")) {
+            return storageProperties.getMinio().getImageBucket();
+        }
+        if (mimeType.startsWith("audio/")) {
+            return storageProperties.getMinio().getAudioBucket();
+        }
+        return storageProperties.getMinio().getBucket();
     }
 
     private String buildObjectKey(String fileId, String filename) {

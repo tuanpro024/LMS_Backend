@@ -39,6 +39,10 @@ public class StudySetApiDelegate {
         return studySetService.getAllStudySets();
     }
 
+    public List<StudySetResponse> getStudySetsByPackageType(String packageType) {
+        return studySetService.getStudySetsByPackageType(packageType);
+    }
+
     public List<StudySetResponse> findByTitleAndUserIdIgnoreCase(String title, String userId) {
         return studySetService.findByTitleAndUserIdIgnoreCase(title, userId);
     }

@@ -49,8 +49,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     public List<AvailableModuleResponse> getAvailableFlashcardSets(String query) {
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? flashcardClient.searchStudySets(query)
-                    : flashcardClient.getAllStudySets();
+                    ? flashcardClient.searchStudySets(query, "VIDEO_COURSE")
+                    : flashcardClient.getAllStudySets("VIDEO_COURSE");
             return toResponseList(response.data(), ModuleType.FLASHCARD, "repo-flashcard");
         } catch (Exception e) {
             log.error("Error fetching flashcard sets: {}", e.getMessage());
@@ -62,8 +62,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     public List<AvailableModuleResponse> getAvailableWritingSets(String query) {
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? writingClient.searchStudySets(query)
-                    : writingClient.getAllStudySets();
+                    ? writingClient.searchStudySets(query, "VIDEO_COURSE")
+                    : writingClient.getAllStudySets("VIDEO_COURSE");
             return toResponseList(response.data(), ModuleType.WRITING, "repo-writing");
         } catch (Exception e) {
             log.error("Error fetching writing sets: {}", e.getMessage());
@@ -75,8 +75,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     public List<AvailableModuleResponse> getAvailableKanjiSets(String query) {
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? kanjiClient.searchStudySets(query)
-                    : kanjiClient.getAllStudySets();
+                    ? kanjiClient.searchStudySets(query, "VIDEO_COURSE")
+                    : kanjiClient.getAllStudySets("VIDEO_COURSE");
             return toResponseList(response.data(), ModuleType.KANJI_ORIGIN, "repo-kanji-origin");
         } catch (Exception e) {
             log.error("Error fetching kanji sets: {}", e.getMessage());
@@ -88,8 +88,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     public List<AvailableModuleResponse> getAvailableQuizSets(String query) {
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? quizClient.searchStudySets(query)
-                    : quizClient.getAllStudySets();
+                    ? quizClient.searchStudySets(query, "VIDEO_COURSE")
+                    : quizClient.getAllStudySets("VIDEO_COURSE");
             return toResponseList(response.data(), ModuleType.QUIZ, "repo-quiz");
         } catch (Exception e) {
             log.error("Error fetching quiz sets: {}", e.getMessage());
@@ -101,8 +101,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     public List<AvailableModuleResponse> getAvailableListeningSets(String query) {
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? listeningClient.searchStudySets(query)
-                    : listeningClient.getAllStudySets();
+                    ? listeningClient.searchStudySets(query, "VIDEO_COURSE")
+                    : listeningClient.getAllStudySets("VIDEO_COURSE");
             return toResponseList(response.data(), ModuleType.LISTENING, "repo-listening-practice");
         } catch (Exception e) {
             log.error("Error fetching listening practice sets: {}", e.getMessage());
@@ -114,8 +114,8 @@ public class AvailableModuleServiceImpl implements IAvailableModuleService {
     public List<AvailableModuleResponse> getAvailablePronunciationSets(String query) {
         try {
             ApiResponse<List<StudySetResponse>> response = (query != null && !query.isBlank())
-                    ? pronunciationClient.searchStudySets(query)
-                    : pronunciationClient.getAllStudySets();
+                    ? pronunciationClient.searchStudySets(query, "VIDEO_COURSE")
+                    : pronunciationClient.getAllStudySets("VIDEO_COURSE");
             return toResponseList(response.data(), ModuleType.PRONUNCIATION, "repo-pronunciation");
         } catch (Exception e) {
             log.error("Error fetching pronunciation sets: {}", e.getMessage());

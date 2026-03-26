@@ -147,6 +147,8 @@ services:
   mysql:
     image: mysql:8.0
     container_name: lms-mysql
+    ports:
+      - "58006:3306"  
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=lms_flashcard_db

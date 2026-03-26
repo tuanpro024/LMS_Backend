@@ -1,7 +1,6 @@
 package com.lms.flashcard.service.impl;
 
 import com.lms.flashcard.dto.response.FlashcardStudySetProgressResponse;
-import com.lms.flashcard.event.FlashcardProgressUpdatedEvent;
 import com.lms.flashcard.entity.FlashcardStudySetProgress;
 import com.lms.flashcard.entity.enums.CardStatus;
 import com.lms.flashcard.entity.enums.ProgressStatus;
@@ -15,7 +14,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.context.ApplicationEventPublisher;
 import com.lms.content.common.delegate.api.FolderApiDelegate;
 import com.lms.content.common.delegate.api.PackageApiDelegate;
 import com.lms.content.common.dto.response.FolderResponse;
@@ -24,7 +22,6 @@ import com.lms.content.common.entity.TypeName;
 import com.lms.flashcard.event.FlashcardStudySetProgressUpdatedEvent;
 
 import java.time.Instant;
-import java.util.UUID;
 import java.util.List;
 
 @Service
@@ -38,7 +35,6 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
     private final ApplicationEventPublisher eventPublisher;
     private final FolderApiDelegate folderApiDelegate;
     private final PackageApiDelegate packageApiDelegate;
-    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -88,30 +84,18 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
 
         progress = progressRepository.save(progress);
 
-        if (isVideoCourseStudySet(studySetId)) {
-            FlashcardStudySetProgressUpdatedEvent event = FlashcardStudySetProgressUpdatedEvent.builder()
-                    .userId(userId)
-                    .studySetId(studySetId)
-                    .learnedCards((int) learnedCards)
-                    .totalCards((int) totalCards)
-                    .progressPercentage(progress.getProgressPercentage())
-                    .completed(status == ProgressStatus.COMPLETED)
-                    .completedAt(progress.getCompletedAt())
-                    .occurredAt(Instant.now())
-                    .build();
-            applicationEventPublisher.publishEvent(event);
-        }
-
-        eventPublisher.publishEvent(FlashcardProgressUpdatedEvent.builder()
-                .eventId(UUID.randomUUID().toString())
+        // Publish internal application event for Kafka listener to broadcast
+        FlashcardStudySetProgressUpdatedEvent event = FlashcardStudySetProgressUpdatedEvent.builder()
                 .userId(userId)
                 .studySetId(studySetId)
-                .learnedCards(progress.getLearnedCards())
-                .totalCards(progress.getTotalCards())
+                .learnedCards((int) learnedCards)
+                .totalCards((int) totalCards)
                 .progressPercentage(progress.getProgressPercentage())
-                .completed(progress.getStatus() == ProgressStatus.COMPLETED)
+                .completed(status == ProgressStatus.COMPLETED)
+                .completedAt(progress.getCompletedAt())
                 .occurredAt(Instant.now())
-                .build());
+                .build();
+        eventPublisher.publishEvent(event);
 
         return toResponse(progress);
     }

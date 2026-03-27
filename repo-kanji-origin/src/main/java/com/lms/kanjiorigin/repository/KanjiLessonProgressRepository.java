@@ -12,4 +12,6 @@ public interface KanjiLessonProgressRepository extends JpaRepository<KanjiLesson
     Optional<KanjiLessonProgress> findByUserIdAndKanjiLesson_Id(String userId, String kanjiLessonId);
 
     List<KanjiLessonProgress> findByUserId(String userId);
+
+    long countByUserIdAndKanjiLesson_StudySet_IdAndIsLearnedTrue(String userId, String studySetId);
 }

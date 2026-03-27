@@ -13,5 +13,6 @@ public record CmsOnlineCourseResponse(
         String type,
         String level,
         @JsonProperty("total_lessons") Integer totalLessons,
+        @JsonProperty("syllabus_id") String syllabusId,
         BigDecimal price) {
 }

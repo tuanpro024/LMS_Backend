@@ -106,6 +106,7 @@ public class OnlineCourseSyncServiceImpl implements IOnlineCourseSyncService {
         entity.setCourseType(src.type());
         entity.setLevel(src.level());
         entity.setTotalLessons(src.totalLessons());
+        entity.setSyllabusId(src.syllabusId());
         entity.setPrice(src.price());
         entity.setCmsSynced(true);
         entity.setDeleted(false);

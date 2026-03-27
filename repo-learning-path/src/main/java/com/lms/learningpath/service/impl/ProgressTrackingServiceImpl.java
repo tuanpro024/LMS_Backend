@@ -5,12 +5,14 @@ import com.lms.learningpath.dto.request.UpdateProgressRequest;
 import com.lms.learningpath.dto.response.LearningPathProgressResponse;
 import com.lms.learningpath.dto.response.ModuleProgressDto;
 import com.lms.learningpath.dto.response.StepProgressResponse;
+import com.lms.learningpath.entity.ConsumedKanjiProgressEvent;
 import com.lms.learningpath.entity.ConsumedQuizProgressEvent;
 import com.lms.learningpath.entity.*;
 import com.lms.learningpath.entity.enums.ModuleType;
 import com.lms.learningpath.entity.enums.ProgressStatus;
 import com.lms.learningpath.exception.ResourceNotFoundException;
 import com.lms.learningpath.integration.event.FlashcardProgressEvent;
+import com.lms.learningpath.integration.event.KanjiProgressEvent;
 import com.lms.learningpath.integration.event.QuizProgressEvent;
 import com.lms.learningpath.integration.event.WritingProgressEvent;
 import com.lms.learningpath.mapper.LearningPathProgressMapper;
@@ -43,6 +45,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         private final StepRepository stepRepository;
         private final LearningPathRepository learningPathRepository;
         private final ConsumedFlashcardProgressEventRepository consumedFlashcardProgressEventRepository;
+        private final ConsumedKanjiProgressEventRepository consumedKanjiProgressEventRepository;
         private final ConsumedQuizProgressEventRepository consumedQuizProgressEventRepository;
         private final ConsumedWritingProgressEventRepository consumedWritingProgressEventRepository;
         private final StepProgressMapper stepProgressMapper;
@@ -304,6 +307,104 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         }
 
         @Transactional
+        public void syncKanjiProgressEvent(KanjiProgressEvent event) {
+                if (event == null
+                                || event.eventId() == null
+                                || event.eventId().isBlank()
+                                || event.userId() == null
+                                || event.userId().isBlank()
+                                || event.studySetId() == null
+                                || event.studySetId().isBlank()) {
+                        return;
+                }
+
+                if (consumedKanjiProgressEventRepository.existsByEventId(event.eventId())) {
+                        log.debug("Skip duplicated kanji progress event {}", event.eventId());
+                        return;
+                }
+
+                List<StepModule> kanjiModules = stepModuleRepository
+                                .findByModuleTypeAndContentSetIdAndIsActiveTrue(ModuleType.KANJI, event.studySetId());
+
+                if (kanjiModules.isEmpty()) {
+                        consumedKanjiProgressEventRepository.save(ConsumedKanjiProgressEvent.builder()
+                                        .eventId(event.eventId())
+                                        .consumedAt(Instant.now())
+                                        .build());
+                        log.debug("No kanji module matched studySet {} for event {}", event.studySetId(),
+                                        event.eventId());
+                        return;
+                }
+
+                Instant now = Instant.now();
+                int learnedLessons = event.learnedLessons() == null ? 0 : Math.max(event.learnedLessons(), 0);
+                int totalLessons = event.totalLessons() == null ? 0 : Math.max(event.totalLessons(), 0);
+                Integer score = event.progressPercentage() == null ? null
+                                : (int) Math.round(event.progressPercentage());
+
+                Set<String> touchedStepIds = new HashSet<>();
+                for (StepModule module : kanjiModules) {
+                        ModuleProgress progress = moduleProgressRepository
+                                        .findByUserIdAndStepModuleId(event.userId(), module.getId())
+                                        .orElseGet(() -> ModuleProgress.builder()
+                                                        .userId(event.userId())
+                                                        .stepModuleId(module.getId())
+                                                        .stepId(module.getStepId())
+                                                        .status(ProgressStatus.NOT_STARTED)
+                                                        .completedItems(0)
+                                                        .totalItems(totalLessons)
+                                                        .score(0)
+                                                        .totalAttempts(0)
+                                                        .studyTimeSeconds(0)
+                                                        .firstStartedAt(now)
+                                                        .startedAt(now)
+                                                        .build());
+
+                        if (Boolean.TRUE.equals(event.completed())) {
+                                progress.setStatus(ProgressStatus.COMPLETED);
+                                progress.setCompletedItems(totalLessons);
+                                if (progress.getCompletedAt() == null) {
+                                        progress.setCompletedAt(now);
+                                }
+                        } else if (learnedLessons > 0) {
+                                progress.setStatus(ProgressStatus.IN_PROGRESS);
+                                progress.setCompletedItems(learnedLessons);
+                                progress.setCompletedAt(null);
+                        } else {
+                                progress.setStatus(ProgressStatus.NOT_STARTED);
+                                progress.setCompletedItems(0);
+                                progress.setCompletedAt(null);
+                        }
+
+                        progress.setTotalItems(totalLessons);
+                        progress.setScore(score);
+                        progress.setTotalAttempts(
+                                        (progress.getTotalAttempts() == null ? 0 : progress.getTotalAttempts()) + 1);
+                        progress.setLastAttemptAt(now);
+                        progress.setMetadata(buildKanjiMetadata(event));
+
+                        moduleProgressRepository.save(progress);
+                        touchedStepIds.add(module.getStepId());
+                }
+
+                for (String stepId : touchedStepIds) {
+                        updateStepProgress(event.userId(), stepId);
+                        Step step = stepRepository.findById(stepId).orElse(null);
+                        if (step != null) {
+                                updateLearningPathProgress(event.userId(), step.getLearningPathId());
+                        }
+                }
+
+                consumedKanjiProgressEventRepository.save(ConsumedKanjiProgressEvent.builder()
+                                .eventId(event.eventId())
+                                .consumedAt(now)
+                                .build());
+
+                log.info("Synced kanji progress event {} for user {} and {} module(s)",
+                                event.eventId(), event.userId(), kanjiModules.size());
+        }
+
+        @Transactional
         public void syncQuizProgressEvent(QuizProgressEvent event) {
                 if (event == null
                                 || event.eventId() == null
@@ -519,6 +620,17 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                 return String.format(
                                 "{\"source\":\"repo-flashcard\",\"eventId\":\"%s\",\"completed\":%s,\"learnedCards\":%s,\"totalCards\":%s,\"progressPercentage\":%s}",
                                 event.eventId(), completed, learnedCards, totalCards, progressPercentage);
+        }
+
+        private String buildKanjiMetadata(KanjiProgressEvent event) {
+                String completed = Boolean.TRUE.equals(event.completed()) ? "true" : "false";
+                String learnedLessons = event.learnedLessons() == null ? "0" : String.valueOf(event.learnedLessons());
+                String totalLessons = event.totalLessons() == null ? "0" : String.valueOf(event.totalLessons());
+                String progressPercentage = event.progressPercentage() == null ? "null"
+                                : String.valueOf(event.progressPercentage());
+                return String.format(
+                                "{\"source\":\"repo-kanji-origin\",\"eventId\":\"%s\",\"completed\":%s,\"learnedLessons\":%s,\"totalLessons\":%s,\"progressPercentage\":%s}",
+                                event.eventId(), completed, learnedLessons, totalLessons, progressPercentage);
         }
 
         private String buildWritingMetadata(WritingProgressEvent event) {

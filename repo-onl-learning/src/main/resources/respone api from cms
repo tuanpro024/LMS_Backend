@@ -1,46 +1,53 @@
-Request URL
-https://cms.dangch.tech/api/erp/students/01KKZZYE2YMCYCCT237QVC12HN/timetable?start=2026-03-16&end=2026-03-23
-Request Method
-GET
+API :
 
-Response:
+GET https://cms.dangch.tech/api/erp/courses/list?type=1-1   -  lấy ra các khóa học online 1-1
+
+{
+  "statusCode": 200,
+  "data": [
+    {
+      "id": "01KMCJM962BT3ZQRS09ZXNHHRX",
+      "code": "GT1-1",
+      "name": "Khoá giao tiếp cho người đi làm 1-1",
+      "type": "1-1",
+      "level": "GT1",
+      "total_lessons": 32,
+      "price": "3550000.00",
+      "syllabus_id": "01KKDHAT8ZP8BTW1CKMK448KWM"
+    }
+  ],
+  "message": "Course list fetched successfully",
+  "success": true
+}
+
+API :
+
+GET https://cms.dangch.tech/api/erp/courses/list?type=GROUP - lấy ra các khóa học online 1-n
+
 {
     "statusCode": 200,
     "data": [
         {
-            "id": "01KM00XE1169PZ5X56R236HVEB",
-            "class_id": "01KKG59RN7NSVQFBNCPRXG012R",
-            "class_code": "GT1003-2",
-            "class_name": "Tiếng trung giao tiếp nhập môn",
-            "session_no": 1,
-            "title": "Buổi 1",
-            "date": "2026-03-20T00:00:00.000Z",
-            "session_date": "2026-03-20T00:00:00.000Z",
-            "start_time": "2026-03-20T18:30:00.000Z",
-            "end_time": "2026-03-20T20:30:00.000Z",
-            "status": "PLANING",
-            "tutor_id": null,
-            "tutor_name": "Phan Manh",
-            "instructor_name": "Phan Manh",
-            "class_room": "Zoom-01",
-            "attendance_status": null,
-            "check_in_at": null
+            "id": "01CRS0000000000000000006",
+            "code": "GT1",
+            "name": "Chinese Communication GT1",
+            "type": "Group",
+            "level": "GT1",
+            "total_lessons": 32,
+            "price": "2300000.00"
+            "syllabus_id": "01KKDHAT8ZP8BTW1CKMK448KCD"
+        },
+        {
+            "id": "01CRS0000000000000000007",
+            "code": "GT2",
+            "name": "Chinese Communication GT2",
+            "type": "Group",
+            "level": "GT2",
+            "total_lessons": 36,
+            "price": "2400000.00"
+            "syllabus_id": "01KKDHAT8ZP8BTW1CKMK448KGH"
         }
     ],
-    "message": "Student timetable fetched",
-    "success": true
-}
-
-
-Request URL
-https://cms.dangch.tech/api/erp/students/01KKZZYE2YMCYCCT237QVC12HN/timetable?start=2026-03-02&end=2026-03-09
-Request Method
-GET
-
-Response:
-{
-    "statusCode": 200,
-    "data": [],
-    "message": "Student timetable fetched",
-    "success": true
+     "message": "Course list fetched successfully",
+     "success": true
 }

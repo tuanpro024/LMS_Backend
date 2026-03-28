@@ -44,6 +44,10 @@ public class Package extends BaseEntity {
     @Builder.Default
     private String pricingType = "FREE"; // FREE or PAID
 
+    @Column(name = "enrollment_count")
+    @Builder.Default
+    private Integer enrollmentCount = 0;
+
     @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Subject> subjects = new ArrayList<>();

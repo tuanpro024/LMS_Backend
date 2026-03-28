@@ -40,6 +40,24 @@ public class PackageController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
+    @GetMapping("/latest")
+    public ResponseEntity<ApiResponse<List<PackageResponse>>> getLatestPackages(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.getLatestPackages(TypeName.VIDEO_COURSE, limit)));
+    }
+
+    @GetMapping("/most-enrolled")
+    public ResponseEntity<ApiResponse<List<PackageResponse>>> getMostEnrolledPackages(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.getMostEnrolledPackages(TypeName.VIDEO_COURSE, limit)));
+    }
+
+    @GetMapping("/free")
+    public ResponseEntity<ApiResponse<List<PackageResponse>>> getFreePackages(
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.getFreePackages(TypeName.VIDEO_COURSE, limit)));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PackageResponse>> getPackage(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(packageDelegate.getPackageById(id)));

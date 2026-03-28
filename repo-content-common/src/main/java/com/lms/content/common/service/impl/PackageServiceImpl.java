@@ -16,6 +16,8 @@ import com.lms.content.common.repository.TypeRepository;
 import com.lms.content.common.service.PackageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -222,6 +224,30 @@ public class PackageServiceImpl implements PackageService {
         Package updated = packageRepository.save(packageEntity);
 
         return packageMapper.toResponse(updated);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PackageResponse> getLatestPackages(TypeName type, int limit) {
+        PageRequest pageRequest = PageRequest.of(0, limit, Sort.by("createdAt").descending());
+        List<Package> packages = packageRepository.findByTypeName(type, pageRequest);
+        return packageMapper.toResponseList(packages);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PackageResponse> getMostEnrolledPackages(TypeName type, int limit) {
+        PageRequest pageRequest = PageRequest.of(0, limit, Sort.by("enrollmentCount").descending());
+        List<Package> packages = packageRepository.findByTypeName(type, pageRequest);
+        return packageMapper.toResponseList(packages);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PackageResponse> getFreePackages(TypeName type, int limit) {
+        PageRequest pageRequest = PageRequest.of(0, limit, Sort.by("createdAt").descending());
+        List<Package> packages = packageRepository.findByTypeNameAndPricingType(type, "FREE", pageRequest);
+        return packageMapper.toResponseList(packages);
     }
 
     // ========== EXTENSION HOOKS (protected, non-final) ==========

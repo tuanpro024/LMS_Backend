@@ -243,4 +243,28 @@ Package
 
 ---
 
+## 8. Discovery APIs (Public)
+
+Các API này hỗ trợ trang khám phá khóa học, giúp người dùng tìm kiếm video course theo các tiêu chí phổ biến:
+
+### 8.1 Khoá học mới nhất
+- `GET /packages/latest`
+  - Tham số: `limit` (mặc định 10)
+  - Phản hồi: `ApiResponse<List<PackageResponse>>`
+  - Sắp xếp: `createdAt` giảm dần.
+
+### 8.2 Khoá học phổ biến nhất
+- `GET /packages/most-enrolled`
+  - Tham số: `limit` (mặc định 10)
+  - Phản hồi: `ApiResponse<List<PackageResponse>>`
+  - Sắp xếp: `enrollmentCount` giảm dần.
+
+### 8.3 Khoá học miễn phí
+- `GET /packages/free`
+  - Tham số: `limit` (mặc định 10)
+  - Phản hồi: `ApiResponse<List<PackageResponse>>`
+  - Lọc: `pricingType = 'FREE'`.
+
+---
+
 Document by: auto-generated guide

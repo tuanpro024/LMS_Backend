@@ -1,6 +1,19 @@
 spring:
   application:
     name: repo-kanji-origin
+
+  kafka:
+    #    prod
+    #    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
+    #    producer:
+    #      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+    #      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    #      properties:
+    #        spring.json.trusted.packages: "*"
+
+    #  local
+    bootstrap-servers: localhost:9092
+
   datasource:
     url: jdbc:mysql://localhost:3306/lms_kanji_origin_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: sa
@@ -55,3 +68,8 @@ eureka:
     prefer-ip-address: true
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
+
+kanji:
+  progress:
+    kafka:
+      topic: ${KANJI_PROGRESS_KAFKA_TOPIC:kanji.progress.events}

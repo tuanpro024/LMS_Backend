@@ -123,4 +123,31 @@ public class PackageApiDelegate {
     public PackageResponse removeFolderFromPackage(String packageId, String folderId, String userId) {
         return packageService.removeFolderFromPackage(packageId, folderId, userId);
     }
+
+    /**
+     * Get latest packages
+     * 
+     * @return List of PackageResponse DTOs
+     */
+    public List<PackageResponse> getLatestPackages(TypeName type, int limit) {
+        return packageService.getLatestPackages(type, limit);
+    }
+
+    /**
+     * Get most enrolled packages
+     * 
+     * @return List of PackageResponse DTOs
+     */
+    public List<PackageResponse> getMostEnrolledPackages(TypeName type, int limit) {
+        return packageService.getMostEnrolledPackages(type, limit);
+    }
+
+    /**
+     * Get free packages
+     * 
+     * @return List of PackageResponse DTOs
+     */
+    public List<PackageResponse> getFreePackages(TypeName type, int limit) {
+        return packageService.getFreePackages(type, limit);
+    }
 }

@@ -2,10 +2,10 @@ spring:
   application:
     name: repo-learning-path
   kafka:
-  #    prod
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
-  #    local
-  #    bootstrap-servers: localhost:9092
+    #    prod
+    #    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
+    #    local
+    bootstrap-servers: localhost:9092
   datasource:
     url: jdbc:mysql://localhost:3306/lms_learning_path_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
@@ -76,3 +76,15 @@ writing:
     kafka:
       topic: ${WRITING_PROGRESS_KAFKA_TOPIC:writing.progress.events}
       group: ${WRITING_PROGRESS_KAFKA_GROUP:repo-learning-path-writing-progress}
+
+kanji:
+  progress:
+    kafka:
+      topic: ${KANJI_PROGRESS_KAFKA_TOPIC:kanji.progress.events}
+      group: ${KANJI_PROGRESS_KAFKA_GROUP:repo-learning-path-kanji-progress}
+
+flashcard:
+  progress:
+    kafka:
+      topic: ${FLASHCARD_PROGRESS_KAFKA_TOPIC:flashcard.progress.events}
+      group: ${FLASHCARD_PROGRESS_KAFKA_GROUP:repo-learning-path-flashcard-progress}

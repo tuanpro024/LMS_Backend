@@ -126,6 +126,11 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
     networks:
       - shared-network
       - lms-network
@@ -159,7 +164,7 @@ services:
       - MYSQL_DATABASE=lms_flashcard_db
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./repo-identity/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./repo-identity/src/main/resources/init-data.sql:/docker-entrypoint-initdb.d/init-data.sql
     networks:
       - lms-network
     healthcheck:
@@ -250,7 +255,7 @@ services:
     ports:
       - "8086:8086"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_flashcard_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_dictionary_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
@@ -261,6 +266,35 @@ services:
       setup-keys:
         condition: service_completed_successfully
       mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - lms-network
+
+  onl-learning-api:
+    build:
+      context: .
+      dockerfile: repo-onl-learning/Dockerfile
+    image: lms-onl-learning
+    container_name: lms-onl-learning
+    ports:
+      - "8095:8095"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_onl_learning_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATA_REDIS_HOST=redis
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
@@ -418,6 +452,9 @@ services:
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - STORAGE_MINIO_ENDPOINT=http://lms-video-minio:9000
+      - STORAGE_MINIO_ACCESS_KEY=lms_minio
+      - STORAGE_MINIO_SECRET_KEY=lms_minio
     volumes:
       - ./secrets:/app/secrets
     depends_on:
@@ -429,6 +466,11 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - lms-network
       - shared-network
@@ -526,7 +568,7 @@ networks:
   lms-network:
     driver: bridge
   shared-network:
-    external: true
+    driver: bridge
 
 volumes:
   mysql_data:

@@ -26,6 +26,7 @@ public class PackageResponse {
     private BigDecimal price;
     private String pricingType;
     private String userId;
+    private Integer enrollmentCount;
     private List<SubjectResponse> subjects;
     private List<FolderResponse> folders;
     private Instant createdAt;

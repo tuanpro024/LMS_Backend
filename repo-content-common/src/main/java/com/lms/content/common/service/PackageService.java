@@ -27,4 +27,10 @@ public interface PackageService {
     PackageResponse addFolderToPackage(String packageId, String folderId, String userId);
 
     PackageResponse removeFolderFromPackage(String packageId, String folderId, String userId);
+
+    List<PackageResponse> getLatestPackages(TypeName type, int limit);
+
+    List<PackageResponse> getMostEnrolledPackages(TypeName type, int limit);
+
+    List<PackageResponse> getFreePackages(TypeName type, int limit);
 }

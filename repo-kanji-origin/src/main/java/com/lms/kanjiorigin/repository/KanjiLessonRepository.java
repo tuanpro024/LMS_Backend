@@ -13,35 +13,44 @@ import java.util.Optional;
 
 @Repository
 public interface KanjiLessonRepository extends JpaRepository<KanjiLesson, String> {
-    List<KanjiLesson> findByDeletedFalse();
-    Optional<KanjiLesson> findByIdAndDeletedFalse(String id);
-    List<KanjiLesson> findByStudySetIdAndDeletedFalse(String studySetId);
+       List<KanjiLesson> findByDeletedFalse();
 
-    Page<KanjiLesson> findByDeletedFalse(Pageable pageable);
-    
-    Page<KanjiLesson> findByStudySetIdAndDeletedFalse(String studySetId, Pageable pageable);
-    
-    @Query("SELECT l FROM KanjiLesson l WHERE l.deleted = false " +
-           "AND (:studySetId IS NULL OR l.studySet.id = :studySetId) " +
-           "AND (:keyword IS NULL OR LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<KanjiLesson> search(@Param("studySetId") String studySetId, 
-                             @Param("keyword") String keyword, 
-                             Pageable pageable);
-    
-    @Query("SELECT l FROM KanjiLesson l WHERE l.deleted = false " +
-           "AND (:studySetId IS NULL OR l.studySet.id = :studySetId) " +
-           "AND (:keyword IS NULL OR LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    List<KanjiLesson> searchList(@Param("studySetId") String studySetId, 
-                                  @Param("keyword") String keyword);
-    boolean existsByStudySetIdAndContentIndex(String studySetId, Integer contentIndex);
-    boolean existsByStudySetIdAndContentIndexAndIdNot(String studySetId, Integer contentIndex, String id);
-    boolean existsByStudySetIdAndTitle(String studySetId, String title);
-    boolean existsByStudySetIdAndTitleAndIdNot(String studySetId, String title, String id);
-    boolean existsByIdAndDeletedFalse(String id);
-    
-    // For import
-    Optional<KanjiLesson> findByStudySetIdAndTitleAndDeletedFalse(String studySetId, String title);
-    
-    @Query("SELECT MAX(l.contentIndex) FROM KanjiLesson l WHERE l.studySet.id = :studySetId AND l.deleted = false")
-    Integer findMaxContentIndexByStudySetId(@Param("studySetId") String studySetId);
+       Optional<KanjiLesson> findByIdAndDeletedFalse(String id);
+
+       List<KanjiLesson> findByStudySetIdAndDeletedFalse(String studySetId);
+
+       Page<KanjiLesson> findByDeletedFalse(Pageable pageable);
+
+       Page<KanjiLesson> findByStudySetIdAndDeletedFalse(String studySetId, Pageable pageable);
+
+       @Query("SELECT l FROM KanjiLesson l WHERE l.deleted = false " +
+                     "AND (:studySetId IS NULL OR l.studySet.id = :studySetId) " +
+                     "AND (:keyword IS NULL OR LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+       Page<KanjiLesson> search(@Param("studySetId") String studySetId,
+                     @Param("keyword") String keyword,
+                     Pageable pageable);
+
+       @Query("SELECT l FROM KanjiLesson l WHERE l.deleted = false " +
+                     "AND (:studySetId IS NULL OR l.studySet.id = :studySetId) " +
+                     "AND (:keyword IS NULL OR LOWER(l.title) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+       List<KanjiLesson> searchList(@Param("studySetId") String studySetId,
+                     @Param("keyword") String keyword);
+
+       boolean existsByStudySetIdAndContentIndex(String studySetId, Integer contentIndex);
+
+       boolean existsByStudySetIdAndContentIndexAndIdNot(String studySetId, Integer contentIndex, String id);
+
+       boolean existsByStudySetIdAndTitle(String studySetId, String title);
+
+       boolean existsByStudySetIdAndTitleAndIdNot(String studySetId, String title, String id);
+
+       boolean existsByIdAndDeletedFalse(String id);
+
+       long countByStudySetIdAndDeletedFalse(String studySetId);
+
+       // For import
+       Optional<KanjiLesson> findByStudySetIdAndTitleAndDeletedFalse(String studySetId, String title);
+
+       @Query("SELECT MAX(l.contentIndex) FROM KanjiLesson l WHERE l.studySet.id = :studySetId AND l.deleted = false")
+       Integer findMaxContentIndexByStudySetId(@Param("studySetId") String studySetId);
 }

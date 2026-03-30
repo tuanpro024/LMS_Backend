@@ -24,7 +24,7 @@ public class SubjectController {
     private final SubjectApiDelegate delegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<SubjectResponse>> createSubject(
             @RequestBody @Valid CreateSubjectRequest request,
             Authentication authentication) {
@@ -53,7 +53,7 @@ public class SubjectController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<SubjectResponse>> updateSubject(
             @PathVariable String id,
             @RequestBody @Valid UpdateSubjectRequest request,
@@ -64,7 +64,7 @@ public class SubjectController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<Void>> deleteSubject(
             @PathVariable String id,
             Authentication authentication) {
@@ -74,7 +74,7 @@ public class SubjectController {
     }
 
     @PostMapping("/{subjectId}/folders/{folderId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<SubjectResponse>> addFolderToSubject(
             @PathVariable String subjectId,
             @PathVariable String folderId,
@@ -85,7 +85,7 @@ public class SubjectController {
     }
 
     @DeleteMapping("/{subjectId}/folders/{folderId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<SubjectResponse>> removeFolderFromSubject(
             @PathVariable String subjectId,
             @PathVariable String folderId,

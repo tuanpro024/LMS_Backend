@@ -8,43 +8,48 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Parser for hierarchical Excel structure.
  * Format: Package -&gt; Folder -&gt; StudySet -&gt; Content Items
  *
  * Parsing is header-name-based (case-insensitive, spaces/underscores stripped).
- * Required headers: PackageName, PackageDescription, FolderName, FolderDescription,
- * StudySetName, StudySetDescription, Term, Definition, Pinyin, SinoVn, WordType,
- * HskLevel, ImageWord, SinoOrigin, ImageOrigin, Audio, ExampleSentence, ExamplePinyin,
+ * Required headers: PackageName, PackageDescription, FolderName,
+ * FolderDescription,
+ * StudySetName, StudySetDescription, Term, Definition, Pinyin, SinoVn,
+ * WordType,
+ * HskLevel, ImageWord, SinoOrigin, ImageOrigin, Audio, ExampleSentence,
+ * ExamplePinyin,
  * ExampleMeaning, CharactersJson
  */
 public class HierarchicalExcelParser {
 
-    private static final String H_PACKAGE_NAME        = "packagename";
+    private static final String H_PACKAGE_NAME = "packagename";
     private static final String H_PACKAGE_DESCRIPTION = "packagedescription";
-    private static final String H_FOLDER_NAME         = "foldername";
-    private static final String H_FOLDER_DESCRIPTION  = "folderdescription";
-    private static final String H_STUDY_SET_NAME      = "studysetname";
-    private static final String H_STUDY_SET_DESC      = "studysetdescription";
-    private static final String H_TERM                = "term";
-    private static final String H_DEFINITION          = "definition";
-    private static final String H_PINYIN              = "pinyin";
-    private static final String H_SINO_VN             = "sinovn";
-    private static final String H_WORD_TYPE           = "wordtype";
-    private static final String H_HSK_LEVEL           = "hsklevel";
-    private static final String H_IMAGE_WORD          = "imageword";
-    private static final String H_SINO_ORIGIN         = "sinoorigin";
-    private static final String H_IMAGE_ORIGIN        = "imageorigin";
-    private static final String H_AUDIO               = "audio";
-    private static final String H_EXAMPLE_SENTENCE    = "examplesentence";
-    private static final String H_EXAMPLE_PINYIN      = "examplepinyin";
-    private static final String H_EXAMPLE_MEANING     = "examplemeaning";
-    private static final String H_CHARACTERS_JSON     = "charactersjson";
+    private static final String H_FOLDER_NAME = "foldername";
+    private static final String H_FOLDER_DESCRIPTION = "folderdescription";
+    private static final String H_STUDY_SET_NAME = "studysetname";
+    private static final String H_STUDY_SET_DESC = "studysetdescription";
+    private static final String H_TERM = "term";
+    private static final String H_DEFINITION = "definition";
+    private static final String H_PINYIN = "pinyin";
+    private static final String H_SINO_VN = "sinovn";
+    private static final String H_WORD_TYPE = "wordtype";
+    private static final String H_HSK_LEVEL = "hsklevel";
+    private static final String H_IMAGE_WORD = "imageword";
+    private static final String H_SINO_ORIGIN = "sinoorigin";
+    private static final String H_IMAGE_ORIGIN = "imageorigin";
+    private static final String H_AUDIO = "audio";
+    private static final String H_EXAMPLE_SENTENCE = "examplesentence";
+    private static final String H_EXAMPLE_PINYIN = "examplepinyin";
+    private static final String H_EXAMPLE_MEANING = "examplemeaning";
+    private static final String H_CHARACTERS_JSON = "charactersjson";
 
     private static final List<String> REQUIRED_HEADERS = Arrays.asList(
             H_PACKAGE_NAME, H_PACKAGE_DESCRIPTION,
@@ -54,8 +59,7 @@ public class HierarchicalExcelParser {
             H_WORD_TYPE, H_HSK_LEVEL, H_IMAGE_WORD,
             H_SINO_ORIGIN, H_IMAGE_ORIGIN, H_AUDIO,
             H_EXAMPLE_SENTENCE, H_EXAMPLE_PINYIN,
-            H_EXAMPLE_MEANING, H_CHARACTERS_JSON
-    );
+            H_EXAMPLE_MEANING, H_CHARACTERS_JSON);
 
     private HierarchicalExcelParser() {
     }
@@ -64,6 +68,14 @@ public class HierarchicalExcelParser {
      * Parse Excel file into hierarchical rows.
      */
     public static List<HierarchicalImportRow> parseFile(MultipartFile file) throws IOException {
+        return parseFile(file, REQUIRED_HEADERS);
+    }
+
+    /**
+     * Parse Excel file into hierarchical rows with custom required headers.
+     */
+    public static List<HierarchicalImportRow> parseFile(MultipartFile file, List<String> requiredHeaders)
+            throws IOException {
         String filename = file.getOriginalFilename();
         if (filename == null) {
             throw new IllegalArgumentException("File name is null");
@@ -73,11 +85,12 @@ public class HierarchicalExcelParser {
         }
 
         try (InputStream is = file.getInputStream()) {
-            return parseExcel(is);
+            return parseExcel(is, normalizeRequiredHeaders(requiredHeaders));
         }
     }
 
-    private static List<HierarchicalImportRow> parseExcel(InputStream is) throws IOException {
+    private static List<HierarchicalImportRow> parseExcel(InputStream is, List<String> requiredHeaders)
+            throws IOException {
         List<HierarchicalImportRow> rows = new ArrayList<>();
 
         try (Workbook workbook = WorkbookFactory.create(is)) {
@@ -89,7 +102,7 @@ public class HierarchicalExcelParser {
             int firstRowNum = sheet.getFirstRowNum();
             Row headerRow = sheet.getRow(firstRowNum);
             Map<String, Integer> headerIndexMap = buildHeaderIndexMap(headerRow);
-            validateRequiredHeaders(headerIndexMap);
+            validateRequiredHeaders(headerIndexMap, requiredHeaders);
 
             for (int i = firstRowNum + 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -145,15 +158,18 @@ public class HierarchicalExcelParser {
                 String normalized = normalizeHeader(value);
                 if (!normalized.isEmpty()) {
                     map.putIfAbsent(normalized, i);
+                    if ("studetsetdescription".equals(normalized)) {
+                        map.putIfAbsent(H_STUDY_SET_DESC, i);
+                    }
                 }
             }
         }
         return map;
     }
 
-    private static void validateRequiredHeaders(Map<String, Integer> headerIndexMap) {
+    private static void validateRequiredHeaders(Map<String, Integer> headerIndexMap, List<String> requiredHeaders) {
         List<String> missing = new ArrayList<>();
-        for (String required : REQUIRED_HEADERS) {
+        for (String required : requiredHeaders) {
             if (!headerIndexMap.containsKey(required)) {
                 missing.add(required);
             }
@@ -169,6 +185,27 @@ public class HierarchicalExcelParser {
             return null;
         }
         return getCellValue(row, index);
+    }
+
+    private static List<String> normalizeRequiredHeaders(List<String> requiredHeaders) {
+        if (requiredHeaders == null || requiredHeaders.isEmpty()) {
+            return REQUIRED_HEADERS;
+        }
+
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String required : requiredHeaders) {
+            if (required == null) {
+                continue;
+            }
+            String key = normalizeHeader(required);
+            if (!key.isEmpty()) {
+                normalized.add(key);
+            }
+        }
+        if (normalized.isEmpty()) {
+            return REQUIRED_HEADERS;
+        }
+        return new ArrayList<>(normalized);
     }
 
     private static String normalizeHeader(String value) {

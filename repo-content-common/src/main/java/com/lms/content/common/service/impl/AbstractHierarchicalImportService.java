@@ -35,6 +35,10 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
 
     protected abstract String getContentItemTypeName();
 
+    protected List<String> getRequiredHeaders() {
+        return null;
+    }
+
     @Transactional
     public HierarchicalImportResult importFromPackageExcel(
             MultipartFile file,
@@ -60,7 +64,7 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
 
         List<HierarchicalImportRow> rows;
         try {
-            rows = HierarchicalExcelParser.parseFile(file);
+            rows = HierarchicalExcelParser.parseFile(file, getRequiredHeaders());
         } catch (IOException e) {
             log.error("Failed to parse Excel file: {}", e.getMessage());
             throw new RuntimeException("Failed to parse Excel file: " + e.getMessage(), e);
@@ -106,10 +110,11 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
         for (HierarchicalImportRow row : rows) {
             if (row.isEmpty()) {
                 // Empty row marks end of current study set
-                if (currentStudySet != null && currentContentItems != null && !currentContentItems.isEmpty()) {
-                    saveStudySetWithItems(currentStudySet, currentContentItems);
+                if (currentStudySet != null) {
+                    List<T> itemsToSave = currentContentItems != null ? currentContentItems : Collections.emptyList();
+                    saveStudySetWithItems(currentStudySet, itemsToSave);
                     result.setTotalStudySets(result.getTotalStudySets() + 1);
-                    result.setTotalContentItems(result.getTotalContentItems() + currentContentItems.size());
+                    result.setTotalContentItems(result.getTotalContentItems() + itemsToSave.size());
                     currentStudySet = null;
                     currentContentItems = null;
                     contentItemIndex = 0;
@@ -170,10 +175,11 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
 
             // StudySet level
             if (row.hasStudySetData()) {
-                if (currentStudySet != null && currentContentItems != null && !currentContentItems.isEmpty()) {
-                    saveStudySetWithItems(currentStudySet, currentContentItems);
+                if (currentStudySet != null) {
+                    List<T> itemsToSave = currentContentItems != null ? currentContentItems : Collections.emptyList();
+                    saveStudySetWithItems(currentStudySet, itemsToSave);
                     result.setTotalStudySets(result.getTotalStudySets() + 1);
-                    result.setTotalContentItems(result.getTotalContentItems() + currentContentItems.size());
+                    result.setTotalContentItems(result.getTotalContentItems() + itemsToSave.size());
                 }
 
                 if (currentFolder == null) {
@@ -213,10 +219,11 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
         // Save remaining folder/studySet hierarchy
         if (currentFolder != null) {
             saveFolderHierarchy(currentFolder, currentStudySet, currentContentItems, result);
-        } else if (currentStudySet != null && currentContentItems != null && !currentContentItems.isEmpty()) {
-            saveStudySetWithItems(currentStudySet, currentContentItems);
+        } else if (currentStudySet != null) {
+            List<T> itemsToSave = currentContentItems != null ? currentContentItems : Collections.emptyList();
+            saveStudySetWithItems(currentStudySet, itemsToSave);
             result.setTotalStudySets(result.getTotalStudySets() + 1);
-            result.setTotalContentItems(result.getTotalContentItems() + currentContentItems.size());
+            result.setTotalContentItems(result.getTotalContentItems() + itemsToSave.size());
         }
 
         return result;
@@ -238,12 +245,13 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
         result.getFolderIds().add(savedFolder.getId());
         log.debug("Saved folder: {}", savedFolder.getName());
 
-        if (studySet != null && contentItems != null && !contentItems.isEmpty()) {
-            saveStudySetWithItems(studySet, contentItems);
+        if (studySet != null) {
+            List<T> itemsToSave = contentItems != null ? contentItems : Collections.emptyList();
+            saveStudySetWithItems(studySet, itemsToSave);
             savedFolder.addStudySet(studySet);
             result.getStudySetIds().add(studySet.getId());
             result.setTotalStudySets(result.getTotalStudySets() + 1);
-            result.setTotalContentItems(result.getTotalContentItems() + contentItems.size());
+            result.setTotalContentItems(result.getTotalContentItems() + itemsToSave.size());
         }
     }
 }

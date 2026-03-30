@@ -55,20 +55,6 @@ public class FolderController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
-    @GetMapping("/subject/{subjectId}")
-    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFoldersBySubjectId(
-            @PathVariable String subjectId) {
-        List<FolderResponse> response = delegate.getFoldersBySubjectId(subjectId);
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
-    @GetMapping("/slot/{slotId}")
-    public ResponseEntity<ApiResponse<List<FolderResponse>>> getFoldersBySlotId(
-            @PathVariable String slotId) {
-        List<FolderResponse> response = delegate.getFoldersBySlotId(slotId);
-        return ResponseEntity.ok(ApiResponse.ok(response));
-    }
-
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<FolderResponse>> updateFolder(
             @PathVariable String id,

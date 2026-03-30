@@ -21,20 +21,12 @@ public class HierarchicalImportResult {
     private List<String> packageIds = new ArrayList<>();
 
     @Builder.Default
-    private List<String> subjectIds = new ArrayList<>();
-
-    @Builder.Default
-    private List<String> slotIds = new ArrayList<>();
-
-    @Builder.Default
     private List<String> folderIds = new ArrayList<>();
 
     @Builder.Default
     private List<String> studySetIds = new ArrayList<>();
 
     private int totalPackages;
-    private int totalSubjects;
-    private int totalSlots;
     private int totalFolders;
     private int totalStudySets;
     private int totalContentItems;

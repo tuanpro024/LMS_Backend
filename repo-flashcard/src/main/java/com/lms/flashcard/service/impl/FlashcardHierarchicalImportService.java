@@ -1,7 +1,6 @@
 package com.lms.flashcard.service.impl;
 
 import com.lms.content.common.dto.excel.HierarchicalImportRow;
-import com.lms.content.common.dto.excel.ImportableContentItem;
 import com.lms.content.common.repository.*;
 import com.lms.content.common.service.impl.AbstractHierarchicalImportService;
 import com.lms.flashcard.entity.Card;
@@ -9,25 +8,38 @@ import com.lms.flashcard.repository.CardRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
- * Hierarchical import service for flashcard module
+ * Hierarchical import service for flashcard module.
+ * Hierarchy: Package -&gt; Folder -&gt; StudySet -&gt; Card
  */
 @Service
 @Slf4j
 public class FlashcardHierarchicalImportService extends AbstractHierarchicalImportService<Card> {
 
+    private static final List<String> FLASHCARD_REQUIRED_HEADERS = List.of(
+            "packageName",
+            "packageDescription",
+            "folderName",
+            "folderDescription",
+            "studySetName",
+            "studySetDescription",
+            "term",
+            "definition",
+            "pinyin",
+            "wordType",
+            "hskLevel");
+
     private final CardRepository cardRepository;
 
     public FlashcardHierarchicalImportService(
             PackageRepository packageRepository,
-            SubjectRepository subjectRepository,
-            SlotRepository slotRepository,
             FolderRepository folderRepository,
             StudySetRepository studySetRepository,
             TypeRepository typeRepository,
             CardRepository cardRepository) {
-        super(packageRepository, subjectRepository, slotRepository,
-                folderRepository, studySetRepository, typeRepository);
+        super(packageRepository, folderRepository, studySetRepository, typeRepository);
         this.cardRepository = cardRepository;
     }
 
@@ -49,13 +61,17 @@ public class FlashcardHierarchicalImportService extends AbstractHierarchicalImpo
         card.setExamplePinyin(row.getExamplePinyin() != null ? row.getExamplePinyin().trim() : null);
         card.setExampleMeaning(row.getExampleMeaning() != null ? row.getExampleMeaning().trim() : null);
         card.setCharacters(row.getCharactersJson() != null ? row.getCharactersJson().trim() : null);
-
         return card;
     }
 
     @Override
     protected void saveContentItem(Card item) {
         cardRepository.save(item);
+    }
+
+    @Override
+    protected List<String> getRequiredHeaders() {
+        return FLASHCARD_REQUIRED_HEADERS;
     }
 
     @Override

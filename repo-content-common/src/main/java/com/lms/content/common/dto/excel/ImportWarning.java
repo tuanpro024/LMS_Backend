@@ -21,9 +21,6 @@ public class ImportWarning {
 
     public enum WarningType {
         MISSING_PACKAGE_NAME,
-        MISSING_SUBJECT_NAME,
-        MISSING_SUBJECT_CODE,
-        MISSING_SLOT_NAME,
         MISSING_FOLDER_NAME,
         MISSING_STUDY_SET_NAME,
         MISSING_TERM,
@@ -31,8 +28,6 @@ public class ImportWarning {
         ORPHAN_CONTENT_ITEM,
         ORPHAN_STUDY_SET,
         ORPHAN_FOLDER,
-        ORPHAN_SLOT,
-        ORPHAN_SUBJECT,
         EMPTY_ROW
     }
 

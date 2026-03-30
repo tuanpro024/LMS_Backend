@@ -66,8 +66,6 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
 
     public KanjiOriginHierarchicalImportService(
             PackageRepository packageRepository,
-            SubjectRepository subjectRepository,
-            SlotRepository slotRepository,
             FolderRepository folderRepository,
             StudySetRepository studySetRepository,
             TypeRepository typeRepository,
@@ -76,8 +74,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
             KanjiQuestionRepository kanjiQuestionRepository,
             KanjiQuestionWrongOptionRepository kanjiQuestionWrongOptionRepository,
             KanjiLessonQuestionRepository kanjiLessonQuestionRepository) {
-        super(packageRepository, subjectRepository, slotRepository,
-                folderRepository, studySetRepository, typeRepository);
+        super(packageRepository, folderRepository, studySetRepository, typeRepository);
         this.kanjiLessonRepository = kanjiLessonRepository;
         this.kanjiOriginRepository = kanjiOriginRepository;
         this.kanjiQuestionRepository = kanjiQuestionRepository;

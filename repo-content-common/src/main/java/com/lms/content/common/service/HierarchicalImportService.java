@@ -6,20 +6,19 @@ import com.lms.content.common.entity.TypeName;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Generic service for hierarchical Excel import
- * Can be used by both flashcard and writing modules
- * 
+ * Generic service for hierarchical Excel import.
+ * Hierarchy: Package -&gt; Folder -&gt; StudySet -&gt; ContentItems
+ *
  * @param <T> The type of content item (Card, Word, etc.)
  */
 public interface HierarchicalImportService<T extends ImportableContentItem> {
 
     /**
-     * Import data from Excel file with full hierarchy:
-     * Package -> Subject -> Slot -> Folder -> StudySet -> ContentItems
-     * 
+     * Import data from Excel file with hierarchy:
+     * Package -&gt; Folder -&gt; StudySet -&gt; ContentItems
+     *
      * @param file      Excel file
-     * @param typeName  TypeName enum for the Package Type (all packages will have
-     *                  this type)
+     * @param typeName  TypeName enum for the Package Type
      * @param userId    User performing the import
      * @param isPrivate Whether created items should be private
      * @return Import result with statistics and warnings

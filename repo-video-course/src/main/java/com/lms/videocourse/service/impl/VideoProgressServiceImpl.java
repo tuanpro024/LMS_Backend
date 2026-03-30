@@ -258,7 +258,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
 
                 for (VideoModule module : allModules) {
                     boolean isCompleted = false;
-                    if (module.getModuleType() == com.lms.videocourse.entity.enums.ModuleType.FLASHCARD) {
+                    if (isExternalPracticeModule(module.getModuleType())) {
                         isCompleted = practiceProgressList.stream()
                                 .anyMatch(p -> p.getVideoModuleId().equals(module.getId()) && p.getStatus() == ProgressStatus.COMPLETED);
                     } else {
@@ -445,5 +445,13 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                 .firstStartedAt(p.getFirstStartedAt())
                                 .completedAt(p.getCompletedAt())
                                 .build();
+        }
+
+        private boolean isExternalPracticeModule(com.lms.videocourse.entity.enums.ModuleType moduleType) {
+                return moduleType == com.lms.videocourse.entity.enums.ModuleType.FLASHCARD ||
+                       moduleType == com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION ||
+                       moduleType == com.lms.videocourse.entity.enums.ModuleType.WRITING ||
+                       moduleType == com.lms.videocourse.entity.enums.ModuleType.QUIZ ||
+                       moduleType == com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
         }
 }

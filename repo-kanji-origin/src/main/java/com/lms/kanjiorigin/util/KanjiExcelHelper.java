@@ -9,30 +9,47 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class KanjiExcelHelper {
     
     private static final String TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     
-    // Kanji columns: A(0)-K(10)
-    private static final int KANJI_TERM_COL = 1;        // B: Hán tự
-    private static final int KANJI_PINYIN_COL = 2;      // C: Pinyin
-    private static final int KANJI_SINO_VN_COL = 3;     // D: Âm Hán Việt
-    private static final int KANJI_MEANING_COL = 4;     // E: Nghĩa
-    private static final int KANJI_ORIGIN_VI_COL = 5;   // F: Nguồn gốc (VI)
-    private static final int KANJI_ORIGIN_CN_COL = 6;   // G: Nguồn gốc (CN)
-    private static final int KANJI_IMAGE_COL = 7;       // H: Hình ảnh
-    private static final int KANJI_EXAM_SENT_COL = 8;   // I: Câu ví dụ
-    private static final int KANJI_EXAM_MEAN_COL = 9;   // J: Nghĩa câu VD
-    private static final int KANJI_EXAM_PINY_COL = 10;  // K: Pinyin câu VD
-    
-    // Question columns: M(12)-P(15)
-    private static final int QUESTION_CONTENT_COL = 13;       // N: Câu hỏi
-    private static final int QUESTION_CORRECT_COL = 14;       // O: Đáp án đúng
-    private static final int QUESTION_WRONG_COL = 15;         // P: Đáp án sai
+    private static final String H_TERM = "term";
+    private static final String H_PINYIN = "pinyin";
+    private static final String H_SINO_VN = "sinovn";
+    private static final String H_MEANING = "meaning";
+    private static final String H_ORIGIN_TEXT_VI = "origintextvi";
+    private static final String H_ORIGIN_TEXT_CN = "origintextcn";
+    private static final String H_ORIGIN_IMAGE = "originimage";
+    private static final String H_EXAMPLE_SENTENCE = "examplesentence";
+    private static final String H_EXAMPLE_MEANING = "examplemeaning";
+    private static final String H_EXAMPLE_PINYIN = "examplepinyin";
+
+    private static final String H_QUESTION_CONTENT = "questioncontent";
+    private static final String H_CORRECT_ANSWER = "correctanswer";
+    private static final String H_WRONG_OPTIONS = "wrongoptions";
+
+        private static final Map<String, List<String>> HEADER_ALIASES = Map.ofEntries(
+            Map.entry(H_TERM, List.of("term", "hantu", "kanji", "character")),
+            Map.entry(H_PINYIN, List.of("pinyin")),
+            Map.entry(H_SINO_VN, List.of("sinovn", "amhanviet", "hanviet")),
+            Map.entry(H_MEANING, List.of("meaning", "nghia")),
+            Map.entry(H_ORIGIN_TEXT_VI, List.of("origintextvi", "originvi", "nguongocvi", "nguongoc")),
+            Map.entry(H_ORIGIN_TEXT_CN, List.of("origintextcn", "origincn", "nguongoccn")),
+            Map.entry(H_ORIGIN_IMAGE, List.of("originimage", "image", "hinhanh", "imageword")),
+            Map.entry(H_EXAMPLE_SENTENCE, List.of("examplesentence", "cauvidu", "vidu")),
+            Map.entry(H_EXAMPLE_MEANING, List.of("examplemeaning", "nghiacauvidu", "nghiacauvd")),
+            Map.entry(H_EXAMPLE_PINYIN, List.of("examplepinyin", "pinyincauvidu", "pinyincauvd")),
+            Map.entry(H_QUESTION_CONTENT, List.of("questioncontent", "question", "cauhoi")),
+            Map.entry(H_CORRECT_ANSWER, List.of("correctanswer", "dapandung", "answercorrect")),
+            Map.entry(H_WRONG_OPTIONS, List.of("wrongoptions", "wrongoption", "wronganswer", "dapansai")));
     
     public static boolean hasExcelFormat(MultipartFile file) {
         return TYPE.equals(file.getContentType());
@@ -73,6 +90,10 @@ public class KanjiExcelHelper {
                 lesson.setDescription(getCellValueAsString(descCell));
             }
         }
+
+            Row headerRow = sheet.getRow(1);
+            Map<String, Integer> headerIndexMap = buildHeaderIndexMap(headerRow);
+            validateRequiredHeaders(headerIndexMap);
         
         // Row 1: headers, skip
         // Row 2+: data rows
@@ -80,14 +101,14 @@ public class KanjiExcelHelper {
             Row row = sheet.getRow(rowIdx);
             if (row == null) continue;
             
-            // Parse kanji from columns A-K
-            ImportKanjiRequest kanji = parseKanjiFromRow(row);
+            // Parse kanji from header names
+            ImportKanjiRequest kanji = parseKanjiFromRow(row, headerIndexMap);
             if (kanji != null && kanji.getTerm() != null && !kanji.getTerm().trim().isEmpty()) {
                 lesson.getKanjis().add(kanji);
             }
             
-            // Parse question from columns M-P
-            ImportQuestionRequest question = parseQuestionFromRow(row);
+            // Parse question from header names
+            ImportQuestionRequest question = parseQuestionFromRow(row, headerIndexMap);
             if (question != null && question.getContent() != null && !question.getContent().trim().isEmpty()) {
                 lesson.getQuestions().add(question);
             }
@@ -96,34 +117,34 @@ public class KanjiExcelHelper {
         return lesson;
     }
     
-    private static ImportKanjiRequest parseKanjiFromRow(Row row) {
-        String term = getCellValueAsString(row.getCell(KANJI_TERM_COL));
+    private static ImportKanjiRequest parseKanjiFromRow(Row row, Map<String, Integer> headerIndexMap) {
+        String term = getValue(row, headerIndexMap, H_TERM);
         if (term == null || term.trim().isEmpty()) {
             return null;
         }
         
         return ImportKanjiRequest.builder()
                 .term(term.trim())
-                .pinyin(getCellValueAsString(row.getCell(KANJI_PINYIN_COL)))
-                .sinoVn(getCellValueAsString(row.getCell(KANJI_SINO_VN_COL)))
-                .meaning(getCellValueAsString(row.getCell(KANJI_MEANING_COL)))
-                .originTextVi(getCellValueAsString(row.getCell(KANJI_ORIGIN_VI_COL)))
-                .originTextCn(getCellValueAsString(row.getCell(KANJI_ORIGIN_CN_COL)))
-                .originImage(getCellValueAsString(row.getCell(KANJI_IMAGE_COL)))
-                .exampleSentence(getCellValueAsString(row.getCell(KANJI_EXAM_SENT_COL)))
-                .exampleMeaning(getCellValueAsString(row.getCell(KANJI_EXAM_MEAN_COL)))
-                .examplePinyin(getCellValueAsString(row.getCell(KANJI_EXAM_PINY_COL)))
+                .pinyin(getValue(row, headerIndexMap, H_PINYIN))
+                .sinoVn(getValue(row, headerIndexMap, H_SINO_VN))
+                .meaning(getValue(row, headerIndexMap, H_MEANING))
+                .originTextVi(getValue(row, headerIndexMap, H_ORIGIN_TEXT_VI))
+                .originTextCn(getValue(row, headerIndexMap, H_ORIGIN_TEXT_CN))
+                .originImage(getValue(row, headerIndexMap, H_ORIGIN_IMAGE))
+                .exampleSentence(getValue(row, headerIndexMap, H_EXAMPLE_SENTENCE))
+                .exampleMeaning(getValue(row, headerIndexMap, H_EXAMPLE_MEANING))
+                .examplePinyin(getValue(row, headerIndexMap, H_EXAMPLE_PINYIN))
                 .build();
     }
     
-    private static ImportQuestionRequest parseQuestionFromRow(Row row) {
-        String content = getCellValueAsString(row.getCell(QUESTION_CONTENT_COL));
+    private static ImportQuestionRequest parseQuestionFromRow(Row row, Map<String, Integer> headerIndexMap) {
+        String content = getValue(row, headerIndexMap, H_QUESTION_CONTENT);
         if (content == null || content.trim().isEmpty()) {
             return null;
         }
         
-        String correctAnswer = getCellValueAsString(row.getCell(QUESTION_CORRECT_COL));
-        String wrongOptionsStr = getCellValueAsString(row.getCell(QUESTION_WRONG_COL));
+        String correctAnswer = getValue(row, headerIndexMap, H_CORRECT_ANSWER);
+        String wrongOptionsStr = getValue(row, headerIndexMap, H_WRONG_OPTIONS);
         
         List<String> wrongOptions = new ArrayList<>();
         if (wrongOptionsStr != null && !wrongOptionsStr.trim().isEmpty()) {
@@ -138,6 +159,64 @@ public class KanjiExcelHelper {
                 .correctAnswer(correctAnswer != null ? correctAnswer.trim() : "")
                 .wrongOptions(wrongOptions)
                 .build();
+    }
+
+    private static Map<String, Integer> buildHeaderIndexMap(Row headerRow) {
+        Map<String, Integer> rawHeaders = new HashMap<>();
+        if (headerRow == null) {
+            return rawHeaders;
+        }
+
+        short firstCell = headerRow.getFirstCellNum();
+        short lastCell = headerRow.getLastCellNum();
+        if (firstCell < 0 || lastCell < 0) {
+            return rawHeaders;
+        }
+
+        for (int i = firstCell; i < lastCell; i++) {
+            String value = getCellValueAsString(headerRow.getCell(i, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL));
+            if (value == null || value.trim().isEmpty()) {
+                continue;
+            }
+            String normalized = normalizeHeader(value);
+            if (!normalized.isEmpty()) {
+                rawHeaders.putIfAbsent(normalized, i);
+            }
+        }
+
+        Map<String, Integer> canonical = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : HEADER_ALIASES.entrySet()) {
+            for (String alias : entry.getValue()) {
+                Integer index = rawHeaders.get(normalizeHeader(alias));
+                if (index != null) {
+                    canonical.putIfAbsent(entry.getKey(), index);
+                    break;
+                }
+            }
+        }
+
+        return canonical;
+    }
+
+    private static void validateRequiredHeaders(Map<String, Integer> headerIndexMap) {
+        if (!headerIndexMap.containsKey(H_TERM)) {
+            throw new IllegalArgumentException("Missing required header: term (or alias like Hán tự)");
+        }
+    }
+
+    private static String normalizeHeader(String value) {
+        String ascii = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT);
+        return ascii.replaceAll("[^a-z0-9]", "");
+    }
+
+    private static String getValue(Row row, Map<String, Integer> headerIndexMap, String headerKey) {
+        Integer index = headerIndexMap.get(headerKey);
+        if (index == null) {
+            return null;
+        }
+        return getCellValueAsString(row.getCell(index, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL));
     }
     
     private static String getCellValueAsString(Cell cell) {

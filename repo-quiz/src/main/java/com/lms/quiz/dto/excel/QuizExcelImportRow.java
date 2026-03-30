@@ -7,17 +7,14 @@ import lombok.NoArgsConstructor;
 
 /**
  * Represents a single row in the Quiz Excel import file.
- * Hierarchy: Package → Subject → Slot → Folder → StudySet → Quiz → Questions
+ * Hierarchy: Package -&gt; Folder -&gt; StudySet -&gt; Quiz -&gt; Questions
  *
  * Columns:
- * A-B: Package (name, desc)
- * C-E: Subject (name, code, desc)
- * F-H: Slot (name, number, desc)
- * I-J: Folder (name, desc)
- * K: StudySet (name)
- * L-P: Quiz metadata (title, desc, difficulty, timeLimit, passingScore)
- * Q-U: Question common (type, text, explanation, points, difficulty)
- * V-Z: Question type-specific data (Data1-Data5)
+ * PackageName | PackageDescription | FolderName | FolderDescription |
+ * StudySetName | StudySetDescription | QuizTitle | QuizDescription |
+ * QuizDifficulty | TimeLimitSeconds | PassingScore |
+ * QuestionType | QuestionText | Explanation | Points | QuestionDifficulty |
+ * Data1 | Data2 | Data3 | Data4 | Data5
  */
 @Data
 @Builder
@@ -27,43 +24,33 @@ public class QuizExcelImportRow {
 
     private int rowNumber;
 
-    // Package level (A-B)
+    // Package level
     private String packageName;
     private String packageDescription;
 
-    // Subject level (C-E)
-    private String subjectName;
-    private String subjectCode;
-    private String subjectDescription;
-
-    // Slot level (F-H)
-    private String slotName;
-    private String slotNumber;
-    private String slotDescription;
-
-    // Folder level (I-J)
+    // Folder level
     private String folderName;
     private String folderDescription;
 
-    // StudySet level (K)
+    // StudySet level
     private String studySetName;
     private String studySetDescription;
 
-    // Quiz level (L-P)
+    // Quiz level
     private String quizTitle;
     private String quizDescription;
     private String quizDifficulty; // EASY / MEDIUM / HARD
     private String timeLimitSeconds; // integer as string
     private String passingScore; // integer as string
 
-    // Question level (Q-U)
+    // Question level
     private String questionType; // MULTIPLE_CHOICE / FILL_IN_BLANK / MATCHING_PAIRS / SENTENCE_BUILDER
     private String questionText;
     private String explanation;
     private String points; // integer as string
     private String questionDifficulty; // EASY / MEDIUM / HARD
 
-    // Type-specific data (V-Z)
+    // Type-specific data
     private String data1;
     private String data2;
     private String data3;
@@ -74,14 +61,6 @@ public class QuizExcelImportRow {
 
     public boolean hasPackageData() {
         return packageName != null && !packageName.trim().isEmpty();
-    }
-
-    public boolean hasSubjectData() {
-        return subjectName != null && !subjectName.trim().isEmpty();
-    }
-
-    public boolean hasSlotData() {
-        return slotName != null && !slotName.trim().isEmpty();
     }
 
     public boolean hasFolderData() {
@@ -100,9 +79,6 @@ public class QuizExcelImportRow {
         return questionType != null && !questionType.trim().isEmpty();
     }
 
-    /**
-     * Row has sub-data only (option/blank/pair/chunk for previous question)
-     */
     public boolean hasSubDataOnly() {
         return !hasQuestionData() && hasAnySubData();
     }
@@ -117,8 +93,7 @@ public class QuizExcelImportRow {
     }
 
     public boolean isEmpty() {
-        return !hasPackageData() && !hasSubjectData() && !hasSlotData()
-                && !hasFolderData() && !hasStudySetData() && !hasQuizData()
-                && !hasQuestionData() && !hasSubDataOnly();
+        return !hasPackageData() && !hasFolderData() && !hasStudySetData()
+                && !hasQuizData() && !hasQuestionData() && !hasSubDataOnly();
     }
 }

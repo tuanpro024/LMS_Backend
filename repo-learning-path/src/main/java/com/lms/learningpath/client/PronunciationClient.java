@@ -41,7 +41,7 @@ public interface PronunciationClient {
         /**
          * Search study sets by query
          */
-        @GetMapping("/study-sets/search")
+        @GetMapping("/study-sets")
         ApiResponse<List<StudySetResponse>> searchStudySets(@RequestParam("q") String query);
 
         /**

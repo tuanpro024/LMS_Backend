@@ -7,15 +7,11 @@ import com.lms.content.common.dto.request.UpdateFolderRequest;
 import com.lms.content.common.dto.response.FolderResponse;
 import com.lms.content.common.entity.Folder;
 import com.lms.content.common.entity.Package;
-import com.lms.content.common.entity.Slot;
 import com.lms.content.common.entity.StudySet;
-import com.lms.content.common.entity.Subject;
 import com.lms.content.common.mapper.FolderMapper;
 import com.lms.content.common.repository.FolderRepository;
 import com.lms.content.common.repository.PackageRepository;
-import com.lms.content.common.repository.SlotRepository;
 import com.lms.content.common.repository.StudySetRepository;
-import com.lms.content.common.repository.SubjectRepository;
 import com.lms.content.common.service.FolderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,11 +28,8 @@ public class FolderServiceImpl implements FolderService {
 
     private final FolderRepository folderRepository;
     private final PackageRepository packageRepository;
-    private final SubjectRepository subjectRepository;
-    private final SlotRepository slotRepository;
     private final StudySetRepository studySetRepository;
     private final FolderMapper folderMapper;
-    private final com.lms.content.common.service.StudySetService studySetService;
 
     @Override
     public FolderResponse createFolder(CreateFolderRequest request, String userId) {
@@ -54,20 +46,6 @@ public class FolderServiceImpl implements FolderService {
             Package packageEntity = packageRepository.findById(request.getPackageId())
                     .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
             folder.setPackageEntity(packageEntity);
-        }
-
-        // Set subject if provided
-        if (request.getSubjectId() != null) {
-            Subject subject = subjectRepository.findById(request.getSubjectId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.E227, "Subject not found"));
-            folder.setSubject(subject);
-        }
-
-        // Set slot if provided (optional - will skip if not found)
-        if (request.getSlotId() != null && !request.getSlotId().trim().isEmpty()) {
-            slotRepository.findById(request.getSlotId()).ifPresentOrElse(
-                    folder::setSlot,
-                    () -> log.warn("Slot with id {} not found, creating folder without slot", request.getSlotId()));
         }
 
         // Hook: before save
@@ -100,20 +78,6 @@ public class FolderServiceImpl implements FolderService {
     @Transactional(readOnly = true)
     public List<FolderResponse> getFoldersByPackageId(String packageId) {
         List<Folder> folders = folderRepository.findByPackageId(packageId);
-        return folderMapper.toResponseList(folders);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<FolderResponse> getFoldersBySubjectId(String subjectId) {
-        List<Folder> folders = folderRepository.findBySubjectId(subjectId);
-        return folderMapper.toResponseList(folders);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<FolderResponse> getFoldersBySlotId(String slotId) {
-        List<Folder> folders = folderRepository.findBySlotId(slotId);
         return folderMapper.toResponseList(folders);
     }
 

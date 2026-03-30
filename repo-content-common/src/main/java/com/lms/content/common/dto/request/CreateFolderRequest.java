@@ -24,8 +24,4 @@ public class CreateFolderRequest {
     private Boolean isPrivate;
 
     private String packageId;
-
-    private String subjectId;
-
-    private String slotId;
 }

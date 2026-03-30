@@ -93,7 +93,7 @@ public class ExcelImportServiceImpl implements ExcelImportService {
 
         // Build success message
         result.setMessage(String.format(
-            "Successfully imported %d package(s), %d folder(s), %d study set(s), %d quiz(zes)",
+                "Successfully imported %d package(s), %d folder(s), %d study set(s), %d quiz(zes)",
                 result.getTotalPackages(),
                 result.getTotalFolders(),
                 result.getTotalStudySets(),
@@ -111,8 +111,6 @@ public class ExcelImportServiceImpl implements ExcelImportService {
 
         HierarchicalImportResult result = HierarchicalImportResult.builder()
                 .packageIds(new ArrayList<>())
-                .subjectIds(new ArrayList<>())
-                .slotIds(new ArrayList<>())
                 .folderIds(new ArrayList<>())
                 .studySetIds(new ArrayList<>())
                 .warnings(new ArrayList<>())
@@ -165,7 +163,6 @@ public class ExcelImportServiceImpl implements ExcelImportService {
                         .description(row.getPackageDescription() != null ? row.getPackageDescription().trim() : null)
                         .type(packageType)
                         .userId(userId)
-                        .subjects(new ArrayList<>())
                         .folders(new ArrayList<>())
                         .build();
                 currentPackage = packageRepository.save(newPackage);

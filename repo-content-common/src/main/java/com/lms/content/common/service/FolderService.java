@@ -16,10 +16,6 @@ public interface FolderService {
 
     List<FolderResponse> getFoldersByPackageId(String packageId);
 
-    List<FolderResponse> getFoldersBySubjectId(String subjectId);
-
-    List<FolderResponse> getFoldersBySlotId(String slotId);
-
     List<FolderResponse> getAllFolders();
 
     FolderResponse updateFolder(String id, UpdateFolderRequest request, String userId);

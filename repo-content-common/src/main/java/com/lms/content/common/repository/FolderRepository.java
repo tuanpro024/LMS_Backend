@@ -16,22 +16,9 @@ public interface FolderRepository extends JpaRepository<Folder, String> {
     @Query("""
             SELECT DISTINCT f
             FROM Folder f
-            LEFT JOIN f.subject s
-            LEFT JOIN s.packageEntity sp
-            LEFT JOIN f.slot sl
-            LEFT JOIN sl.subject sls
-            LEFT JOIN sls.packageEntity slp
             WHERE f.packageEntity.id = :packageId
-               OR sp.id = :packageId
-               OR slp.id = :packageId
             """)
     List<Folder> findByPackageId(@Param("packageId") String packageId);
-
-    @Query("SELECT f FROM Folder f WHERE f.subject.id = :subjectId")
-    List<Folder> findBySubjectId(@Param("subjectId") String subjectId);
-
-    @Query("SELECT f FROM Folder f WHERE f.slot.id = :slotId")
-    List<Folder> findBySlotId(@Param("slotId") String slotId);
 
     // Find folders by package entity id (Spring Data JPA naming convention)
     List<Folder> findByPackageEntityId(String packageId);

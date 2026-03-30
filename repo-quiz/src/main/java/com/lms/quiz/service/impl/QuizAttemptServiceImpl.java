@@ -13,10 +13,14 @@ import com.lms.quiz.entity.QuizBlank;
 import com.lms.quiz.entity.QuizOption;
 import com.lms.quiz.entity.QuizQuestion;
 import com.lms.quiz.entity.SentenceChunk;
+import com.lms.quiz.entity.UserQuizStudySetProgress;
+import com.lms.quiz.entity.enums.StudySetProgressStatus;
 import com.lms.quiz.event.QuizAttemptSubmittedEvent;
+import com.lms.quiz.event.QuizStudySetProgressUpdatedEvent;
 import com.lms.quiz.repository.QuizAttemptRepository;
 import com.lms.quiz.repository.QuizRepository;
 import com.lms.quiz.repository.UserQuizProgressRepository;
+import com.lms.quiz.repository.UserQuizStudySetProgressRepository;
 import com.lms.quiz.service.IQuizAttemptService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +41,7 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
     private final QuizRepository quizRepository;
     private final QuizAttemptRepository quizAttemptRepository;
     private final UserQuizProgressRepository userQuizProgressRepository;
+    private final UserQuizStudySetProgressRepository studySetProgressRepository;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -167,6 +172,57 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
         }
 
         progress = userQuizProgressRepository.save(progress);
+
+        // Recalculate Study Set Progress
+        String studySetId = quiz.getStudySet().getId();
+        UserQuizStudySetProgress studySetProgress = studySetProgressRepository.findByUserIdAndStudySetId(userId, studySetId)
+                .orElseGet(() -> UserQuizStudySetProgress.builder()
+                        .userId(userId)
+                        .studySetId(studySetId)
+                        .completedQuizzes(0)
+                        .totalQuizzes(0)
+                        .progressPercentage(0.0)
+                        .status(StudySetProgressStatus.NOT_STARTED)
+                        .build());
+
+        if (studySetProgress.getFirstStartedAt() == null) {
+            studySetProgress.setFirstStartedAt(now);
+        }
+
+        long totalQuizzes = quizRepository.countByStudySetId(studySetId);
+        long completedQuizzes = userQuizProgressRepository.countByUserIdAndStudySetIdAndCompletedTrue(userId, studySetId);
+
+        studySetProgress.setTotalQuizzes((int) totalQuizzes);
+        studySetProgress.setCompletedQuizzes((int) completedQuizzes);
+
+        double studySetProgressPercentage = totalQuizzes > 0 ? (double) completedQuizzes / totalQuizzes * 100 : 0;
+        studySetProgress.setProgressPercentage(Math.round(studySetProgressPercentage * 100.0) / 100.0);
+
+        if (completedQuizzes == 0) {
+            studySetProgress.setStatus(StudySetProgressStatus.NOT_STARTED);
+        } else if (completedQuizzes >= totalQuizzes && totalQuizzes > 0) {
+            studySetProgress.setStatus(StudySetProgressStatus.COMPLETED);
+            if (studySetProgress.getCompletedAt() == null) {
+                studySetProgress.setCompletedAt(now);
+            }
+        } else {
+            studySetProgress.setStatus(StudySetProgressStatus.IN_PROGRESS);
+        }
+
+        studySetProgress = studySetProgressRepository.save(studySetProgress);
+
+        // Publish study set event
+        eventPublisher.publishEvent(QuizStudySetProgressUpdatedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .userId(userId)
+                .studySetId(studySetId)
+                .completedQuizzes(studySetProgress.getCompletedQuizzes())
+                .totalQuizzes(studySetProgress.getTotalQuizzes())
+                .progressPercentage(studySetProgress.getProgressPercentage())
+                .completed(StudySetProgressStatus.COMPLETED.equals(studySetProgress.getStatus()))
+                .completedAt(studySetProgress.getCompletedAt())
+                .occurredAt(now)
+                .build());
 
         eventPublisher.publishEvent(QuizAttemptSubmittedEvent.builder()
                 .eventId(UUID.randomUUID().toString())

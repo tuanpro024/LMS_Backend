@@ -1,6 +1,6 @@
 package com.lms.pronunciation.entity.enums;
 
 public enum PronunciationType {
-    SHENGMU,  // Âm đầu (phụ âm): b, p, m, f, d, t, n, l...
-    YUNMU     // Âm cuối (nguyên âm): a, o, e, i, u, ü...
+    SHENGMU,
+    YUNMU
 }

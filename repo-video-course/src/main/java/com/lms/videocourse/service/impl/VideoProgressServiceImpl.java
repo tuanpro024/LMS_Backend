@@ -450,6 +450,8 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         private boolean isExternalPracticeModule(com.lms.videocourse.entity.enums.ModuleType moduleType) {
                 return moduleType == com.lms.videocourse.entity.enums.ModuleType.FLASHCARD ||
                        moduleType == com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION ||
-                       moduleType == com.lms.videocourse.entity.enums.ModuleType.WRITING;
+                       moduleType == com.lms.videocourse.entity.enums.ModuleType.WRITING ||
+                       moduleType == com.lms.videocourse.entity.enums.ModuleType.QUIZ ||
+                       moduleType == com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
         }
 }

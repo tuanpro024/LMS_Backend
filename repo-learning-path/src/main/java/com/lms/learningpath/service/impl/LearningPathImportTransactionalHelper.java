@@ -90,7 +90,6 @@ public class LearningPathImportTransactionalHelper {
                         .description(row.getPackageDescription() != null ? row.getPackageDescription().trim() : null)
                         .type(packageType)
                         .userId(userId)
-                        .subjects(new ArrayList<>())
                         .folders(new ArrayList<>())
                         .build();
                 currentPackage = packageRepository.save(currentPackage);

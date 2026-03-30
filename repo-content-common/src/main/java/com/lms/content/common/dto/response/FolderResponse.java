@@ -21,8 +21,6 @@ public class FolderResponse {
     private boolean isPrivate;
     private String userId;
     private String packageId;
-    private String subjectId;
-    private String slotId;
     private List<StudySetResponse> studySets;
     private Instant createdAt;
     private Instant updatedAt;

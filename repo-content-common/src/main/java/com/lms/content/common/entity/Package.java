@@ -48,25 +48,11 @@ public class Package extends BaseEntity {
     @Builder.Default
     private Integer enrollmentCount = 0;
 
-    @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Subject> subjects = new ArrayList<>();
-
     @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.PERSIST)
     @Builder.Default
     private List<Folder> folders = new ArrayList<>();
 
     // Helper methods
-    public void addSubject(Subject subject) {
-        subjects.add(subject);
-        subject.setPackageEntity(this);
-    }
-
-    public void removeSubject(Subject subject) {
-        subjects.remove(subject);
-        subject.setPackageEntity(null);
-    }
-
     public void addFolder(Folder folder) {
         folders.add(folder);
         folder.setPackageEntity(this);

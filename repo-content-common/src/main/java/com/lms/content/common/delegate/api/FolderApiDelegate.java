@@ -31,14 +31,6 @@ public class FolderApiDelegate {
         return folderService.getFoldersByPackageId(packageId);
     }
 
-    public List<FolderResponse> getFoldersBySubjectId(String subjectId) {
-        return folderService.getFoldersBySubjectId(subjectId);
-    }
-
-    public List<FolderResponse> getFoldersBySlotId(String slotId) {
-        return folderService.getFoldersBySlotId(slotId);
-    }
-
     public List<FolderResponse> getAllFolders() {
         return folderService.getAllFolders();
     }

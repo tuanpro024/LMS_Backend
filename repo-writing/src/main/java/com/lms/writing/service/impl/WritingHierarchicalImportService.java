@@ -10,7 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * Hierarchical import service for writing module
+ * Hierarchical import service for writing module.
+ * Hierarchy: Package -&gt; Folder -&gt; StudySet -&gt; Word
  */
 @Service
 @Slf4j
@@ -20,14 +21,11 @@ public class WritingHierarchicalImportService extends AbstractHierarchicalImport
 
     public WritingHierarchicalImportService(
             PackageRepository packageRepository,
-            SubjectRepository subjectRepository,
-            SlotRepository slotRepository,
             FolderRepository folderRepository,
             StudySetRepository studySetRepository,
             TypeRepository typeRepository,
             WordRepository wordRepository) {
-        super(packageRepository, subjectRepository, slotRepository,
-                folderRepository, studySetRepository, typeRepository);
+        super(packageRepository, folderRepository, studySetRepository, typeRepository);
         this.wordRepository = wordRepository;
     }
 
@@ -56,7 +54,6 @@ public class WritingHierarchicalImportService extends AbstractHierarchicalImport
         word.setExamplePinyin(row.getExamplePinyin() != null ? row.getExamplePinyin().trim() : null);
         word.setExampleMeaning(row.getExampleMeaning() != null ? row.getExampleMeaning().trim() : null);
         word.setCharacters(charactersJson);
-
         return word;
     }
 

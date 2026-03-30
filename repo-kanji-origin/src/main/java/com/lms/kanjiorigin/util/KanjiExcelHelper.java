@@ -18,9 +18,9 @@ import java.util.Locale;
 import java.util.Map;
 
 public class KanjiExcelHelper {
-    
+
     private static final String TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    
+
     private static final String H_TERM = "term";
     private static final String H_PINYIN = "pinyin";
     private static final String H_SINO_VN = "sinovn";
@@ -36,7 +36,7 @@ public class KanjiExcelHelper {
     private static final String H_CORRECT_ANSWER = "correctanswer";
     private static final String H_WRONG_OPTIONS = "wrongoptions";
 
-        private static final Map<String, List<String>> HEADER_ALIASES = Map.ofEntries(
+    private static final Map<String, List<String>> HEADER_ALIASES = Map.ofEntries(
             Map.entry(H_TERM, List.of("term", "hantu", "kanji", "character")),
             Map.entry(H_PINYIN, List.of("pinyin")),
             Map.entry(H_SINO_VN, List.of("sinovn", "amhanviet", "hanviet")),
@@ -50,14 +50,14 @@ public class KanjiExcelHelper {
             Map.entry(H_QUESTION_CONTENT, List.of("questioncontent", "question", "cauhoi")),
             Map.entry(H_CORRECT_ANSWER, List.of("correctanswer", "dapandung", "answercorrect")),
             Map.entry(H_WRONG_OPTIONS, List.of("wrongoptions", "wrongoption", "wronganswer", "dapansai")));
-    
+
     public static boolean hasExcelFormat(MultipartFile file) {
         return TYPE.equals(file.getContentType());
     }
-    
+
     public static List<ImportLessonRequest> excelToLessons(InputStream is) throws IOException {
         List<ImportLessonRequest> lessons = new ArrayList<>();
-        
+
         try (Workbook workbook = new XSSFWorkbook(is)) {
             for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
                 Sheet sheet = workbook.getSheetAt(i);
@@ -67,21 +67,21 @@ public class KanjiExcelHelper {
                 }
             }
         }
-        
+
         return lessons;
     }
-    
+
     private static ImportLessonRequest parseSheet(Sheet sheet) {
         String sheetName = sheet.getSheetName();
         if (sheetName == null || sheetName.trim().isEmpty()) {
             return null;
         }
-        
+
         ImportLessonRequest lesson = new ImportLessonRequest();
         lesson.setTitle(sheetName.trim());
         lesson.setKanjis(new ArrayList<>());
         lesson.setQuestions(new ArrayList<>());
-        
+
         // Row 0: description in cell A1
         Row descRow = sheet.getRow(0);
         if (descRow != null) {
@@ -91,38 +91,39 @@ public class KanjiExcelHelper {
             }
         }
 
-            Row headerRow = sheet.getRow(1);
-            Map<String, Integer> headerIndexMap = buildHeaderIndexMap(headerRow);
-            validateRequiredHeaders(headerIndexMap);
-        
+        Row headerRow = sheet.getRow(1);
+        Map<String, Integer> headerIndexMap = buildHeaderIndexMap(headerRow);
+        validateRequiredHeaders(headerIndexMap);
+
         // Row 1: headers, skip
         // Row 2+: data rows
         for (int rowIdx = 2; rowIdx <= sheet.getLastRowNum(); rowIdx++) {
             Row row = sheet.getRow(rowIdx);
-            if (row == null) continue;
-            
+            if (row == null)
+                continue;
+
             // Parse kanji from header names
             ImportKanjiRequest kanji = parseKanjiFromRow(row, headerIndexMap);
             if (kanji != null && kanji.getTerm() != null && !kanji.getTerm().trim().isEmpty()) {
                 lesson.getKanjis().add(kanji);
             }
-            
+
             // Parse question from header names
             ImportQuestionRequest question = parseQuestionFromRow(row, headerIndexMap);
             if (question != null && question.getContent() != null && !question.getContent().trim().isEmpty()) {
                 lesson.getQuestions().add(question);
             }
         }
-        
+
         return lesson;
     }
-    
+
     private static ImportKanjiRequest parseKanjiFromRow(Row row, Map<String, Integer> headerIndexMap) {
         String term = getValue(row, headerIndexMap, H_TERM);
         if (term == null || term.trim().isEmpty()) {
             return null;
         }
-        
+
         return ImportKanjiRequest.builder()
                 .term(term.trim())
                 .pinyin(getValue(row, headerIndexMap, H_PINYIN))
@@ -136,16 +137,16 @@ public class KanjiExcelHelper {
                 .examplePinyin(getValue(row, headerIndexMap, H_EXAMPLE_PINYIN))
                 .build();
     }
-    
+
     private static ImportQuestionRequest parseQuestionFromRow(Row row, Map<String, Integer> headerIndexMap) {
         String content = getValue(row, headerIndexMap, H_QUESTION_CONTENT);
         if (content == null || content.trim().isEmpty()) {
             return null;
         }
-        
+
         String correctAnswer = getValue(row, headerIndexMap, H_CORRECT_ANSWER);
         String wrongOptionsStr = getValue(row, headerIndexMap, H_WRONG_OPTIONS);
-        
+
         List<String> wrongOptions = new ArrayList<>();
         if (wrongOptionsStr != null && !wrongOptionsStr.trim().isEmpty()) {
             wrongOptions = Arrays.stream(wrongOptionsStr.split("\\|"))
@@ -153,7 +154,7 @@ public class KanjiExcelHelper {
                     .filter(s -> !s.isEmpty())
                     .toList();
         }
-        
+
         return ImportQuestionRequest.builder()
                 .content(content.trim())
                 .correctAnswer(correctAnswer != null ? correctAnswer.trim() : "")
@@ -218,12 +219,12 @@ public class KanjiExcelHelper {
         }
         return getCellValueAsString(row.getCell(index, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL));
     }
-    
+
     private static String getCellValueAsString(Cell cell) {
         if (cell == null) {
             return null;
         }
-        
+
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue();
             case NUMERIC -> {

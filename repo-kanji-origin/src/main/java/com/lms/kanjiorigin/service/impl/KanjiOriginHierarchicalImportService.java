@@ -22,8 +22,9 @@ import java.util.*;
  * Support hierarchy: StudySet -> Lesson -> Kanji (One Lesson has many Kanjis).
  * 
  * Logic:
- * - Lesson data comes from Extra Columns (AA, AB).
- * - Kanji data comes from Standard Columns (M-Z) + Remaining Extra Columns.
+ * - Kanji common data comes from standard hierarchical headers.
+ * - Kanji-origin extra data is resolved by header name (preferred).
+ * - Legacy Excel without extra headers is still supported via AA-AJ fallback.
  * - Rows with same Lesson Title in same StudySet are merged into one Lesson.
  * - Supports inheritance: If Lesson Title is empty, uses the previous valid
  * lesson title.
@@ -32,7 +33,7 @@ import java.util.*;
 @Slf4j
 public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalImportService<KanjiLesson> {
 
-    // Extra column indices (from AA onwards)
+    // Legacy fallback column indices (from AA onwards)
     private static final int COL_LESSON_TITLE = 26; // AA
     private static final int COL_LESSON_DESC = 27; // AB
     private static final int COL_ORIGIN_TEXT_CN = 28; // AC
@@ -43,6 +44,33 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
     private static final int COL_QUESTION_CONTENT = 33; // AH
     private static final int COL_CORRECT_ANSWER = 34; // AI
     private static final int COL_WRONG_OPTIONS = 35; // AJ
+
+    private static final String H_LESSON_TITLE = "lessontitle";
+    private static final String H_LESSON_DESCRIPTION = "lessondescription";
+    private static final String H_ORIGIN_TEXT_CN = "origintextcn";
+    private static final String H_ORIGIN_TEXT_EN = "origintexten";
+    private static final String H_STROKE_ANIMATION_URL = "strokeanimationurl";
+    private static final String H_EXAMPLE_MEANING_VI = "examplemeaningvi";
+    private static final String H_EXAMPLE_MEANING_EN = "examplemeaningen";
+    private static final String H_QUESTION_CONTENT = "questioncontent";
+    private static final String H_CORRECT_ANSWER = "correctanswer";
+    private static final String H_WRONG_OPTIONS = "wrongoptions";
+
+    private static final Map<String, List<String>> EXTRA_HEADER_ALIASES = Map.ofEntries(
+            Map.entry(H_LESSON_TITLE, List.of("lessontitle", "lesson_title", "lesson title")),
+            Map.entry(H_LESSON_DESCRIPTION,
+                    List.of("lessondescription", "lesson_description", "lesson description")),
+            Map.entry(H_ORIGIN_TEXT_CN, List.of("origintextcn", "origin_text_cn", "origin cn")),
+            Map.entry(H_ORIGIN_TEXT_EN, List.of("origintexten", "origin_text_en", "origin en")),
+            Map.entry(H_STROKE_ANIMATION_URL,
+                    List.of("strokeanimationurl", "stroke_animation_url", "strokeurl", "animationurl")),
+            Map.entry(H_EXAMPLE_MEANING_VI,
+                    List.of("examplemeaningvi", "example_meaning_vi", "examplevimeaning")),
+            Map.entry(H_EXAMPLE_MEANING_EN,
+                    List.of("examplemeaningen", "example_meaning_en", "exampleenmeaning")),
+            Map.entry(H_QUESTION_CONTENT, List.of("questioncontent", "question_content", "question")),
+            Map.entry(H_CORRECT_ANSWER, List.of("correctanswer", "correct_answer")),
+            Map.entry(H_WRONG_OPTIONS, List.of("wrongoptions", "wrong_options", "wrongoption")));
 
     private final KanjiLessonRepository kanjiLessonRepository;
     private final KanjiOriginRepository kanjiOriginRepository;
@@ -88,7 +116,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
             MultipartFile file, TypeName typeName, String userId, boolean isPrivate) {
 
         try {
-            log.info("Pre-parsing extra kanji columns (AA-AJ)...");
+            log.info("Pre-parsing extra kanji columns (header-based with AA-AJ fallback)...");
             Map<Integer, KanjiExtraRowData> map = preParseExtraColumns(file);
             contextHolder.set(new ImportContext(map));
             log.info("Found extra data for {} rows", map.size());
@@ -265,29 +293,50 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
                 Workbook workbook = WorkbookFactory.create(is)) {
 
             Sheet sheet = workbook.getSheetAt(0);
+            int firstRowNum = sheet.getFirstRowNum();
             int lastRowNum = sheet.getLastRowNum();
 
-            for (int i = 1; i <= lastRowNum; i++) {
+            Row headerRow = sheet.getRow(firstRowNum);
+            Map<String, Integer> headerIndexMap = buildNormalizedHeaderIndexMap(headerRow);
+
+            int lessonTitleIdx = resolveColumnIndex(headerIndexMap, H_LESSON_TITLE, COL_LESSON_TITLE);
+            int lessonDescIdx = resolveColumnIndex(headerIndexMap, H_LESSON_DESCRIPTION, COL_LESSON_DESC);
+            int originTextCnIdx = resolveColumnIndex(headerIndexMap, H_ORIGIN_TEXT_CN, COL_ORIGIN_TEXT_CN);
+            int originTextEnIdx = resolveColumnIndex(headerIndexMap, H_ORIGIN_TEXT_EN, COL_ORIGIN_TEXT_EN);
+            int strokeAnimationUrlIdx = resolveColumnIndex(headerIndexMap, H_STROKE_ANIMATION_URL,
+                    COL_STROKE_ANIMATION_URL);
+            int exampleMeaningViIdx = resolveColumnIndex(headerIndexMap, H_EXAMPLE_MEANING_VI,
+                    COL_EXAMPLE_MEANING_VI);
+            int exampleMeaningEnIdx = resolveColumnIndex(headerIndexMap, H_EXAMPLE_MEANING_EN,
+                    COL_EXAMPLE_MEANING_EN);
+            int questionContentIdx = resolveColumnIndex(headerIndexMap, H_QUESTION_CONTENT, COL_QUESTION_CONTENT);
+            int correctAnswerIdx = resolveColumnIndex(headerIndexMap, H_CORRECT_ANSWER, COL_CORRECT_ANSWER);
+            int wrongOptionsIdx = resolveColumnIndex(headerIndexMap, H_WRONG_OPTIONS, COL_WRONG_OPTIONS);
+
+            for (int i = firstRowNum + 1; i <= lastRowNum; i++) {
                 Row row = sheet.getRow(i);
                 if (row == null)
                     continue;
 
                 int rowNumber = i + 1;
 
-                String lessonTitle = getCellStr(row, COL_LESSON_TITLE);
-                String lessonDesc = getCellStr(row, COL_LESSON_DESC);
-                String originTextCn = getCellStr(row, COL_ORIGIN_TEXT_CN);
-                String originTextEn = getCellStr(row, COL_ORIGIN_TEXT_EN);
-                String strokeUrl = getCellStr(row, COL_STROKE_ANIMATION_URL);
-                String exMeanVi = getCellStr(row, COL_EXAMPLE_MEANING_VI);
-                String exMeanEn = getCellStr(row, COL_EXAMPLE_MEANING_EN);
-                String qContent = getCellStr(row, COL_QUESTION_CONTENT);
-                String qCorrect = getCellStr(row, COL_CORRECT_ANSWER);
-                String qWrong = getCellStr(row, COL_WRONG_OPTIONS);
+                String lessonTitle = getCellStr(row, lessonTitleIdx);
+                String lessonDesc = getCellStr(row, lessonDescIdx);
+                String originTextCn = getCellStr(row, originTextCnIdx);
+                String originTextEn = getCellStr(row, originTextEnIdx);
+                String strokeUrl = getCellStr(row, strokeAnimationUrlIdx);
+                String exMeanVi = getCellStr(row, exampleMeaningViIdx);
+                String exMeanEn = getCellStr(row, exampleMeaningEnIdx);
+                String qContent = getCellStr(row, questionContentIdx);
+                String qCorrect = getCellStr(row, correctAnswerIdx);
+                String qWrong = getCellStr(row, wrongOptionsIdx);
 
-                // Even if lessonTitle is null, we might have other extra data
-                // We create the DTO anyway.
-                if (lessonTitle != null || originTextCn != null || qContent != null) {
+                boolean hasAnyExtraData = lessonTitle != null || lessonDesc != null
+                        || originTextCn != null || originTextEn != null
+                        || strokeUrl != null || exMeanVi != null || exMeanEn != null
+                        || qContent != null || qCorrect != null || qWrong != null;
+
+                if (hasAnyExtraData) {
                     map.put(rowNumber, KanjiExtraRowData.builder()
                             .lessonTitle(lessonTitle)
                             .lessonDescription(lessonDesc)
@@ -307,6 +356,48 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
         }
 
         return map;
+    }
+
+    private static Map<String, Integer> buildNormalizedHeaderIndexMap(Row headerRow) {
+        Map<String, Integer> headerIndexMap = new HashMap<>();
+        if (headerRow == null) {
+            return headerIndexMap;
+        }
+
+        short firstCell = headerRow.getFirstCellNum();
+        short lastCell = headerRow.getLastCellNum();
+        if (firstCell < 0 || lastCell < 0) {
+            return headerIndexMap;
+        }
+
+        for (int i = firstCell; i < lastCell; i++) {
+            String header = getCellStr(headerRow, i);
+            if (header == null || header.trim().isEmpty()) {
+                continue;
+            }
+
+            String normalized = normalizeHeader(header);
+            if (!normalized.isEmpty()) {
+                headerIndexMap.putIfAbsent(normalized, i);
+            }
+        }
+
+        return headerIndexMap;
+    }
+
+    private static int resolveColumnIndex(Map<String, Integer> headerIndexMap, String key, int legacyFallback) {
+        List<String> aliases = EXTRA_HEADER_ALIASES.getOrDefault(key, List.of(key));
+        for (String alias : aliases) {
+            Integer index = headerIndexMap.get(normalizeHeader(alias));
+            if (index != null) {
+                return index;
+            }
+        }
+        return legacyFallback;
+    }
+
+    private static String normalizeHeader(String value) {
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 
     private static String getCellStr(Row row, int colIndex) {

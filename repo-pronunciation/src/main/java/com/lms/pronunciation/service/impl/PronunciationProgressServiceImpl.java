@@ -15,6 +15,7 @@ import com.lms.pronunciation.repository.UserPronunciationItemProgressRepository;
 import com.lms.pronunciation.service.PronunciationProgressService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
     private final UserPronunciationItemProgressRepository userItemProgressRepo;
     private final PronunciationItemStudySetProgressRepository studySetProgressRepo;
     private final PronunciationItemRepository itemRepo;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public PronunciationItemProgressResponse markItemListened(String userId, String itemId) {
@@ -146,5 +148,18 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
         }
 
         studySetProgressRepo.save(progress);
+
+        com.lms.pronunciation.event.PronunciationStudySetProgressUpdatedEvent event = com.lms.pronunciation.event.PronunciationStudySetProgressUpdatedEvent.builder()
+                .userId(userId)
+                .studySetId(studySetId)
+                .learnedItems((int) learnedItems)
+                .totalItems((int) totalItems)
+                .progressPercentage(progress.getProgressPercentage())
+                .completed(progress.getStatus() == ProgressStatus.COMPLETED)
+                .completedAt(progress.getCompletedAt())
+                .occurredAt(Instant.now())
+                .build();
+                
+        eventPublisher.publishEvent(event);
     }
 }

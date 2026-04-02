@@ -1,0 +1,33 @@
+package com.lms.kanjiorigin.repository;
+
+import com.lms.kanjiorigin.entity.UserKanjiProgress;
+import com.lms.kanjiorigin.entity.enums.KanjiStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface UserKanjiProgressRepository extends JpaRepository<UserKanjiProgress, String> {
+
+    Optional<UserKanjiProgress> findByUserIdAndKanjiOriginId(String userId, String kanjiOriginId);
+
+    @Query("SELECT COUNT(ukp) FROM UserKanjiProgress ukp " +
+            "WHERE ukp.userId = :userId " +
+            "AND ukp.kanjiOrigin.studySet.id = :studySetId " +
+            "AND ukp.kanjiOrigin.deleted = false " +
+            "AND ukp.status = :status")
+    long countByUserIdAndStudySetIdAndStatus(
+            @Param("userId") String userId,
+            @Param("studySetId") String studySetId,
+            @Param("status") KanjiStatus status);
+
+    @Query("SELECT ukp FROM UserKanjiProgress ukp " +
+            "WHERE ukp.userId = :userId " +
+            "AND ukp.kanjiOrigin.studySet.id = :studySetId " +
+            "AND ukp.kanjiOrigin.deleted = false")
+    List<UserKanjiProgress> findByUserIdAndStudySetId(
+            @Param("userId") String userId,
+            @Param("studySetId") String studySetId);
+}

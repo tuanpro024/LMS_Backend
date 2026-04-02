@@ -3,14 +3,14 @@ package com.lms.kanjiorigin.service.impl;
 import com.lms.common.dto.PageResponse;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.repository.StudySetRepository;
 import com.lms.kanjiorigin.dto.request.CreateKanjiOriginRequest;
 import com.lms.kanjiorigin.dto.request.KanjiOriginSearchRequest;
 import com.lms.kanjiorigin.dto.request.UpdateKanjiOriginRequest;
 import com.lms.kanjiorigin.dto.response.KanjiOriginResponse;
-import com.lms.kanjiorigin.entity.KanjiLesson;
 import com.lms.kanjiorigin.entity.KanjiOrigin;
 import com.lms.kanjiorigin.mapper.KanjiOriginMapper;
-import com.lms.kanjiorigin.repository.KanjiLessonRepository;
 import com.lms.kanjiorigin.repository.KanjiOriginRepository;
 import com.lms.kanjiorigin.service.KanjiOriginService;
 import lombok.RequiredArgsConstructor;
@@ -30,37 +30,37 @@ import java.util.List;
 public class KanjiOriginServiceImpl implements KanjiOriginService {
 
     private final KanjiOriginRepository kanjiOriginRepository;
-    private final KanjiLessonRepository kanjiLessonRepository;
+    private final StudySetRepository studySetRepository;
     private final KanjiOriginMapper kanjiOriginMapper;
 
     @Override
     public KanjiOriginResponse createOrigin(CreateKanjiOriginRequest request) {
         log.info("Creating kanji origin with term: {}", request.getTerm());
 
-        KanjiLesson lesson = kanjiLessonRepository.findById(request.getKanjiLessonId())
-                .orElseThrow(() -> new ApiException(ErrorCode.E227,
-                        "KanjiLesson not found with id: " + request.getKanjiLessonId()));
+        StudySet studySet = studySetRepository.findById(request.getStudySetId())
+            .orElseThrow(
+                () -> new ApiException(ErrorCode.E227, "StudySet not found with id: " + request.getStudySetId()));
 
         Integer contentIndex = request.getContentIndex();
         if (contentIndex == null) {
             Integer maxContentIndex = kanjiOriginRepository
-                    .findMaxContentIndexByKanjiLessonId(request.getKanjiLessonId());
+                .findMaxContentIndexByStudySetId(request.getStudySetId());
             contentIndex = maxContentIndex == null ? 0 : maxContentIndex + 1;
         }
 
-        if (kanjiOriginRepository.existsByKanjiLessonIdAndContentIndexAndDeletedFalse(request.getKanjiLessonId(),
+        if (kanjiOriginRepository.existsByStudySetIdAndContentIndexAndDeletedFalse(request.getStudySetId(),
                 contentIndex)) {
             throw new ApiException(ErrorCode.E227,
-                    "Content index already exists in this lesson: " + contentIndex);
+                "Content index already exists in this study set: " + contentIndex);
         }
 
-        if (kanjiOriginRepository.existsByTermAndKanjiLessonIdAndDeletedFalse(request.getTerm(),
-                request.getKanjiLessonId())) {
-            throw new ApiException(ErrorCode.E227, "Term already exists in this lesson: " + request.getTerm());
+        if (kanjiOriginRepository.existsByTermAndStudySetIdAndDeletedFalse(request.getTerm(),
+            request.getStudySetId())) {
+            throw new ApiException(ErrorCode.E227, "Term already exists in this study set: " + request.getTerm());
         }
 
         KanjiOrigin origin = kanjiOriginMapper.toEntity(request);
-        origin.setKanjiLesson(lesson);
+        origin.setStudySet(studySet);
         origin.setContentIndex(contentIndex);
 
         KanjiOrigin savedOrigin = kanjiOriginRepository.save(origin);
@@ -76,17 +76,17 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiOrigin not found with id: " + id));
 
         if (!origin.getTerm().equals(request.getTerm()) &&
-                kanjiOriginRepository.existsByTermAndKanjiLessonIdAndDeletedFalse(request.getTerm(),
-                        origin.getKanjiLesson().getId())) {
-            throw new ApiException(ErrorCode.E227, "Term already exists in this lesson: " + request.getTerm());
+            kanjiOriginRepository.existsByTermAndStudySetIdAndDeletedFalse(request.getTerm(),
+                origin.getStudySet().getId())) {
+            throw new ApiException(ErrorCode.E227, "Term already exists in this study set: " + request.getTerm());
         }
 
         if (request.getContentIndex() != null) {
             if (!request.getContentIndex().equals(origin.getContentIndex()) &&
-                    kanjiOriginRepository.existsByKanjiLessonIdAndContentIndexAndIdNotAndDeletedFalse(
-                            origin.getKanjiLesson().getId(), request.getContentIndex(), id)) {
+                kanjiOriginRepository.existsByStudySetIdAndContentIndexAndIdNotAndDeletedFalse(
+                    origin.getStudySet().getId(), request.getContentIndex(), id)) {
                 throw new ApiException(ErrorCode.E227,
-                        "Content index already exists in this lesson: " + request.getContentIndex());
+                "Content index already exists in this study set: " + request.getContentIndex());
             }
         }
 
@@ -127,33 +127,29 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<KanjiOriginResponse> getOriginsByLesson(String lessonId) {
-        log.info("Getting kanji origins for lesson: {}", lessonId);
-
-        if (!kanjiLessonRepository.existsById(lessonId)) {
-            throw new ApiException(ErrorCode.E227, "KanjiLesson not found with id: " + lessonId);
-        }
-
-        List<KanjiOrigin> origins = kanjiOriginRepository.findByKanjiLessonIdAndDeletedFalse(lessonId);
+    public List<KanjiOriginResponse> getOriginsByStudySet(String studySetId) {
+        log.info("Getting kanji origins for study set: {}", studySetId);
+        List<KanjiOrigin> origins = kanjiOriginRepository.findByStudySetIdAndDeletedFalseOrderByContentIndexAsc(studySetId);
         return kanjiOriginMapper.toResponseList(origins);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<KanjiOriginResponse> search(KanjiOriginSearchRequest request) {
-        log.info("Searching kanji origins with lessonId: {}, keyword: {}", request.getLessonId(), request.getKeyword());
-        List<KanjiOrigin> origins = kanjiOriginRepository.searchList(request.getLessonId(), request.getKeyword());
+        log.info("Searching kanji origins with studySetId: {}, keyword: {}", request.getStudySetId(),
+                request.getKeyword());
+        List<KanjiOrigin> origins = kanjiOriginRepository.searchList(request.getStudySetId(), request.getKeyword());
         return kanjiOriginMapper.toResponseList(origins);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<KanjiOriginResponse> searchPaged(KanjiOriginSearchRequest request) {
-        log.info("Searching paged kanji origins with lessonId: {}, keyword: {}", request.getLessonId(),
+        log.info("Searching paged kanji origins with studySetId: {}, keyword: {}", request.getStudySetId(),
                 request.getKeyword());
 
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
-        Page<KanjiOrigin> page = kanjiOriginRepository.search(request.getLessonId(), request.getKeyword(), pageable);
+        Page<KanjiOrigin> page = kanjiOriginRepository.search(request.getStudySetId(), request.getKeyword(), pageable);
 
         List<KanjiOriginResponse> items = kanjiOriginMapper.toResponseList(page.getContent());
 

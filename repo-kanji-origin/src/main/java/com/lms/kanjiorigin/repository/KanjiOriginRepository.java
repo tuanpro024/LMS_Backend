@@ -13,31 +13,35 @@ import java.util.Optional;
 
 @Repository
 public interface KanjiOriginRepository extends JpaRepository<KanjiOrigin, String> {
-    List<KanjiOrigin> findByKanjiLessonIdAndDeletedFalse(String kanjiLessonId);
-    boolean existsByTermAndKanjiLessonIdAndDeletedFalse(String term, String kanjiLessonId);
-    boolean existsByKanjiLessonIdAndContentIndexAndDeletedFalse(String kanjiLessonId, Integer contentIndex);
-    boolean existsByKanjiLessonIdAndContentIndexAndIdNotAndDeletedFalse(String kanjiLessonId, Integer contentIndex, String id);
-    
-    Page<KanjiOrigin> findByKanjiLessonIdAndDeletedFalse(String kanjiLessonId, Pageable pageable);
-    
+    List<KanjiOrigin> findByStudySetIdAndDeletedFalseOrderByContentIndexAsc(String studySetId);
+
+    boolean existsByTermAndStudySetIdAndDeletedFalse(String term, String studySetId);
+
+    boolean existsByStudySetIdAndContentIndexAndDeletedFalse(String studySetId, Integer contentIndex);
+
+    boolean existsByStudySetIdAndContentIndexAndIdNotAndDeletedFalse(String studySetId, Integer contentIndex,
+            String id);
+
+    long countByStudySetIdAndDeletedFalse(String studySetId);
+
     @Query("SELECT o FROM KanjiOrigin o WHERE o.deleted = false " +
-           "AND (:lessonId IS NULL OR o.kanjiLesson.id = :lessonId) " +
+           "AND (:studySetId IS NULL OR o.studySet.id = :studySetId) " +
            "AND (:keyword IS NULL OR LOWER(o.term) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(o.meaning) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<KanjiOrigin> search(@Param("lessonId") String lessonId, 
+    Page<KanjiOrigin> search(@Param("studySetId") String studySetId,
                              @Param("keyword") String keyword, 
                              Pageable pageable);
-    
+
     @Query("SELECT o FROM KanjiOrigin o WHERE o.deleted = false " +
-           "AND (:lessonId IS NULL OR o.kanjiLesson.id = :lessonId) " +
+           "AND (:studySetId IS NULL OR o.studySet.id = :studySetId) " +
            "AND (:keyword IS NULL OR LOWER(o.term) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
            "OR LOWER(o.meaning) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    List<KanjiOrigin> searchList(@Param("lessonId") String lessonId, 
+    List<KanjiOrigin> searchList(@Param("studySetId") String studySetId,
                                   @Param("keyword") String keyword);
-    
+
     // For import
-    Optional<KanjiOrigin> findByKanjiLessonIdAndTermAndDeletedFalse(String kanjiLessonId, String term);
-    
-    @Query("SELECT MAX(o.contentIndex) FROM KanjiOrigin o WHERE o.kanjiLesson.id = :lessonId AND o.deleted = false")
-    Integer findMaxContentIndexByKanjiLessonId(@Param("lessonId") String lessonId);
+    Optional<KanjiOrigin> findByStudySetIdAndTermAndDeletedFalse(String studySetId, String term);
+
+    @Query("SELECT MAX(o.contentIndex) FROM KanjiOrigin o WHERE o.studySet.id = :studySetId AND o.deleted = false")
+    Integer findMaxContentIndexByStudySetId(@Param("studySetId") String studySetId);
 }

@@ -10,12 +10,16 @@ import java.util.List;
 
 public interface KanjiOriginService {
     KanjiOriginResponse createOrigin(CreateKanjiOriginRequest request);
+
     KanjiOriginResponse updateOrigin(String id, UpdateKanjiOriginRequest request);
+
     void deleteOrigin(String id);
+
     KanjiOriginResponse getOrigin(String id);
-    List<KanjiOriginResponse> getOriginsByLesson(String lessonId);
-    
+
+    List<KanjiOriginResponse> getOriginsByStudySet(String studySetId);
+
     List<KanjiOriginResponse> search(KanjiOriginSearchRequest request);
-    
+
     PageResponse<KanjiOriginResponse> searchPaged(KanjiOriginSearchRequest request);
 }

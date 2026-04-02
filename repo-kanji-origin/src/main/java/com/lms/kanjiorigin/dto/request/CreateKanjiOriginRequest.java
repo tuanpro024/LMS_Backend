@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateKanjiOriginRequest {
 
-    @NotNull(message = "Kanji Lesson ID is required")
-    private String kanjiLessonId;
+    @NotNull(message = "StudySet ID is required")
+    private String studySetId;
 
     private Integer contentIndex;
 

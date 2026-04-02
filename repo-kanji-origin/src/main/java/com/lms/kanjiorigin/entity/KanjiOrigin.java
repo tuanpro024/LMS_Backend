@@ -1,6 +1,7 @@
 package com.lms.kanjiorigin.entity;
 
-import com.lms.common.jpa.BaseEntity;
+import com.lms.content.common.dto.excel.ImportableContentItem;
+import com.lms.content.common.entity.BaseContentItem;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,14 +12,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class KanjiOrigin extends BaseEntity {
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "kanji_lesson_id", nullable = false)
-    private KanjiLesson kanjiLesson;
-
-    @Column(nullable = false)
-    private Integer contentIndex;
+public class KanjiOrigin extends BaseContentItem implements ImportableContentItem {
 
     @Column(nullable = false)
     private String term;

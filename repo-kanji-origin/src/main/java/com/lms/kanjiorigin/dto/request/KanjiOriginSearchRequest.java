@@ -13,6 +13,6 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class KanjiOriginSearchRequest extends PaginationRequest {
-    private String lessonId;
+    private String studySetId;
     private String keyword;
 }

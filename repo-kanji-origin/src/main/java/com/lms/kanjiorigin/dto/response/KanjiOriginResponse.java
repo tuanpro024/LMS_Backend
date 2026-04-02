@@ -5,15 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
-
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class KanjiOriginResponse {
     private String id;
-    private String kanjiLessonId;
+    private String studySetId;
     private Integer contentIndex;
     private String term;
     private String pinyin;

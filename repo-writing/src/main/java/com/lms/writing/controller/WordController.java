@@ -26,7 +26,7 @@ public class WordController {
     private final WordService wordService;
 
     @PostMapping("/bulk")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<List<WordResponse>>> addWordsToStudySet(
             @RequestBody @Valid AddWordsToStudySetRequest request,
             Authentication authentication) {
@@ -54,7 +54,7 @@ public class WordController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<WordResponse>> updateWord(
             @PathVariable String id,
             @Valid @RequestBody UpdateWordRequest request,
@@ -75,7 +75,7 @@ public class WordController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<Void>> deleteWord(
             @PathVariable String id,
             Authentication authentication) {

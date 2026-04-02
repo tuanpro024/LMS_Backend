@@ -8,6 +8,8 @@ import com.lms.flashcard.repository.CardRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Hierarchical import service for flashcard module.
  * Hierarchy: Package -&gt; Folder -&gt; StudySet -&gt; Card
@@ -15,6 +17,19 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class FlashcardHierarchicalImportService extends AbstractHierarchicalImportService<Card> {
+
+    private static final List<String> FLASHCARD_REQUIRED_HEADERS = List.of(
+            "packageName",
+            "packageDescription",
+            "folderName",
+            "folderDescription",
+            "studySetName",
+            "studySetDescription",
+            "term",
+            "definition",
+            "pinyin",
+            "wordType",
+            "hskLevel");
 
     private final CardRepository cardRepository;
 
@@ -52,6 +67,11 @@ public class FlashcardHierarchicalImportService extends AbstractHierarchicalImpo
     @Override
     protected void saveContentItem(Card item) {
         cardRepository.save(item);
+    }
+
+    @Override
+    protected List<String> getRequiredHeaders() {
+        return FLASHCARD_REQUIRED_HEADERS;
     }
 
     @Override

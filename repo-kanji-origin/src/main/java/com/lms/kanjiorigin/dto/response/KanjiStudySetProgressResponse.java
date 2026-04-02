@@ -1,6 +1,6 @@
-package com.lms.videocourse.dto.event;
+package com.lms.kanjiorigin.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.lms.kanjiorigin.entity.enums.StudySetProgressStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,14 +12,16 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class KanjiProgressEvent {
-    private String eventId;
+public class KanjiStudySetProgressResponse {
+
+    private String id;
     private String userId;
     private String studySetId;
+    private StudySetProgressStatus status;
     private Integer learnedLessons;
     private Integer totalLessons;
     private Double progressPercentage;
     private Boolean completed;
-    private Instant occurredAt;
+    private Instant firstStartedAt;
+    private Instant completedAt;
 }

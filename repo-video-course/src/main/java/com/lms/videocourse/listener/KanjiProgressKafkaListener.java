@@ -17,15 +17,11 @@ public class KanjiProgressKafkaListener {
     private final ObjectMapper objectMapper;
     private final KanjiModuleProgressSyncService syncService;
 
-    @KafkaListener(topics = "${kanji.progress.kafka.topic:kanji.progress.events}", groupId = "${spring.kafka.consumer.group-id:repo-video-course}")
-    public void listenKanjiProgressEvent(@Payload String message) {
+    @KafkaListener(topics = "${app.kafka.topics.kanji-progress-events:kanji.progress.events}", groupId = "video-course-kanji-progress-group")
+    public void consumeKanjiProgress(@Payload String message) {
         log.debug("Received raw message from kanji.progress.events: {}", message);
         try {
             KanjiProgressEvent event = objectMapper.readValue(message, KanjiProgressEvent.class);
-            if (event.getEventId() == null || event.getUserId() == null) {
-                log.warn("Invalid kanji progress event received: {}", message);
-                return;
-            }
             syncService.syncKanjiProgress(event);
         } catch (Exception e) {
             log.error("Failed to process kanji progress event: {}", message, e);

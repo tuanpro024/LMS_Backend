@@ -17,7 +17,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
                 "com.lms.content.common.entity"
 })
 @EnableJpaRepositories(basePackages = {
-                "com.lms.kanjiorigin.repository"
+                "com.lms.kanjiorigin.repository",
+                "com.lms.content.common.repository"
 })
 public class RepoKanjiOriginApplication {
 

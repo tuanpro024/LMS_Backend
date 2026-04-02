@@ -2,7 +2,10 @@ package com.lms.quiz.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.quiz.dto.request.CheckQuestionRequest;
 import com.lms.quiz.dto.request.SubmitQuizRequest;
+import com.lms.quiz.dto.request.UpdateQuestionResultRequest;
+import com.lms.quiz.dto.response.CheckQuestionResponse;
 import com.lms.quiz.dto.response.QuizProgressResponse;
 import com.lms.quiz.dto.response.QuizResultResponse;
 import com.lms.quiz.service.IQuizAttemptService;
@@ -32,6 +35,22 @@ public class QuizAttemptController {
             Authentication authentication) {
         String userId = resolveUserId(authentication);
         return ResponseEntity.ok(ApiResponse.ok(quizAttemptService.submitQuiz(request, userId)));
+    }
+
+    @PostMapping("/check-question")
+    public ResponseEntity<ApiResponse<CheckQuestionResponse>> checkQuestion(
+            @Valid @RequestBody CheckQuestionRequest request,
+            Authentication authentication) {
+        String userId = resolveUserId(authentication);
+        return ResponseEntity.ok(ApiResponse.ok(quizAttemptService.checkQuestion(request, userId)));
+    }
+
+    @PostMapping("/update-question-result")
+    public ResponseEntity<ApiResponse<QuizResultResponse>> updateQuestionResult(
+            @Valid @RequestBody UpdateQuestionResultRequest request,
+            Authentication authentication) {
+        String userId = resolveUserId(authentication);
+        return ResponseEntity.ok(ApiResponse.ok(quizAttemptService.updateQuestionResult(request, userId)));
     }
 
     @GetMapping("/quizzes/{quizId}/progress")

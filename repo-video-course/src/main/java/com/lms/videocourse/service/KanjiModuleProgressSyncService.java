@@ -32,35 +32,37 @@ public class KanjiModuleProgressSyncService {
 
     @Transactional
     public void syncKanjiProgress(KanjiProgressEvent event) {
-        log.info("Processing kanji progress event {} for user {} studySet {}",
-                event.getEventId(), event.getUserId(), event.getStudySetId());
-
-        // 1. Idempotency check
-        if (consumedEventRepository.existsById(event.getEventId())) {
-            log.info("Event {} already consumed, skipping", event.getEventId());
+        if (event == null || event.getEventId() == null || event.getUserId() == null) {
+            log.warn("Invalid kanji progress event, skipping: {}", event);
             return;
         }
 
-        // 2. We only care about completed study sets for video course progression
+        if (event.getStudySetId() == null || event.getStudySetId().isBlank()) {
+            log.warn("Kanji event {} missing studySetId, skipping", event.getEventId());
+            return;
+        }
+
+        if (consumedEventRepository.existsById(event.getEventId())) {
+            log.info("Kanji event {} already consumed, skipping", event.getEventId());
+            return;
+        }
+
         if (!Boolean.TRUE.equals(event.getCompleted())) {
-            log.debug("Event {} is not a completion event, marking consumed and skipping logic", event.getEventId());
+            log.debug("Kanji event {} is not completion, marking consumed", event.getEventId());
             markEventConsumed(event);
             return;
         }
 
-        // 3. Find all active KANJI_ORIGIN modules using this studySetId
         List<VideoModule> linkedModules = videoModuleRepository
                 .findByContentSetIdAndModuleTypeAndIsActiveTrue(event.getStudySetId(), ModuleType.KANJI_ORIGIN);
 
         if (linkedModules.isEmpty()) {
-            log.debug("No active KANJI_ORIGIN modules found linked to studySet {}", event.getStudySetId());
+            log.debug("No active KANJI_ORIGIN modules found for study set {}", event.getStudySetId());
             markEventConsumed(event);
             return;
         }
 
-        // 4. Update or create progress for each linked module
-        Instant completeTime = event.getCompletedAt() != null ? event.getCompletedAt() :
-                               (event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now());
+        Instant completeTime = event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now();
 
         for (VideoModule module : linkedModules) {
             VideoPracticeModuleProgress progress = practiceProgressRepository
@@ -78,21 +80,18 @@ public class KanjiModuleProgressSyncService {
 
             progress.setStatus(ProgressStatus.COMPLETED);
             progress.setProgressPercentage(100.0);
-
             if (progress.getFirstStartedAt() == null) {
                 progress.setFirstStartedAt(completeTime);
             }
             if (progress.getCompletedAt() == null) {
                 progress.setCompletedAt(completeTime);
             }
-
             progress.setLastSyncedEventId(event.getEventId());
             progress.setLastSyncedAt(Instant.now());
 
             practiceProgressRepository.save(progress);
             log.info("Marked KANJI_ORIGIN module {} COMPLETE for user {}", module.getId(), event.getUserId());
 
-            // 5. Trigger Rollup
             try {
                 videoProgressService.getStepProgress(event.getUserId(), module.getStepId());
 
@@ -101,23 +100,20 @@ public class KanjiModuleProgressSyncService {
                     videoProgressService.getCourseProgress(event.getUserId(), step.getStudySetId());
                 }
             } catch (Exception ex) {
-                log.error("Failed to calculate rollup progress for module {}", module.getId(), ex);
+                log.error("Failed to roll up progress for KANJI_ORIGIN module {}", module.getId(), ex);
             }
         }
 
-        // 6. Save idempotency record
         markEventConsumed(event);
     }
 
     private void markEventConsumed(KanjiProgressEvent event) {
-        ConsumedKanjiProgressEvent consumedEvent = ConsumedKanjiProgressEvent.builder()
+        consumedEventRepository.save(ConsumedKanjiProgressEvent.builder()
                 .eventId(event.getEventId())
                 .userId(event.getUserId())
                 .studySetId(event.getStudySetId())
                 .consumedAt(Instant.now())
-                .build();
-        consumedEventRepository.save(consumedEvent);
-        log.debug("Marked event {} as consumed", event.getEventId());
+                .build());
     }
 
     private String getCourseStudySetId(String stepId) {

@@ -135,6 +135,7 @@ public class KanjiLessonProgressServiceImpl implements KanjiLessonProgressServic
                 .totalLessons((int) totalLessons)
                 .progressPercentage(progressPercentage)
                 .completed(status == StudySetProgressStatus.COMPLETED)
+                .completedAt(studySetProgress.getCompletedAt())
                 .occurredAt(now)
                 .build());
     }

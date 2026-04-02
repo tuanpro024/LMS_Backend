@@ -10,5 +10,6 @@ public enum ModuleType {
     KANJI_ORIGIN,
     QUIZ,
     LISTENING,
-    PRONUNCIATION
+    PRONUNCIATION,
+    LEARNING_PATH
 }

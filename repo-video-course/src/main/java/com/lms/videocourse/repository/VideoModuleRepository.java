@@ -19,4 +19,8 @@ public interface VideoModuleRepository extends JpaRepository<VideoModule, String
     long countByStepIdAndIsActiveTrue(String stepId);
 
     List<VideoModule> findByContentSetIdAndModuleTypeAndIsActiveTrue(String contentSetId, com.lms.videocourse.entity.enums.ModuleType moduleType);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(value = "UPDATE video_modules SET content_set_id = ?2 WHERE content_set_id = ?1", nativeQuery = true)
+    int updateContentSetId(String oldId, String newId);
 }

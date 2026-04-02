@@ -83,3 +83,4 @@ app:
       writing-progress-events: writing.progress.events
       quiz-study-set-progress-events: quiz.study-set.progress.events
       kanji-progress-events: kanji.progress.events
+      listening-progress-events: listening.progress.events

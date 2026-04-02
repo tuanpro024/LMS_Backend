@@ -29,6 +29,7 @@ public class ListeningProgressServiceImpl implements ListeningProgressService {
     private final ListeningVideoProgressRepository videoProgressRepository;
     private final ListeningStudySetProgressRepository studySetProgressRepository;
     private final VideoMetadataRepository videoMetadataRepository;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -196,6 +197,9 @@ public class ListeningProgressServiceImpl implements ListeningProgressService {
         }
 
         studySetProgressRepository.save(progress);
+        
+        // Publish internal event for async processing (e.g. Kafka)
+        eventPublisher.publishEvent(new com.lms.listening.event.ListeningStudySetProgressUpdatedEvent(this, progress));
     }
 
     private VideoMetadata validateVideoMetadata(String studySetId, String videoCode) {

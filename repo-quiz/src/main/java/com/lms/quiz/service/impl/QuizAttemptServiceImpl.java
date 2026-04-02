@@ -2,7 +2,10 @@ package com.lms.quiz.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lms.quiz.dto.request.CheckQuestionRequest;
 import com.lms.quiz.dto.request.SubmitQuizRequest;
+import com.lms.quiz.dto.request.UpdateQuestionResultRequest;
+import com.lms.quiz.dto.response.CheckQuestionResponse;
 import com.lms.quiz.dto.response.QuizProgressResponse;
 import com.lms.quiz.dto.response.QuizResultResponse;
 import com.lms.quiz.entity.QuizAttempt;
@@ -14,6 +17,7 @@ import com.lms.quiz.entity.QuizOption;
 import com.lms.quiz.entity.QuizQuestion;
 import com.lms.quiz.entity.SentenceChunk;
 import com.lms.quiz.entity.UserQuizStudySetProgress;
+import com.lms.quiz.entity.enums.QuestionType;
 import com.lms.quiz.entity.enums.StudySetProgressStatus;
 import com.lms.quiz.event.QuizAttemptSubmittedEvent;
 import com.lms.quiz.event.QuizStudySetProgressUpdatedEvent;
@@ -256,6 +260,99 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
 
     @Override
     @Transactional(readOnly = true)
+    public CheckQuestionResponse checkQuestion(CheckQuestionRequest request, String userId) {
+        log.info("User {} checking question {} in quiz {}", userId,
+                request != null && request.getAnswer() != null ? request.getAnswer().getQuestionId() : null,
+                request != null ? request.getQuizId() : null);
+
+        if (request == null || request.getQuizId() == null || request.getAnswer() == null
+                || request.getAnswer().getQuestionId() == null) {
+            throw new IllegalArgumentException("quizId and answer.questionId are required");
+        }
+
+        Quiz quiz = quizRepository.findById(request.getQuizId())
+                .orElseThrow(() -> new EntityNotFoundException("Quiz not found: " + request.getQuizId()));
+
+        QuizQuestion question = quiz.getQuestions().stream()
+                .filter(q -> request.getAnswer().getQuestionId().equals(q.getId()))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Question not found in quiz: " + request.getAnswer().getQuestionId()));
+
+        GradeResult gradeResult;
+        Object userAnswerObj;
+
+        switch (question.getQuestionType()) {
+            case MULTIPLE_CHOICE -> {
+                gradeResult = gradeMultipleChoice(question, request.getAnswer());
+                userAnswerObj = request.getAnswer().getSelectedOptionId();
+            }
+            case FILL_IN_BLANK -> {
+                gradeResult = gradeFillInBlank(question, request.getAnswer());
+                userAnswerObj = request.getAnswer().getBlankAnswers();
+            }
+            case MATCHING_PAIRS -> {
+                gradeResult = gradeMatchingPairs(question, request.getAnswer());
+                userAnswerObj = request.getAnswer().getMatchAnswers();
+            }
+            case SENTENCE_BUILDER -> {
+                gradeResult = gradeSentenceBuilder(question, request.getAnswer());
+                userAnswerObj = request.getAnswer().getOrderedChunkIds();
+            }
+            default -> throw new IllegalArgumentException("Unsupported question type: " + question.getQuestionType());
+        }
+
+        int maxPoints = question.getPoints() != null ? question.getPoints() : 0;
+        int pointsEarned = gradeResult.correct ? maxPoints : 0;
+
+        return CheckQuestionResponse.builder()
+                .quizId(quiz.getId())
+                .questionId(question.getId())
+                .questionType(question.getQuestionType().name())
+                .isCorrect(gradeResult.correct)
+                .pointsEarned(pointsEarned)
+                .maxPoints(maxPoints)
+                .timeTakenSeconds(request.getTimeTakenSeconds())
+                .explanation(question.getExplanation())
+                .correctAnswer(gradeResult.correctAnswer)
+                .userAnswer(userAnswerObj)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public QuizResultResponse updateQuestionResult(UpdateQuestionResultRequest request, String userId) {
+        if (request == null || request.getQuizId() == null || request.getAnswer() == null
+                || request.getAnswer().getQuestionId() == null) {
+            throw new IllegalArgumentException("quizId and answer.questionId are required");
+        }
+
+        Map<String, SubmitQuizRequest.SubmitAnswerRequest> answerMap = new LinkedHashMap<>();
+        if (request.getPreviousQuestionResults() != null) {
+            for (UpdateQuestionResultRequest.PreviousQuestionResult item : request.getPreviousQuestionResults()) {
+                if (item == null || item.getQuestionId() == null || item.getQuestionType() == null) {
+                    continue;
+                }
+                SubmitQuizRequest.SubmitAnswerRequest converted = convertPreviousUserAnswer(item);
+                if (converted != null) {
+                    answerMap.put(converted.getQuestionId(), converted);
+                }
+            }
+        }
+
+        answerMap.put(request.getAnswer().getQuestionId(), request.getAnswer());
+
+        SubmitQuizRequest reconstructed = SubmitQuizRequest.builder()
+                .quizId(request.getQuizId())
+                .answers(new ArrayList<>(answerMap.values()))
+                .timeTakenSeconds(request.getTimeTakenSeconds())
+                .build();
+
+        return submitQuiz(reconstructed, userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public QuizProgressResponse getQuizProgress(String quizId, String userId) {
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new EntityNotFoundException("Quiz not found: " + quizId));
@@ -404,6 +501,136 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
         boolean isCorrect = correctOrder.equals(userOrder);
 
         return new GradeResult(isCorrect, correctOrder);
+    }
+
+    private SubmitQuizRequest.SubmitAnswerRequest convertPreviousUserAnswer(
+            UpdateQuestionResultRequest.PreviousQuestionResult item) {
+        QuestionType questionType;
+        try {
+            questionType = QuestionType.valueOf(item.getQuestionType());
+        } catch (Exception e) {
+            return null;
+        }
+
+        SubmitQuizRequest.SubmitAnswerRequest.SubmitAnswerRequestBuilder builder = SubmitQuizRequest.SubmitAnswerRequest
+                .builder()
+                .questionId(item.getQuestionId());
+
+        Object userAnswer = item.getUserAnswer();
+        switch (questionType) {
+            case MULTIPLE_CHOICE -> {
+                String selected = asString(userAnswer);
+                if (selected != null && !selected.isBlank()) {
+                    builder.selectedOptionId(selected);
+                }
+            }
+            case FILL_IN_BLANK -> builder.blankAnswers(parseBlankAnswers(userAnswer));
+            case MATCHING_PAIRS -> builder.matchAnswers(parseMatchAnswers(userAnswer));
+            case SENTENCE_BUILDER -> builder.orderedChunkIds(parseOrderedChunkIds(userAnswer));
+        }
+
+        return builder.build();
+    }
+
+    private List<SubmitQuizRequest.BlankAnswer> parseBlankAnswers(Object userAnswer) {
+        if (userAnswer == null) {
+            return Collections.emptyList();
+        }
+
+        List<SubmitQuizRequest.BlankAnswer> answers = new ArrayList<>();
+        if (userAnswer instanceof Map<?, ?> map) {
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                Integer idx = asInteger(entry.getKey());
+                String val = asString(entry.getValue());
+                if (idx != null && val != null) {
+                    answers.add(SubmitQuizRequest.BlankAnswer.builder().blankIndex(idx).answer(val).build());
+                }
+            }
+        } else if (userAnswer instanceof Collection<?> collection) {
+            for (Object obj : collection) {
+                if (!(obj instanceof Map<?, ?> item)) {
+                    continue;
+                }
+                Integer idx = asInteger(item.get("blankIndex"));
+                if (idx == null) {
+                    idx = asInteger(item.get("index"));
+                }
+                String val = asString(item.get("answer"));
+                if (val == null) {
+                    val = asString(item.get("correctAnswer"));
+                }
+                if (idx != null && val != null) {
+                    answers.add(SubmitQuizRequest.BlankAnswer.builder().blankIndex(idx).answer(val).build());
+                }
+            }
+        }
+
+        answers.sort(Comparator.comparingInt(SubmitQuizRequest.BlankAnswer::getBlankIndex));
+        return answers;
+    }
+
+    private List<SubmitQuizRequest.MatchAnswer> parseMatchAnswers(Object userAnswer) {
+        if (!(userAnswer instanceof Collection<?> collection)) {
+            return Collections.emptyList();
+        }
+
+        List<SubmitQuizRequest.MatchAnswer> answers = new ArrayList<>();
+        for (Object obj : collection) {
+            if (!(obj instanceof Map<?, ?> item)) {
+                continue;
+            }
+            String promptId = asString(item.get("promptId"));
+            String answerId = asString(item.get("answerId"));
+            if (promptId != null && answerId != null) {
+                answers.add(SubmitQuizRequest.MatchAnswer.builder()
+                        .promptId(promptId)
+                        .answerId(answerId)
+                        .build());
+            }
+        }
+        return answers;
+    }
+
+    private List<String> parseOrderedChunkIds(Object userAnswer) {
+        if (!(userAnswer instanceof Collection<?> collection)) {
+            return Collections.emptyList();
+        }
+
+        List<String> chunkIds = new ArrayList<>();
+        for (Object obj : collection) {
+            String value = asString(obj);
+            if (value != null && !value.isBlank()) {
+                chunkIds.add(value);
+            }
+        }
+        return chunkIds;
+    }
+
+    private String asString(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String s) {
+            return s;
+        }
+        return String.valueOf(value);
+    }
+
+    private Integer asInteger(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer i) {
+            return i;
+        }
+        if (value instanceof Number n) {
+            return n.intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private record GradeResult(boolean correct, Object correctAnswer) {

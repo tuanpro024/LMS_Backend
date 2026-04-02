@@ -1,6 +1,9 @@
 package com.lms.quiz.service;
 
+import com.lms.quiz.dto.request.CheckQuestionRequest;
 import com.lms.quiz.dto.request.SubmitQuizRequest;
+import com.lms.quiz.dto.request.UpdateQuestionResultRequest;
+import com.lms.quiz.dto.response.CheckQuestionResponse;
 import com.lms.quiz.dto.response.QuizProgressResponse;
 import com.lms.quiz.dto.response.QuizResultResponse;
 
@@ -15,6 +18,10 @@ public interface IQuizAttemptService {
      * - SENTENCE_BUILDER: so khớp thứ tự chunks
      */
     QuizResultResponse submitQuiz(SubmitQuizRequest request, String userId);
+
+    CheckQuestionResponse checkQuestion(CheckQuestionRequest request, String userId);
+
+    QuizResultResponse updateQuestionResult(UpdateQuestionResultRequest request, String userId);
 
     QuizProgressResponse getQuizProgress(String quizId, String userId);
 }

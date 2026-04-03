@@ -65,7 +65,7 @@ public class VideoUnlockServiceImpl implements IVideoUnlockService {
                             .orElse(null);
 
                     if (requiredStep != null) {
-                        return String.format("Watch at least 80%% of all videos in '%s' to unlock this step",
+                        return String.format("Complete all modules in '%s' to unlock this step. Video modules require at least 80%% watch time.",
                                 requiredStep.getTitle());
                     }
 

@@ -62,7 +62,7 @@ public class VideoStepProgress extends BaseEntity {
     }
 
     public boolean canUnlockNext() {
-        return requiredCompletedModules >= totalRequiredModules && totalRequiredModules > 0;
+        return status == ProgressStatus.COMPLETED;
     }
 
     public double getProgressPercentage() {

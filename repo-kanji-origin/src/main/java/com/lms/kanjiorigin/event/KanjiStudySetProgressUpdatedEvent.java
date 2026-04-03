@@ -13,5 +13,6 @@ public record KanjiStudySetProgressUpdatedEvent(
         Integer totalLessons,
         Double progressPercentage,
         Boolean completed,
+        Instant completedAt,
         Instant occurredAt) {
 }

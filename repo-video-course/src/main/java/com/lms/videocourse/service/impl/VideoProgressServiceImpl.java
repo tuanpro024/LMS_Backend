@@ -242,7 +242,9 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                 .findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(stepId);
 
                 int totalModules = allModules.size();
-                long totalRequired = allModules.stream().filter(VideoModule::getIsRequired).count();
+                // Rule: All modules must be completed. 
+                // We map allModules to totalRequired for backward compatibility with UI/API.
+                int totalRequired = totalModules;
 
                 List<String> moduleIds = allModules.stream()
                                 .map(VideoModule::getId)
@@ -254,7 +256,6 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                 .findByUserIdAndStepId(userId, stepId);
 
                 int completedCount = 0;
-                long completedRequiredCount = 0;
 
                 for (VideoModule module : allModules) {
                     boolean isCompleted = false;
@@ -268,16 +269,15 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
 
                     if (isCompleted) {
                         completedCount++;
-                        if (module.getIsRequired()) {
-                            completedRequiredCount++;
-                        }
                     }
                 }
+
+                int completedRequiredCount = completedCount;
 
                 ProgressStatus status;
                 if (completedCount == 0) {
                         status = ProgressStatus.NOT_STARTED;
-                } else if (completedRequiredCount >= totalRequired && totalRequired > 0) {
+                } else if (completedCount >= totalModules && totalModules > 0) {
                         status = ProgressStatus.COMPLETED;
                 } else {
                         status = ProgressStatus.IN_PROGRESS;
@@ -293,21 +293,21 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                                 .completedModules(0)
                                                 .totalModules(totalModules)
                                                 .requiredCompletedModules(0)
-                                                .totalRequiredModules((int) totalRequired)
+                                                .totalRequiredModules(totalRequired)
                                                 .build());
 
                 boolean changed = progress.getStatus() != status
                                 || progress.getCompletedModules() != completedCount
                                 || progress.getTotalModules() != totalModules
-                                || progress.getRequiredCompletedModules() != (int) completedRequiredCount
-                                || progress.getTotalRequiredModules() != (int) totalRequired;
+                                || progress.getRequiredCompletedModules() != completedRequiredCount
+                                || progress.getTotalRequiredModules() != totalRequired;
 
                 if (changed) {
                         progress.setStatus(status);
                         progress.setCompletedModules(completedCount);
                         progress.setTotalModules(totalModules);
-                        progress.setRequiredCompletedModules((int) completedRequiredCount);
-                        progress.setTotalRequiredModules((int) totalRequired);
+                        progress.setRequiredCompletedModules(completedRequiredCount);
+                        progress.setTotalRequiredModules(totalRequired);
 
                         if (progress.getFirstStartedAt() == null && completedCount > 0) {
                                 progress.setFirstStartedAt(Instant.now());
@@ -317,8 +317,8 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                         }
 
                         stepProgressRepository.save(progress);
-                        log.info("Updated step progress for user {} step {}: {}/{} required modules, status={}",
-                                        userId, stepId, completedRequiredCount, totalRequired, status);
+                        log.info("Updated step progress for user {} step {}: {}/{} modules (all required), status={}",
+                                        userId, stepId, completedCount, totalModules, status);
                 }
         }
 
@@ -452,6 +452,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                        moduleType == com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION ||
                        moduleType == com.lms.videocourse.entity.enums.ModuleType.WRITING ||
                        moduleType == com.lms.videocourse.entity.enums.ModuleType.QUIZ ||
+                       moduleType == com.lms.videocourse.entity.enums.ModuleType.LISTENING ||
                        moduleType == com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
         }
 }

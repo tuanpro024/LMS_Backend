@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -122,6 +123,12 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
                         .status(ProgressStatus.NOT_STARTED)
                         .build());
 
+        Integer previousLearnedItems = progress.getLearnedItems();
+        Integer previousTotalItems = progress.getTotalItems();
+        Double previousProgressPercentage = progress.getProgressPercentage();
+        ProgressStatus previousStatus = progress.getStatus();
+        Instant previousCompletedAt = progress.getCompletedAt();
+
         long totalItems = itemRepo.countByStudySetIdAndDeletedFalse(studySetId);
         long learnedItems = userItemProgressRepo.countByUserIdAndStudySetIdAndStatus(userId, studySetId, PronunciationLearningStatus.LEARNED);
 
@@ -148,6 +155,19 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
         }
 
         studySetProgressRepo.save(progress);
+
+        boolean progressChanged =
+                !Objects.equals(previousLearnedItems, progress.getLearnedItems())
+                        || !Objects.equals(previousTotalItems, progress.getTotalItems())
+                        || !Objects.equals(previousProgressPercentage, progress.getProgressPercentage())
+                        || previousStatus != progress.getStatus()
+                        || !Objects.equals(previousCompletedAt, progress.getCompletedAt());
+
+        if (!progressChanged) {
+            log.debug("Skip publishing pronunciation progress event because state is unchanged for userId: {}, studySetId: {}",
+                    userId, studySetId);
+            return;
+        }
 
         com.lms.pronunciation.event.PronunciationStudySetProgressUpdatedEvent event = com.lms.pronunciation.event.PronunciationStudySetProgressUpdatedEvent.builder()
                 .userId(userId)

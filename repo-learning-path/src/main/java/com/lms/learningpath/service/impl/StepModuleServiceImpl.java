@@ -1,11 +1,17 @@
 package com.lms.learningpath.service.impl;
 
+import com.lms.learningpath.client.FlashcardClient;
+import com.lms.learningpath.client.KanjiOriginClient;
+import com.lms.learningpath.client.PronunciationClient;
+import com.lms.learningpath.client.QuizClient;
+import com.lms.learningpath.client.WritingClient;
 import com.lms.learningpath.exception.ResourceAlreadyExistsException;
 import com.lms.learningpath.exception.ResourceNotFoundException;
 import com.lms.learningpath.dto.request.AddModuleToStepRequest;
 import com.lms.learningpath.dto.request.ReorderItemsRequest;
 import com.lms.learningpath.dto.response.StepModuleResponse;
 import com.lms.learningpath.entity.StepModule;
+import com.lms.learningpath.entity.enums.ModuleType;
 import com.lms.learningpath.mapper.StepModuleMapper;
 import com.lms.learningpath.repository.StepModuleRepository;
 import com.lms.learningpath.service.IStepModuleService;
@@ -24,6 +30,11 @@ public class StepModuleServiceImpl implements IStepModuleService {
 
     private final StepModuleRepository stepModuleRepository;
     private final StepModuleMapper stepModuleMapper;
+    private final FlashcardClient flashcardClient;
+    private final WritingClient writingClient;
+    private final KanjiOriginClient kanjiOriginClient;
+    private final QuizClient quizClient;
+    private final PronunciationClient pronunciationClient;
 
     @Override
     @Transactional
@@ -36,6 +47,8 @@ public class StepModuleServiceImpl implements IStepModuleService {
             throw new ResourceAlreadyExistsException(
                     "Module with order " + request.getModuleOrder() + " already exists in this step");
         }
+
+        validateContentSetMapping(request.getModuleType(), request.getContentSetId());
 
         StepModule stepModule = stepModuleMapper.toEntity(request);
         stepModule = stepModuleRepository.save(stepModule);
@@ -89,5 +102,32 @@ public class StepModuleServiceImpl implements IStepModuleService {
     private StepModule findStepModuleById(String id) {
         return stepModuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Step module not found with id: " + id));
+    }
+
+    private void validateContentSetMapping(ModuleType moduleType, String contentSetId) {
+        if (contentSetId == null || contentSetId.isBlank() || moduleType == null) {
+            throw new ResourceNotFoundException("Invalid module mapping: moduleType/contentSetId is missing");
+        }
+
+        try {
+            boolean exists = switch (moduleType) {
+                case FLASHCARD -> flashcardClient.getStudySetById(contentSetId).data() != null;
+                case WRITING -> writingClient.getStudySetById(contentSetId).data() != null;
+                case KANJI -> kanjiOriginClient.getStudySetById(contentSetId).data() != null;
+                case QUIZ -> quizClient.getStudySetById(contentSetId).data() != null;
+                case PRONUNCIATION -> pronunciationClient.getStudySetById(contentSetId).data() != null;
+                default -> true;
+            };
+
+            if (!exists) {
+                throw new ResourceNotFoundException(
+                        "Content set " + contentSetId + " not found for module type " + moduleType);
+            }
+        } catch (ResourceNotFoundException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ResourceNotFoundException(
+                    "Content set " + contentSetId + " is invalid for module type " + moduleType);
+        }
     }
 }

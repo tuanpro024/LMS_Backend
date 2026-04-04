@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -19,6 +20,7 @@ import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -48,6 +50,24 @@ public class GlobalExceptionHandler {
         String message = ex.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining("; "));
+        ApiResponse<Void> body = ApiResponse.error(ErrorCode.BAD_REQUEST.code(), message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        String message = "Invalid value for parameter '" + ex.getName() + "'";
+
+        Class<?> requiredType = ex.getRequiredType();
+        if (requiredType != null && requiredType.isEnum()) {
+            Object[] allowed = requiredType.getEnumConstants();
+            String allowedValues = allowed == null ? ""
+                    : Arrays.stream(allowed)
+                            .map(String::valueOf)
+                            .collect(Collectors.joining(", "));
+            message = message + ". Allowed values: " + allowedValues;
+        }
+
         ApiResponse<Void> body = ApiResponse.error(ErrorCode.BAD_REQUEST.code(), message);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }

@@ -108,16 +108,18 @@ public class OtpServiceImpl implements OtpService {
     @Transactional
     @Override
     public User verifyOtp(String email, String otp) {
+        String normalizedOtp = otp == null ? "" : otp.trim();
+
         // Find user
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException(ErrorCode.E238, "User not found"));
 
-        // Find OTP token
-        OtpVerificationToken token = otpTokenRepository.findByOtp(otp)
+        // Find OTP token by user to avoid OTP collisions between users.
+        OtpVerificationToken token = otpTokenRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.E241, "The OTP is invalid or has expired."));
 
-        // Verify token belongs to user
-        if (!token.getUserId().equals(user.getId())) {
+        // Verify OTP content for this specific user token.
+        if (!token.getOtp().equals(normalizedOtp)) {
             throw new ApiException(ErrorCode.E241, "OTP is invalid for the given email");
         }
 

@@ -102,4 +102,9 @@ public class AuthController {
     ) {
         return ApiResponse.ok(authService.verifyDeviceOtp(request, servletRequest));
     }
+
+    @PostMapping("/device/resend-otp")
+    public ApiResponse<String> resendDeviceOtp(@Valid @RequestBody ResendDeviceOtpRequest request) {
+        return ApiResponse.ok(authService.resendDeviceOtp(request.getEmail()));
+    }
 }

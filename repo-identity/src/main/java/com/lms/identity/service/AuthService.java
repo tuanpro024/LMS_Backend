@@ -29,4 +29,6 @@ public interface AuthService {
 
     AuthResponse verifyOtp(VerifyOtpRequest request);
     AuthResponse verifyDeviceOtp(DeviceVerificationRequest request, HttpServletRequest servletRequest);
+    
+    String resendDeviceOtp(String email);
 }

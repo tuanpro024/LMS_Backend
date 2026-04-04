@@ -182,4 +182,18 @@ public class AuthServiceImpl implements AuthService {
         loginHistoryService.logLogin(user, servletRequest);
         return jwtTokenService.issueTokens(user);
     }
+
+    @Override
+    @Transactional
+    public String resendDeviceOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ApiException(ErrorCode.E238));
+
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new ApiException(ErrorCode.FORBIDDEN);
+        }
+
+        otpService.generateAndSendDeviceOtp(user);
+        return "OTP has been sent to your email.";
+    }
 }

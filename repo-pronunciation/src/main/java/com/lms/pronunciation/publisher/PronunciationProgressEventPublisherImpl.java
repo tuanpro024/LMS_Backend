@@ -1,6 +1,5 @@
 package com.lms.pronunciation.publisher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.pronunciation.event.PronunciationStudySetProgressKafkaPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Component;
 public class PronunciationProgressEventPublisherImpl implements PronunciationProgressEventPublisher {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final ObjectMapper objectMapper;
 
     @Value("${app.kafka.topics.pronunciation-progress-events:pronunciation.progress.events}")
     private String progressTopic;
@@ -24,11 +22,10 @@ public class PronunciationProgressEventPublisherImpl implements PronunciationPro
         try {
             log.info("Publishing pronunciation progress event for user {} and study set {} to topic {}", 
                     payload.getUserId(), payload.getStudySetId(), progressTopic);
-            String jsonPayload = objectMapper.writeValueAsString(payload);
             // Producer logic: Kafka Key = userId to ensure order per user
-            kafkaTemplate.send(progressTopic, payload.getUserId(), jsonPayload);
+            kafkaTemplate.send(progressTopic, payload.getUserId(), payload);
         } catch (Exception e) {
-            log.error("Failed to serialize or publish pronunciation progress event", e);
+            log.error("Failed to publish pronunciation progress event", e);
         }
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -99,6 +100,47 @@ public class PracticeModuleWebClient {
         } catch (Exception e) {
             log.error("PracticeModuleWebClient.importExcel({}) failed: {}", serviceBaseUrl, e.getMessage());
             throw new RuntimeException("Không thể kết nối đến dịch vụ ôn luyện để import: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * GET /study-sets/{id} từ repo ngoài.
+     *
+     * @param serviceBaseUrl URL base của service (e.g. "http://repo-flashcard")
+     * @param id             Study set ID cần kiểm tra
+     * @return StudySetResponse nếu tồn tại, null nếu không tìm thấy (404)
+     */
+    public StudySetResponse getStudySetById(String serviceBaseUrl, String id) {
+        try {
+            if (id == null || id.isBlank()) {
+                return null;
+            }
+
+            String authHeader = getAuthHeader();
+            String raw = webClientBuilder.build()
+                    .get()
+                    .uri(serviceBaseUrl + "/study-sets/" + id)
+                    .headers(h -> {
+                        if (authHeader != null) h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                    })
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .timeout(TIMEOUT)
+                    .block();
+
+            if (raw == null) {
+                return null;
+            }
+
+            ObjectMapper om = new ObjectMapper();
+            om.findAndRegisterModules();
+            ApiResponse<StudySetResponse> resp = om.readValue(raw, new TypeReference<>() {});
+            return resp != null ? resp.data() : null;
+        } catch (WebClientResponseException.NotFound ex) {
+            return null;
+        } catch (Exception e) {
+            log.error("PracticeModuleWebClient.getStudySetById({}, {}) failed: {}", serviceBaseUrl, id, e.getMessage());
+            throw new RuntimeException("Không thể kiểm tra study set từ dịch vụ ôn luyện: " + e.getMessage(), e);
         }
     }
 

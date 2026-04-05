@@ -15,6 +15,8 @@ public class UpdateAiPracticeItemRequest {
     private String referenceAnswer;
     private String originalArticleSummary;
     private String referenceText;
+    private String questionAudioFileId;
+    private String questionImageFileId;
     private String extraConfigJson;
     private Integer contentIndex;
 }

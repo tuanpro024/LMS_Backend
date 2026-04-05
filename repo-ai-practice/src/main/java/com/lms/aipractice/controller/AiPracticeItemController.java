@@ -7,10 +7,12 @@ import com.lms.aipractice.service.AiPracticeItemService;
 import com.lms.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,6 +29,24 @@ public class AiPracticeItemController {
             @Valid @RequestBody CreateAiPracticeItemRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(itemService.create(request)));
+    }
+
+    @PostMapping(value = "/with-audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<AiPracticeItemResponse>> createWithAudio(
+            @Valid @RequestPart("data") CreateAiPracticeItemRequest request,
+            @RequestPart("audio") MultipartFile audioFile) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(itemService.createWithAudio(request, audioFile)));
+    }
+
+    @PostMapping(value = "/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<AiPracticeItemResponse>> createWithImage(
+            @Valid @RequestPart("data") CreateAiPracticeItemRequest request,
+            @RequestPart("image") MultipartFile imageFile) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(itemService.createWithImage(request, imageFile)));
     }
 
     @PutMapping("/{id}")

@@ -210,7 +210,8 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
 
         try {
             Map<String, Object> payload = objectMapper.readValue(
-                    job.getRequestPayloadJson(), new TypeReference<Map<String, Object>>() {});
+                    job.getRequestPayloadJson(), new TypeReference<Map<String, Object>>() {
+                    });
             String rawResponse = hskApiClient.submitWritingSyncV1(payload);
 
             job.setResponsePayloadJson(rawResponse);

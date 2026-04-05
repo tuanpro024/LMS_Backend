@@ -20,6 +20,10 @@ public class AiPracticeItemResponse {
     private String referenceAnswer;
     private String originalArticleSummary;
     private String referenceText;
+    private String questionAudioFileId;
+    private String questionAudioUrl;
+    private String questionImageFileId;
+    private String questionImageUrl;
     private String extraConfigJson;
     private Integer contentIndex;
     private Instant createdAt;

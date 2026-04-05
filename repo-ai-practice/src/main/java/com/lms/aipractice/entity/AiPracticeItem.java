@@ -7,8 +7,10 @@ import lombok.*;
 
 /**
  * Represents one AI-graded practice question inside a StudySet.
- * Extends BaseContentItem which already provides: id, study_set_id, content_index, createdAt, updatedAt, deleted.
- * Note: No @Builder — MapStruct uses setter-based mapping which handles parent class fields correctly.
+ * Extends BaseContentItem which already provides: id, study_set_id,
+ * content_index, createdAt, updatedAt, deleted.
+ * Note: No @Builder — MapStruct uses setter-based mapping which handles parent
+ * class fields correctly.
  */
 @Entity
 @Table(name = "ai_practice_items")
@@ -45,17 +47,36 @@ public class AiPracticeItem extends BaseContentItem {
     @Column(name = "required_words_json", columnDefinition = "TEXT")
     private String requiredWordsJson;
 
-    /** Reference/model answer for SENTENCE_ARRANGEMENT, SPEAKING_LISTEN_AND_ANSWER */
+    /**
+     * Reference/model answer for SENTENCE_ARRANGEMENT, SPEAKING_LISTEN_AND_ANSWER
+     */
     @Column(name = "reference_answer", columnDefinition = "TEXT")
     private String referenceAnswer;
 
-    /** Key points summary of the source article for SUMMARY_WRITING (original_article_summary) */
+    /**
+     * Key points summary of the source article for SUMMARY_WRITING
+     * (original_article_summary)
+     */
     @Column(name = "original_article_summary", columnDefinition = "TEXT")
     private String originalArticleSummary;
 
     /** Reference text for AUDIO_COMPARE (expected_text sent to ASR_HSK) */
     @Column(name = "reference_text", columnDefinition = "TEXT")
     private String referenceText;
+
+    /**
+     * Multimedia file id for teacher-provided listening audio
+     * (SPEAKING_LISTEN_AND_ANSWER).
+     */
+    @Column(name = "question_audio_file_id", length = 64)
+    private String questionAudioFileId;
+
+    /**
+     * Multimedia file id for teacher-provided image
+     * (PICTURE_SENTENCE/PICTURE_PARAGRAPH).
+     */
+    @Column(name = "question_image_file_id", length = 64)
+    private String questionImageFileId;
 
     /** Extra configuration JSON for future extensibility */
     @Column(name = "extra_config_json", columnDefinition = "TEXT")

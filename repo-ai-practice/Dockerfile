@@ -1,34 +1,26 @@
-# ── Stage 1: Build ──────────────────────────────────────────
-FROM eclipse-temurin:21-jdk-alpine AS builder
+# Stage 1: Build
+FROM maven:3.9.8-eclipse-temurin-21-alpine AS build
 
 WORKDIR /app
 
-# Copy Maven wrapper + pom first (layer cache for deps)
-COPY .mvn .mvn
-COPY mvnw.cmd mvnw
-COPY pom.xml .
+# Copy shared modules first so Maven can resolve local parent/framework dependencies.
+COPY repo-common-parent ./repo-common-parent
+COPY repo-common-framework ./repo-common-framework
+COPY repo-content-common ./repo-content-common
 
-# Download deps (cached unless pom.xml changes)
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -q || true
+# Install shared modules into the local Maven repository.
+RUN mvn -f repo-common-parent/pom.xml clean install -DskipTests
+RUN mvn -f repo-common-framework/pom.xml clean install -DskipTests
+RUN mvn -f repo-content-common/pom.xml clean install -DskipTests
 
-# Copy source + build
-COPY src src
-RUN ./mvnw package -DskipTests -q
+# Copy and build AI practice service.
+COPY repo-ai-practice ./repo-ai-practice
+RUN mvn -f repo-ai-practice/pom.xml clean package -DskipTests
 
-# ── Stage 2: Runtime ─────────────────────────────────────────
+# Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
-
-# Non-root user for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
-
-# JWT public key directory
-RUN mkdir -p secrets
-
-COPY --from=builder /app/target/repo-ai-practice-*.jar app.jar
-
+COPY --from=build /app/repo-ai-practice/target/repo-ai-practice-*.jar app.jar
 EXPOSE 8092
-
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]

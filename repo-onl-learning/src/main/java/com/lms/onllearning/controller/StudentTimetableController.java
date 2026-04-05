@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/students/me/timetable")
+@RequestMapping({ "/students/me/timetable", "/users/me/timetable" })
 @RequiredArgsConstructor
 public class StudentTimetableController {
 
@@ -32,8 +32,7 @@ public class StudentTimetableController {
                     .body(ApiResponse.error("UNAUTHORIZED", "Không xác định được người dùng đăng nhập"));
         }
 
-        CmsEnvelope<List<StudentTimetableItemResponse>> result =
-                timetableService.getStudentTimetable(email);
+        CmsEnvelope<List<StudentTimetableItemResponse>> result = timetableService.getStudentTimetable(email);
 
         return ResponseEntity.ok(ApiResponse.ok(result));
     }

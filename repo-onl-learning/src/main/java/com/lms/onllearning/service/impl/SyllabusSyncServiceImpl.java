@@ -11,7 +11,6 @@ import com.lms.onllearning.repository.*;
 import com.lms.onllearning.service.ISyllabusSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +19,6 @@ import java.util.List;
 
 /**
  * Đồng bộ dữ liệu syllabus từ CMS vào DB local (fallback khi CMS down).
- * Dự trù: scheduled hàng ngày lúc 3h sáng + trigger thủ công qua API.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,16 +32,6 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
     private final SyllabusScheduleRepository scheduleRepo;
     private final SyllabusGradingRepository gradingRepo;
     private final ObjectMapper objectMapper;
-
-    // -----------------------------------------------------------------------
-    // Scheduled — mỗi ngày lúc 03:00 AM
-    // -----------------------------------------------------------------------
-
-    @Scheduled(cron = "0 0 3 * * *")
-    public void scheduledSync() {
-        log.info("[SyllabusSync] Bắt đầu scheduled sync...");
-        syncAll();
-    }
 
     // -----------------------------------------------------------------------
     // Public methods
@@ -71,7 +59,7 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
         // Sau khi upsert header xong, sync chi tiết từng cái
         for (SyllabusResponse sr : list) {
             try {
-                syncOne(sr.id());
+                syncOneInternal(sr.id());
             } catch (Exception e) {
                 log.error("[SyllabusSync] Lỗi syncOne id={}: {}", sr.id(), e.getMessage());
             }
@@ -79,9 +67,8 @@ public class SyllabusSyncServiceImpl implements ISyllabusSyncService {
         log.info("[SyllabusSync] syncAll hoàn tất.");
     }
 
-    @Override
     @Transactional
-    public void syncOne(String syllabusId) {
+    protected void syncOneInternal(String syllabusId) {
         CmsEnvelope<SyllabusDetailResponse> envelope = cmsClient.getSyllabusDetail(syllabusId);
         if (envelope.meta().cmsUnavailable() || envelope.data() == null) {
             log.warn("[SyllabusSync] CMS không khả dụng cho syllabusId={}", syllabusId);

@@ -12,12 +12,16 @@ public class WebClientConfig {
     @Value("${cms.base-url}")
     private String cmsBaseUrl;
 
+    @Value("${cms.webclient.max-in-memory-mb:32}")
+    private int cmsWebClientMaxInMemoryMb;
+
     @Bean
     public WebClient cmsWebClient() {
+        int maxInMemory = Math.max(cmsWebClientMaxInMemoryMb, 2) * 1024 * 1024;
         return WebClient.builder()
                 .baseUrl(cmsBaseUrl)
                 .defaultHeader("Accept", "application/json")
-                .codecs(config -> config.defaultCodecs().maxInMemorySize(2 * 1024 * 1024)) // 2MB
+                .codecs(config -> config.defaultCodecs().maxInMemorySize(maxInMemory))
                 .build();
     }
 

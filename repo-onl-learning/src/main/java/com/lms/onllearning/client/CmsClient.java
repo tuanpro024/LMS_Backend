@@ -1,18 +1,16 @@
 package com.lms.onllearning.client;
 
 import com.lms.onllearning.dto.response.CmsApiResponse;
+import com.lms.onllearning.dto.response.CmsCourseTimetableResponse;
 import com.lms.onllearning.dto.response.CmsEnvelope;
 import com.lms.onllearning.dto.response.CmsOnlineCourseResponse;
-import com.lms.onllearning.dto.response.StudentTimetableItemResponse;
 import com.lms.onllearning.dto.response.SyllabusDetailResponse;
 import com.lms.onllearning.dto.response.SyllabusResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
@@ -21,7 +19,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Client gọi CMS API: https://cms.dangch.tech
  * CMS trả format: {"statusCode":200,"data":...,"message":...,"success":true}
- * Mọi call đều có fallback: trả data từ Redis cache nếu CMS down.
+ * Các API catalogue có fallback Redis; API sync timetable full snapshot thì
+ * không dùng cache.
  */
 @Component
 @RequiredArgsConstructor
@@ -34,11 +33,7 @@ public class CmsClient {
     private static final String CACHE_KEY_SYLLABUS_LIST = "syllabus:list:all";
     private static final String CACHE_KEY_SYLLABUS_DETAIL = "syllabus:detail:";
     private static final String CACHE_KEY_COURSE_LIST = "course:list:type:";
-    private static final String CACHE_KEY_TIMETABLE = "timetable:student:";
     private static final long SYLLABUS_TTL_SEC = 600L;
-
-    @Value("${cache.ttl.timetable:90}")
-    private long timetableTtlSec;
 
     // -----------------------------------------------------------------------
     // Syllabus List — GET /api/erp/syllabus
@@ -159,44 +154,23 @@ public class CmsClient {
     }
 
     // -----------------------------------------------------------------------
-    // Student Timetable — GET /api/erp/students/timetable-by-email?email={email}
+    // Timetable Snapshot - GET /api/erp/students/courses-timetable-emails
     // -----------------------------------------------------------------------
 
-    @SuppressWarnings("unchecked")
-    public CmsEnvelope<List<StudentTimetableItemResponse>> getStudentTimetable(String email) {
-
-        String cacheKey = CACHE_KEY_TIMETABLE + email;
+    public CmsEnvelope<List<CmsCourseTimetableResponse>> getCoursesTimetableEmails() {
         try {
-            CmsApiResponse<List<StudentTimetableItemResponse>> resp = cmsWebClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api/erp/students/timetable-by-email")
-                            .queryParam("email", email)
-                            .build())
+            CmsApiResponse<List<CmsCourseTimetableResponse>> resp = cmsWebClient.get()
+                    .uri("/api/erp/students/courses-timetable-emails")
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<StudentTimetableItemResponse>>>() {
+                    .bodyToMono(new ParameterizedTypeReference<CmsApiResponse<List<CmsCourseTimetableResponse>>>() {
                     })
                     .block();
 
-            List<StudentTimetableItemResponse> data = resp != null && resp.data() != null ? resp.data() : List.of();
-            try {
-                redisTemplate.opsForValue().set(cacheKey, data, timetableTtlSec, TimeUnit.SECONDS);
-            } catch (Exception cacheEx) {
-                log.warn("CMS getStudentTimetable(email={}): cache write failed, continue with CMS data: {}",
-                        email, cacheEx.getMessage());
-            }
+            List<CmsCourseTimetableResponse> data = resp != null && resp.data() != null ? resp.data() : List.of();
             return CmsEnvelope.fromCms(data);
 
-        } catch (WebClientResponseException.NotFound notFound) {
-            log.info("CMS getStudentTimetable(email={}): student has no schedule (404)", email);
-            return CmsEnvelope.noSchedule(List.of());
-
         } catch (Exception e) {
-            log.warn("CMS getStudentTimetable(email={}) failed, falling back to cache: {}",
-                    email, e.getMessage());
-            Object cached = redisTemplate.opsForValue().get(cacheKey);
-            if (cached != null) {
-                return CmsEnvelope.fromCache((List<StudentTimetableItemResponse>) cached);
-            }
+            log.warn("CMS getCoursesTimetableEmails failed: {}", e.getMessage());
             return CmsEnvelope.cmsUnavailable();
         }
     }

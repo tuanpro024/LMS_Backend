@@ -137,6 +137,12 @@ spring:
             - Path=${config.api-prefix}/online-learning/**
           filters:
             - StripPrefix=${config.strip-prefix}
+        - id: ai-practice
+          uri: lb://REPO-AI-PRACTICE
+          predicates:
+            - Path=${config.api-prefix}/ai/**
+          filters:
+            - StripPrefix=${config.strip-prefix}
 
   main:
     web-application-type: reactive

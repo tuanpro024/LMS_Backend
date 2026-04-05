@@ -1,0 +1,421 @@
+{
+  "info": {
+    "name": "repo-ai-practice API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "API collection for AI-powered practice service (writing, speaking, audio compare)"
+  },
+  "variable": [
+    { "key": "base_url",    "value": "http://localhost:8092" },
+    { "key": "token",       "value": "PASTE_JWT_TOKEN_HERE" },
+    { "key": "studySetId",  "value": "" },
+    { "key": "itemId_writing",  "value": "" },
+    { "key": "itemId_speaking", "value": "" },
+    { "key": "itemId_audio",    "value": "" },
+    { "key": "attemptId",   "value": "" },
+    { "key": "jobId",       "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Hierarchy — Package → Folder → StudySet",
+      "item": [
+        {
+          "name": "1.1 Create Package",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/packages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"HSK AI Practice Package\",\n  \"description\": \"Bài luyện tập AI cho HSK 5/6\",\n  \"type\": \"AI_PRACTICE\",\n  \"isPrivate\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "1.2 Create Folder",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/folders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Writing HSK 5\",\n  \"description\": \"Các bài luyện viết HSK 5\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.3 Create StudySet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('studySetId', json.data.id);",
+                  "console.log('studySetId set:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/study-sets",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"[AI] Short Paragraph Writing HSK5\",\n  \"description\": \"Luyện viết đoạn văn ngắn HSK 5\",\n  \"isPrivate\": false\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Create AI Practice Items",
+      "item": [
+        {
+          "name": "2.1 Writing — Sentence Arrangement (HSK 4)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('itemId_writing', json.data.id);",
+                  "console.log('itemId_writing:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/ai-items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studySetId\": \"{{studySetId}}\",\n  \"questionSubtype\": \"SENTENCE_ARRANGEMENT\",\n  \"hskLevel\": 4,\n  \"promptText\": \"请把下面的词语组成一个正确的句子：\\n这次 / 比赛 / 参加 / 很多 / 运动员\",\n  \"referenceAnswer\": \"这次比赛参加了很多运动员。\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2.2 Writing — Short Paragraph (HSK 5, required_words)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/ai-items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studySetId\": \"{{studySetId}}\",\n  \"questionSubtype\": \"SHORT_PARAGRAPH\",\n  \"hskLevel\": 5,\n  \"promptText\": \"请用下面的词语写一篇80字左右的短文（题目自拟）\",\n  \"requiredWordsJson\": \"[\\\"尽管\\\",\\\"影响\\\",\\\"坚持\\\",\\\"保持\\\",\\\"积极\\\"]\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2.3 Writing — Summary Writing (HSK 6)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/ai-items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studySetId\": \"{{studySetId}}\",\n  \"questionSubtype\": \"SUMMARY_WRITING\",\n  \"hskLevel\": 6,\n  \"promptText\": \"请阅读下面的文章并写一篇400字左右的摘要。\",\n  \"originalArticleSummary\": \"文章主要讲述了人工智能在医疗领域的应用，包括辅助诊断、药物研发和个性化治疗三个方面，同时也讨论了相关的伦理问题和挑战。\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2.4 Speaking — Listen and Answer (Elementary)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('itemId_speaking', json.data.id);",
+                  "console.log('itemId_speaking:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/ai-items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studySetId\": \"{{studySetId}}\",\n  \"questionSubtype\": \"SPEAKING_LISTEN_AND_ANSWER\",\n  \"partLevel\": \"elementary\",\n  \"promptText\": \"请回答下面的问题：你平时喜欢做什么运动？\",\n  \"referenceAnswer\": \"我平时喜欢跑步和游泳，因为这些运动对身体很好。\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2.5 Speaking — Picture Description (Intermediate)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/ai-items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studySetId\": \"{{studySetId}}\",\n  \"questionSubtype\": \"SPEAKING_PICTURE_DESCRIPTION\",\n  \"partLevel\": \"intermediate\",\n  \"promptText\": \"请描述这张图片中的场景。\",\n  \"imageDescription\": \"图片中有一个家庭在公园里野餐，孩子们在玩耍，父母在聊天。背景是绿色的草地和蓝色的天空。\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2.6 Audio Compare",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('itemId_audio', json.data.id);",
+                  "console.log('itemId_audio:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/ai-items",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studySetId\": \"{{studySetId}}\",\n  \"questionSubtype\": \"AUDIO_COMPARE\",\n  \"promptText\": \"请跟读下面的句子并录音：\",\n  \"referenceText\": \"我喜欢学习汉语，因为它很有趣。\"\n}"
+            }
+          }
+        },
+        {
+          "name": "2.7 Get Items by StudySet",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/ai-items/study-set/{{studySetId}}"
+          }
+        },
+        {
+          "name": "2.8 Get Item by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/ai-items/{{itemId_writing}}"
+          }
+        },
+        {
+          "name": "2.9 Update Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/ai-items/{{itemId_writing}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"promptText\": \"请把下面词语排列成句子（更新版）：\\n这次 / 比赛 / 参加 / 非常 / 多 / 运动员\",\n  \"hskLevel\": 4\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Attempt — Writing (Text Answer)",
+      "item": [
+        {
+          "name": "3.1 Create Attempt",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('attemptId', json.data.id);",
+                  "console.log('attemptId:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/attempts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studySetId\": \"{{studySetId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3.2 Submit Text Answer — Sentence Arrangement",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/attempts/{{attemptId}}/answers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{itemId_writing}}\",\n  \"answerText\": \"这次比赛参加了很多运动员。\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3.3 Submit Text Answer — Short Paragraph",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/attempts/{{attemptId}}/answers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"REPLACE_WITH_SHORT_PARAGRAPH_ITEM_ID\",\n  \"answerText\": \"尽管学习汉语很难，但它对我的影响非常深远。我坚持每天练习，努力保持积极的态度。通过不断学习，我的汉语水平有了很大的提高，这让我非常开心。\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3.4 Submit Attempt (đánh dấu đã nộp bài)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/attempts/{{attemptId}}/submit"
+          }
+        },
+        {
+          "name": "3.5 Get Attempt Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/attempts/{{attemptId}}"
+          }
+        },
+        {
+          "name": "3.6 Get Results (poll đến khi COMPLETED)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/attempts/{{attemptId}}/results"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Attempt — Audio Compare (Multipart)",
+      "item": [
+        {
+          "name": "4.1 Create Attempt (Audio)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('attemptId', json.data.id);",
+                  "console.log('Audio attemptId:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type",  "value": "application/json" }
+            ],
+            "url": "{{base_url}}/attempts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studySetId\": \"{{studySetId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "4.2 Submit Audio Answer (multipart/form-data)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/attempts/{{attemptId}}/answers/audio?itemId={{itemId_audio}}",
+              "query": [
+                { "key": "itemId", "value": "{{itemId_audio}}" }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "audio",
+                  "type": "file",
+                  "description": "Chọn file .wav từ máy tính (16kHz mono, max 20MB)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.3 Get Results (Audio — sync nên có kết quả ngay)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/attempts/{{attemptId}}/results"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Admin — Job Monitoring",
+      "item": [
+        {
+          "name": "5.1 Get Grading Job by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": "{{base_url}}/grading-jobs/{{jobId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

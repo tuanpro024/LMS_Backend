@@ -16,19 +16,22 @@ import com.lms.notification.dto.response.NotificationResponse;
 import com.lms.notification.service.NotificationService;
 
 @RestController
-@RequestMapping("/notifications")
+@RequestMapping("/")
 @RequiredArgsConstructor
-public class                                                                                                                                                    NotificationController {
+public class NotificationController {
 
     private final NotificationService notificationService;
 
     @GetMapping
     public ApiResponse<NotificationPageResponse> list(Authentication authentication,
+                                                      @RequestParam(name = "readStatus", required = false) String readStatus,
+                                                      @RequestParam(name = "fromDate", required = false) java.time.Instant fromDate,
+                                                      @RequestParam(name = "toDate", required = false) java.time.Instant toDate,
                                                       @RequestParam(defaultValue = "0") @Min(0) int page,
                                                       @RequestParam(defaultValue = "20") @Min(1) int size) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         String userId = principal.userId();
-        return ApiResponse.ok(notificationService.list(userId, page, size));
+        return ApiResponse.ok(notificationService.list(userId, readStatus, fromDate, toDate, page, size));
     }
 
     @GetMapping("/unread-count")
@@ -55,6 +58,13 @@ public class                                                                    
     public ApiResponse<Void> markAllSeen(Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         notificationService.markAllSeen(principal.userId());
+        return ApiResponse.ok(null);
+    }
+
+    @PostMapping("/read/all")
+    public ApiResponse<Void> markAllRead(Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        notificationService.markAllRead(principal.userId());
         return ApiResponse.ok(null);
     }
 }

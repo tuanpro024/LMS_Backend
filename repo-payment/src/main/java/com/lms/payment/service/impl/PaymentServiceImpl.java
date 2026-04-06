@@ -38,6 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final UserPackageAccessRepository accessRepository;
     private final PayOsService payOsService;
     private final PayOS payOS;
+    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Override
     public List<CartItemResponse> getCart(String userId) {
@@ -177,6 +178,7 @@ public class PaymentServiceImpl implements PaymentService {
                 }
 
                 orderRepository.save(order);
+                eventPublisher.publishEvent(new com.lms.payment.event.PaymentCompletedInternalEvent(this, order));
             } else {
                 log.warn("Payment failed or different status for order {}: code={}, desc={}",
                         order.getId(), data.getCode(), data.getDesc());
@@ -213,6 +215,10 @@ public class PaymentServiceImpl implements PaymentService {
             return; // Already has access
         }
         grantAccess(userId, packageId, packageName);
+        
+        // Publish event for notification
+        eventPublisher.publishEvent(new com.lms.payment.event.FreeEnrollmentCompletedInternalEvent(
+                this, userId, packageId, packageName, thumbnail));
     }
 
     @Override

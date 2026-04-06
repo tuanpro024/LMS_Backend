@@ -37,6 +37,8 @@ server:
 # CMS integration
 cms:
   base-url: https://cms.dangch.tech
+  webclient:
+    max-in-memory-mb: 32
 
 # JWT RSA (same keypair as identity service)
 security:
@@ -49,7 +51,10 @@ cache:
   ttl:
     syllabus-list: 600 # 10 minutes
     syllabus-detail: 600 # 10 minutes
-    timetable: 1800 # 30 minutes
+
+timetable:
+  sync:
+    batch-size: 500
 
 # Rate limiting
 rate-limit:
@@ -83,7 +88,6 @@ eureka:
     prefer-ip-address: true
     hostname: localhost
     instance-id: ${spring.application.name}:${server.port}
-
 
 # URLs của các repo ôn luyện (Eureka load-balanced service names)
 practice:

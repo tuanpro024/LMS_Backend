@@ -3,6 +3,7 @@ package com.lms.onllearning.service.impl;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
+import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.content.common.entity.TypeName;
 import com.lms.onllearning.client.PracticeModuleWebClient;
 import com.lms.onllearning.dto.request.AddModuleToScheduleRequest;
@@ -61,6 +62,8 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                     "Module với thứ tự " + req.getModuleOrder() + " đã tồn tại trong buổi học này",
                     HttpStatus.CONFLICT);
         }
+
+        validateContentSetMapping(req.getModuleType(), req.getContentSetId());
 
         ScheduleModule entity = moduleRepo
                 .findByScheduleIdAndModuleOrderAndDeletedTrue(req.getScheduleId(), req.getModuleOrder())
@@ -246,6 +249,30 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
             case PRONUNCIATION -> pronunciationUrl;
             case QUIZ -> quizUrl;
         };
+    }
+
+    private void validateContentSetMapping(ScheduleModuleType moduleType, String contentSetId) {
+        if (moduleType == null || contentSetId == null || contentSetId.isBlank()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST,
+                    "moduleType/contentSetId không hợp lệ.",
+                    HttpStatus.BAD_REQUEST);
+        }
+
+        String serviceUrl = resolveServiceUrl(moduleType);
+        try {
+            StudySetResponse studySet = practiceWebClient.getStudySetById(serviceUrl, contentSetId);
+            if (studySet == null) {
+                throw new ApiException(ErrorCode.BAD_REQUEST,
+                        "Content set " + contentSetId + " không tồn tại cho moduleType " + moduleType,
+                        HttpStatus.BAD_REQUEST);
+            }
+        } catch (ApiException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ApiException(ErrorCode.E305,
+                    "Không thể kiểm tra content set từ dịch vụ ôn luyện: " + ex.getMessage(),
+                    HttpStatus.BAD_GATEWAY);
+        }
     }
 
     private ScheduleModuleResponse toResponse(ScheduleModule m) {

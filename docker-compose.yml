@@ -148,6 +148,8 @@ services:
   mysql:
     image: mysql:8.0
     container_name: lms-mysql
+    ports:
+      - "58006:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=lms_flashcard_db
@@ -467,7 +469,32 @@ services:
     networks:
       - shared-network
       - lms-network
-
+  repo-ai-api:
+    build:
+      context: .
+      dockerfile: repo-ai-practice/Dockerfile
+    image: repo-ai-practice
+    container_name: repo-ai-practice
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_ai_practice_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+    volumes:
+      - ./secrets:/app/secrets
+    depends_on:
+      setup-keys:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      multimedia-api:
+        condition: service_started
+    networks:
+      - shared-network
+      - lms-network
   payment-api:
     build:
       context: .

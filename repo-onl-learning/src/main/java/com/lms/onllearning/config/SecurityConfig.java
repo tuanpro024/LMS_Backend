@@ -65,9 +65,8 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")
                         .requestMatchers(HttpMethod.PUT, "/courses/**")
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")
-                        // Course delete và syllabus sync chỉ ADMIN
+                        // Course delete
                         .requestMatchers(HttpMethod.DELETE, "/courses/**").hasAnyRole("ADMIN", "TEACHER_MANAGER")
-                        .requestMatchers("/syllabus/**").hasAnyRole("ADMIN", "TEACHER_MANAGER")
                         // Admin/Staff: xem leads, export Excel
                         .requestMatchers(HttpMethod.GET, "/leads/**")
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")

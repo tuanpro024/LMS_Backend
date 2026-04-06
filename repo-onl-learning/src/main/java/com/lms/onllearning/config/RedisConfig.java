@@ -25,9 +25,6 @@ public class RedisConfig {
     @Value("${cache.ttl.syllabus-detail:600}")
     private long syllabusDetailTtl;
 
-    @Value("${cache.ttl.timetable:90}")
-    private long timetableTtl;
-
     private final ObjectMapper objectMapper;
 
     public RedisConfig(ObjectMapper objectMapper) {
@@ -36,8 +33,7 @@ public class RedisConfig {
 
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
-        GenericJackson2JsonRedisSerializer jsonSerializer =
-                new GenericJackson2JsonRedisSerializer(objectMapper);
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
@@ -51,14 +47,13 @@ public class RedisConfig {
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory factory) {
-        GenericJackson2JsonRedisSerializer jsonSerializer =
-                new GenericJackson2JsonRedisSerializer(objectMapper);
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeKeysWith(
-                    RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                        RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(
-                    RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
+                        RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
                 .disableCachingNullValues();
 
         return RedisCacheManager.builder(factory)
@@ -67,10 +62,7 @@ public class RedisConfig {
                         "syllabus:list",
                         defaultConfig.entryTtl(Duration.ofSeconds(syllabusListTtl)),
                         "syllabus:detail",
-                        defaultConfig.entryTtl(Duration.ofSeconds(syllabusDetailTtl)),
-                        "timetable",
-                        defaultConfig.entryTtl(Duration.ofSeconds(timetableTtl))
-                ))
+                        defaultConfig.entryTtl(Duration.ofSeconds(syllabusDetailTtl))))
                 .build();
     }
 }

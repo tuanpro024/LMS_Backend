@@ -127,7 +127,7 @@ services:
       eureka-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 15s
       retries: 3
@@ -189,10 +189,30 @@ services:
       - shared-network
     command: server /data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD-SHELL", "cat < /dev/tcp/localhost/9000 || exit 1"]
       interval: 30s
       timeout: 20s
       retries: 3
+
+  setup-minio:
+    image: minio/mc
+    container_name: lms-setup-minio
+    depends_on:
+      lms-video-minio:
+        condition: service_healthy
+    networks:
+      - lms-network
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://lms-video-minio:9000 lms_minio lms_minio;
+      /usr/bin/mc mb myminio/videos || true;
+      /usr/bin/mc mb myminio/images || true;
+      /usr/bin/mc mb myminio/audios || true;
+      /usr/bin/mc policy set public myminio/videos;
+      /usr/bin/mc policy set public myminio/images;
+      /usr/bin/mc policy set public myminio/audios;
+      exit 0;
+      "
 
   flashcard-api:
     build:
@@ -446,7 +466,7 @@ services:
     ports:
       - "8091:8091"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_media_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_media_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
@@ -464,10 +484,14 @@ services:
         condition: service_healthy
       lms-video-minio:
         condition: service_healthy
+      setup-minio:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8091/actuator/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8091/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3

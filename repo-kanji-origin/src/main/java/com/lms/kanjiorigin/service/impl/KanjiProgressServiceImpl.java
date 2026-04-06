@@ -104,7 +104,9 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
                 KanjiStatus.LEARNED);
 
         StudySetProgressStatus status;
-        if (totalKanjis == 0 || learnedKanjis == 0) {
+        if (totalKanjis == 0) {
+            status = StudySetProgressStatus.COMPLETED;
+        } else if (learnedKanjis == 0) {
             status = StudySetProgressStatus.NOT_STARTED;
         } else if (learnedKanjis >= totalKanjis) {
             status = StudySetProgressStatus.COMPLETED;
@@ -126,7 +128,7 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
         progress.setTotalLessons((int) totalKanjis);
         progress.setLearnedLessons((int) learnedKanjis);
         progress.setStatus(status);
-        progress.setProgressPercentage(totalKanjis > 0 ? (double) learnedKanjis / totalKanjis : 0.0);
+        progress.setProgressPercentage(totalKanjis > 0 ? (double) learnedKanjis / totalKanjis : 1.0);
 
         Instant now = Instant.now();
         if (progress.getFirstStartedAt() == null && learnedKanjis > 0) {

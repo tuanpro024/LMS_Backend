@@ -4,23 +4,25 @@ package com.lms.onllearning.dto.response;
  * Envelope chuẩn cho mọi response liên quan đến CMS.
  * Frontend dựa vào meta để hiển thị thông báo phù hợp khi CMS không khả dụng.
  *
- * @param data           Dữ liệu trả về (null nếu cmsUnavailable = true)
- * @param meta           Metadata về nguồn gốc dữ liệu
+ * @param data Dữ liệu trả về (null nếu cmsUnavailable = true)
+ * @param meta Metadata về nguồn gốc dữ liệu
  */
 public record CmsEnvelope<T>(
-    T data,
-    Meta meta
-) {
+        T data,
+        Meta meta) {
     public record Meta(
-        /** "CMS" nếu lấy trực tiếp, "CACHE" nếu lấy từ Redis */
-        String source,
-        /** true nếu CMS down và đang trả dữ liệu cũ từ cache */
-        boolean isStale,
-        /** true nếu CMS down và không có cache — frontend hiển thị "Không thể tải dữ liệu" */
-        boolean cmsUnavailable,
-        /** (chỉ cho timetable) true nếu CMS trả 404 - học viên chưa có lịch */
-        Boolean scheduled
-    ) {}
+            /** "CMS" nếu lấy trực tiếp, "CACHE" nếu lấy từ Redis */
+            String source,
+            /** true nếu CMS down và đang trả dữ liệu cũ từ cache */
+            boolean isStale,
+            /**
+             * true nếu CMS down và không có cache — frontend hiển thị "Không thể tải dữ
+             * liệu"
+             */
+            boolean cmsUnavailable,
+            /** (chỉ cho timetable) true nếu CMS trả 404 - học viên chưa có lịch */
+            Boolean scheduled) {
+    }
 
     public static <T> CmsEnvelope<T> fromCms(T data) {
         return new CmsEnvelope<>(data, new Meta("CMS", false, false, null));
@@ -44,5 +46,9 @@ public record CmsEnvelope<T>(
 
     public static <T> CmsEnvelope<T> noSchedule(T emptyData) {
         return new CmsEnvelope<>(emptyData, new Meta("CMS", false, false, false));
+    }
+
+    public static <T> CmsEnvelope<T> noScheduleFromDb(T emptyData) {
+        return new CmsEnvelope<>(emptyData, new Meta("DB", false, false, false));
     }
 }

@@ -1,6 +1,14 @@
 spring:
   application:
     name: repo-payment
+  kafka:
+  #   prod
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
+  #  local
+    # bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   datasource:
     url: jdbc:mysql://localhost:3306/lms_payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
@@ -16,6 +24,10 @@ spring:
         format_sql: true
         use_sql_comments: true
     open-in-view: false
+
+notification:
+  publisher:
+    topic: ${NOTIFICATION_TOPIC:notification.events}
 
 server:
   port: 8079
@@ -64,8 +76,8 @@ payos:
   api-key: ${PAYOS_API_KEY:REDACTED_PAYOS_API_KEY_DEV}
   checksum-key: ${PAYOS_CHECKSUM_KEY:REDACTED_PAYOS_CHECKSUM_DEV}
 #  local
-#  return-url: ${PAYOS_RETURN_URL:http://localhost:3000/payment/success}
-#  cancel-url: ${PAYOS_CANCEL_URL:http://localhost:3000/payment/cancel}
+  # return-url: ${PAYOS_RETURN_URL:http://localhost:3000/payment/success}
+  # cancel-url: ${PAYOS_CANCEL_URL:http://localhost:3000/payment/cancel}
 #  prod
   return-url: ${PAYOS_RETURN_URL:https://lms.dangch.tech/payment/success}
   cancel-url: ${PAYOS_CANCEL_URL:https://lms.dangch.tech/payment/cancel}

@@ -9,11 +9,13 @@ import com.lms.payment.service.PaymentReportService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class PaymentReportServiceImpl implements PaymentReportService {
 
     private final OrderRepository orderRepository;
@@ -58,7 +60,9 @@ public class PaymentReportServiceImpl implements PaymentReportService {
         TransactionReportItemResponse.BuyerInfo buyer = new TransactionReportItemResponse.BuyerInfo();
         buyer.setUserId(order.getUserId());
         // For now, these are placeholder or we could try to get from another service in Phase 2
-        buyer.setUsername("User " + order.getUserId().substring(0, 5)); 
+        String userId = order.getUserId();
+        String displayId = userId != null && userId.length() > 5 ? userId.substring(0, 5) : (userId != null ? userId : "Unknown");
+        buyer.setUsername("User " + displayId); 
         item.setBuyer(buyer);
 
         // Courses info

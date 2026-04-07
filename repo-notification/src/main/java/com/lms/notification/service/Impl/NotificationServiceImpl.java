@@ -79,10 +79,12 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
-    public NotificationPageResponse list(String userId, int page, int size) {
+    public NotificationPageResponse list(String userId, String readStatus, Instant fromDate, Instant toDate, int page, int size) {
         PageRequest pageRequest = PageRequest.of(Math.max(page, 0), Math.max(size, 1),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Notification> result = notificationRepository.findByUserId(userId, pageRequest);
+        
+        Page<Notification> result = notificationRepository.findByFilters(userId, readStatus, fromDate, toDate, pageRequest);
+        
         List<NotificationResponse> items = result.getContent().stream()
                 .map(this::toResponse)
                 .toList();
@@ -142,6 +144,13 @@ public class NotificationServiceImpl implements NotificationService {
     public void markAllSeen(String userId) {
         Instant now = Instant.now();
         notificationRepository.markAllSeen(userId, now);
+    }
+
+    @Override
+    @Transactional
+    public void markAllRead(String userId) {
+        Instant now = Instant.now();
+        notificationRepository.markAllRead(userId, now);
     }
 
     @Override

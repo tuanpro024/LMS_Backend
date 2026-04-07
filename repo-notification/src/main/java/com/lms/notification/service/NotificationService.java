@@ -5,9 +5,10 @@ import com.lms.notification.dto.response.NotificationResponse;
 
 public interface NotificationService {
     NotificationResponse create(NotificationEvent request);
-    NotificationPageResponse list(String userId, int page, int size);
+    NotificationPageResponse list(String userId, String readStatus, java.time.Instant fromDate, java.time.Instant toDate, int page, int size);
     NotificationResponse markSeen(String userId, String notificationId);
     NotificationResponse markRead(String userId, String notificationId);
     void markAllSeen(String userId);
+    void markAllRead(String userId);
     long unreadCount(String userId);
 }

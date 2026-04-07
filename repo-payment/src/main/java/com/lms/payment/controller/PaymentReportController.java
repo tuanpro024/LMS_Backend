@@ -1,5 +1,6 @@
 package com.lms.payment.controller;
 
+import com.lms.common.dto.ApiResponse;
 import com.lms.payment.dto.response.PaymentSummaryResponse;
 import com.lms.payment.dto.response.TransactionReportItemResponse;
 import com.lms.payment.service.PaymentReportService;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/payment/reports")
+@RequestMapping("/reports")
 public class PaymentReportController {
 
     private final PaymentReportService paymentReportService;
@@ -22,13 +23,13 @@ public class PaymentReportController {
 
     @GetMapping("/summary")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
-    public PaymentSummaryResponse getSummary() {
-        return paymentReportService.getSummary();
+    public ApiResponse<PaymentSummaryResponse> getSummary() {
+        return ApiResponse.ok(paymentReportService.getSummary());
     }
 
     @GetMapping("/transactions")
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
-    public Page<TransactionReportItemResponse> getTransactionReport(Pageable pageable) {
-        return paymentReportService.getTransactionReport(pageable);
+    public ApiResponse<Page<TransactionReportItemResponse>> getTransactionReport(Pageable pageable) {
+        return ApiResponse.ok(paymentReportService.getTransactionReport(pageable));
     }
 }

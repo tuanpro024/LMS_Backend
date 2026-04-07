@@ -73,11 +73,8 @@ app:
     timeout-ms: ${MULTIMEDIA_TIMEOUT_MS:30000}
   ai:
     hsk-api:
-      base-url: ${HSK_API_BASE_URL:http://localhost:8000}
+      base-url: ${HSK_API_BASE_URL:https://hsk-ai.dangch.tech}
       timeout-ms: 60000
-    asr-hsk:
-      base-url: ${ASR_HSK_BASE_URL:http://localhost:8002}
-      timeout-ms: 30000
     polling:
       interval-ms: 3000
       max-retries: 5

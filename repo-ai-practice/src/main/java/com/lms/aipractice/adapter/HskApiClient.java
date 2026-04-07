@@ -18,8 +18,9 @@ import java.util.Optional;
  * Client for HSK_API-main (FastAPI).
  * Handles:
  * - Writing: POST /api/v2/grade (async), fallback /api/v1/grade (sync)
- * - Speaking: POST /api/v2/speaking/grade → returns {job_id, status, message}
- * - Polling: GET /api/v2/job/{job_id} or /api/v2/speaking/job/{job_id}
+ * - Speaking: POST /api/v2/speaking/grade/sync (sync), optional async /api/v2/speaking/grade
+ * - Audio compare: POST /api/v2/audio/compare (async)
+ * - Polling: GET /api/v2/job/{job_id}, /api/v2/speaking/job/{job_id}, /api/v2/audio/job/{job_id}
  */
 @Component
 @Slf4j
@@ -61,6 +62,17 @@ public class HskApiClient {
     public String submitSpeakingJob(Map<String, Object> payload) {
         log.debug("Submitting speaking job to HSK_API: {}", payload.get("part_type"));
         return postGradeJob("/api/v2/speaking/grade", payload);
+    }
+
+    /**
+     * Submit an audio-compare grading job.
+     *
+     * @param payload Map matching audio compare request schema
+     * @return provider job_id
+     */
+    public String submitAudioCompareJob(Map<String, Object> payload) {
+        log.debug("Submitting audio compare job to HSK_API");
+        return postGradeJob("/api/v2/audio/compare", payload);
     }
 
     /**
@@ -138,12 +150,18 @@ public class HskApiClient {
             String response;
             try {
                 response = getRawJson("/api/v2/job/{jobId}", jobId);
-            } catch (RuntimeException ex) {
-                String message = ex.getMessage();
-                if (message != null && message.contains("(404)") && message.contains("/api/v2/job")) {
+            } catch (RuntimeException exV2) {
+                if (!isNotFound(exV2.getMessage(), "/api/v2/job")) {
+                    throw exV2;
+                }
+
+                try {
                     response = getRawJson("/api/v2/speaking/job/{jobId}", jobId);
-                } else {
-                    throw ex;
+                } catch (RuntimeException exSpeaking) {
+                    if (!isNotFound(exSpeaking.getMessage(), "/api/v2/speaking/job")) {
+                        throw exSpeaking;
+                    }
+                    response = getRawJson("/api/v2/audio/job/{jobId}", jobId);
                 }
             }
 
@@ -173,5 +191,9 @@ public class HskApiClient {
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(10_000))
                 .block();
+    }
+
+    private boolean isNotFound(String message, String endpointPath) {
+        return message != null && message.contains("(404)") && message.contains(endpointPath);
     }
 }

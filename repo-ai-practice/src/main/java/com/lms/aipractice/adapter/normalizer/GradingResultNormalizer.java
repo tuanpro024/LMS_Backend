@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * Normalizes raw AI response JSON (from either HSK_API or ASR_HSK)
+ * Normalizes raw AI response JSON from HSK_API
  * into a unified AiGradingResult entity.
  *
  * HSK_API Writing response (GradingResponse):
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * HSK_API Speaking response (SpeakingGradeResponse):
  *   final_score, max_score, level, deductions, feedback, transcript, content_analysis, ...
  *
- * ASR_HSK response (wrapped in result{}):
+ * HSK_API Audio response (wrapped in result{}):
  *   overall_score, feedback, character_comparison, tone_score, initials_score, vowels_score, ...
  */
 @Component
@@ -88,11 +88,10 @@ public class GradingResultNormalizer {
 
     public AiGradingResult normalizeAudioCompare(String gradingJobId, String rawJson) {
         try {
-            // ASR_HSK response: {status, processing_time_sec, details:[{hanzi, tone_feedback, ...}]}
+            // HSK_API audio job response: {job_id, status, result:{...}}
             JsonNode root = objectMapper.readTree(rawJson);
 
-            // ASR_HSK returns per-character details — aggregate to overall score
-            // Use overall_score if present (HSK_API audio_practice path), else derive from details
+            // Use overall_score if present, keep full raw payload in analytics for UI/debug.
             double score = root.path("result").path("overall_score").asDouble(-1);
             double maxScore = 100;
             String transcript = root.path("result").path("student_transcript").asText(

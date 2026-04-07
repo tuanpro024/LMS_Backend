@@ -117,13 +117,15 @@ public class GradingPollingService {
             job.setCompletedAt(Instant.now());
             jobRepository.save(job);
 
-            // Normalize and save result
-            boolean isSpeaking = rawJson.contains("final_score") || rawJson.contains("transcript");
-            AiGradingResult result = isSpeaking
-                    ? normalizer.normalizeSpeaking(job.getId(), rawJson)
-                    : normalizer.normalizeWriting(job.getId(), rawJson);
+            // Normalize based on original request payload shape.
+            String jobType = detectJobType(job, rawJson);
+            AiGradingResult result = switch (jobType) {
+                case "SPEAKING" -> normalizer.normalizeSpeaking(job.getId(), rawJson);
+                case "AUDIO" -> normalizer.normalizeAudioCompare(job.getId(), rawJson);
+                default -> normalizer.normalizeWriting(job.getId(), rawJson);
+            };
             resultRepository.save(result);
-            log.info("Job {} completed and result saved (speaking={})", job.getId(), isSpeaking);
+            log.info("Job {} completed and result saved (type={})", job.getId(), jobType);
 
             // Fire internal Spring event → listener aggregates score + publishes Kafka
             eventPublisher.publishEvent(
@@ -138,5 +140,27 @@ public class GradingPollingService {
             job.setErrorMessage(e.getMessage());
             jobRepository.save(job);
         }
+    }
+
+    private String detectJobType(AiGradingJob job, String rawJson) {
+        try {
+            JsonNode request = objectMapper.readTree(job.getRequestPayloadJson());
+            if (request.has("part_type")) {
+                return "SPEAKING";
+            }
+            if (request.has("reference_text")) {
+                return "AUDIO";
+            }
+        } catch (Exception ignore) {
+            // Fall back to response shape hints if request payload is unavailable.
+        }
+
+        if (rawJson.contains("\"final_score\"") || rawJson.contains("\"transcript\"")) {
+            return "SPEAKING";
+        }
+        if (rawJson.contains("\"character_comparison\"") || rawJson.contains("\"student_transcript\"")) {
+            return "AUDIO";
+        }
+        return "WRITING";
     }
 }

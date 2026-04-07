@@ -18,9 +18,11 @@ import java.util.Optional;
  * Client for HSK_API-main (FastAPI).
  * Handles:
  * - Writing: POST /api/v2/grade (async), fallback /api/v1/grade (sync)
- * - Speaking: POST /api/v2/speaking/grade/sync (sync), optional async /api/v2/speaking/grade
+ * - Speaking: POST /api/v2/speaking/grade/sync (sync), optional async
+ * /api/v2/speaking/grade
  * - Audio compare: POST /api/v2/audio/compare (async)
- * - Polling: GET /api/v2/job/{job_id}, /api/v2/speaking/job/{job_id}, /api/v2/audio/job/{job_id}
+ * - Polling: GET /api/v2/job/{job_id}, /api/v2/speaking/job/{job_id},
+ * /api/v2/audio/job/{job_id}
  */
 @Component
 @Slf4j

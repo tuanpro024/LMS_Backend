@@ -4,7 +4,7 @@ package com.lms.aipractice.entity.enums;
  * Maps 1:1 to AI_LMS QuestionType / SpeakingPartType.
  * Prefix determines which AI provider to use:
  *   - "speaking_*"  → HSK_API /api/v2/speaking/grade
- *   - "audio_*"     → ASR_HSK /evaluate (multipart)
+ *   - "audio_*"     → HSK_API /api/v2/audio/compare
  *   - others        → HSK_API /api/v2/grade
  */
 public enum AiItemSubtype {
@@ -21,6 +21,6 @@ public enum AiItemSubtype {
     SPEAKING_READ_ALOUD,          // Cao cấp Part II
     SPEAKING_OPEN_ANSWER,         // All levels Part III
 
-    // Audio compare → ASR_HSK /evaluate (multipart WAV)
+    // Audio compare → HSK_API /api/v2/audio/compare
     AUDIO_COMPARE
 }

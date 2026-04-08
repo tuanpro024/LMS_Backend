@@ -1,6 +1,7 @@
 package com.lms.learningpath.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.exception.ErrorCode;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.content.common.delegate.api.FolderApiDelegate;
 import com.lms.content.common.dto.request.CreateFolderRequest;
@@ -66,10 +67,14 @@ public class FolderController {
      * Get all folders by user
      */
     @GetMapping("/my-folders")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<FolderResponse>>> getMyFolders(
             Authentication authentication) {
 
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthPrincipal principal)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(ErrorCode.UNAUTHORIZED.code(), "Authentication required"));
+        }
         List<FolderResponse> response = folderDelegate.getFoldersByUserId(principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

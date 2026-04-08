@@ -50,8 +50,7 @@ public class StepController {
             @PathVariable String id,
             Authentication authentication) {
 
-        if (authentication != null) {
-            AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
             StepResponse response = stepService.getStepWithProgress(id, principal.userId());
             return ResponseEntity.ok(ApiResponse.ok(response));
         }
@@ -68,8 +67,7 @@ public class StepController {
             @PathVariable String learningPathId,
             Authentication authentication) {
 
-        if (authentication != null) {
-            AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
             List<StepResponse> response = stepService
                     .getStepsByLearningPathIdWithProgress(learningPathId, principal.userId());
             return ResponseEntity.ok(ApiResponse.ok(response));

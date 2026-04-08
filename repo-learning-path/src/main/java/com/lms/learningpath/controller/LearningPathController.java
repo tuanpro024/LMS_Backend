@@ -55,8 +55,7 @@ public class LearningPathController {
             @PathVariable String id,
             Authentication authentication) {
 
-        if (authentication != null) {
-            AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
             LearningPathResponse response = learningPathService.getLearningPathWithProgress(id, principal.userId());
             return ResponseEntity.ok(ApiResponse.ok(response));
         }
@@ -73,8 +72,7 @@ public class LearningPathController {
             @PathVariable String studySetId,
             Authentication authentication) {
 
-        if (authentication != null) {
-            AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
             List<LearningPathResponse> response = learningPathService
                     .getLearningPathsByStudySetIdWithProgress(studySetId, principal.userId());
             return ResponseEntity.ok(ApiResponse.ok(response));

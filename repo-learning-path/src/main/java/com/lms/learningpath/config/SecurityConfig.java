@@ -54,6 +54,10 @@ public class SecurityConfig {
                         // Health endpoints
                         .requestMatchers("/health", "/actuator/**").permitAll()
 
+                    // My resources require authentication
+                    .requestMatchers(HttpMethod.GET, "/folders/my-folders").authenticated()
+                    .requestMatchers(HttpMethod.GET, "/study-sets/my-sets").authenticated()
+
                         // Public GET endpoints (browse learning paths)
                         .requestMatchers(HttpMethod.GET, "/learning-paths/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/folders/**").permitAll()

@@ -33,15 +33,18 @@ public class GradingResultNormalizer {
     public AiGradingResult normalizeWriting(String gradingJobId, String rawJson) {
         try {
             JsonNode root = objectMapper.readTree(rawJson);
+            JsonNode data = root.has("result") ? root.path("result") : root;
 
-            double score = root.path("score").asDouble(0);
-            double maxScore = root.path("max_score_per_question").asDouble(100);
-            String level = root.path("level").asText("");
-            String feedback = root.path("feedback").asText("");
-            String deductions = toJsonString(root.path("deductions"));
+            double score = data.path("score").asDouble(0);
+            double maxScore = data.has("max_score_per_question")
+                    ? data.path("max_score_per_question").asDouble(100)
+                    : data.path("max_score").asDouble(100);
+            String level = data.path("level").asText("");
+            String feedback = data.path("feedback").asText("");
+            String deductions = toJsonString(data.path("deductions"));
 
             // analytics includes rubric_breakdown, required_words_check, character_count
-            String analytics = buildWritingAnalytics(root);
+            String analytics = buildWritingAnalytics(data);
 
             return AiGradingResult.builder()
                     .gradingJobId(gradingJobId)

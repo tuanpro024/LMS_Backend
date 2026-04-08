@@ -74,8 +74,10 @@ public class AiPracticeProgressEventListener {
             }
         }
 
-        boolean completed = gradedCount > 0 && gradedCount >= totalAnswers
-                && attempt.getStatus() == AttemptStatus.SUBMITTED;
+        boolean canPromote = attempt.getStatus() == AttemptStatus.SUBMITTED
+            || (attempt.getStatus() == AttemptStatus.IN_PROGRESS && attempt.getSubmittedAt() != null);
+
+        boolean completed = gradedCount > 0 && gradedCount >= totalAnswers && canPromote;
 
         double progressPercent = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
 

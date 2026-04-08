@@ -3,9 +3,12 @@ package com.lms.identity.service;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.identity.dto.request.ticket.CreateTicketRequest;
 import com.lms.identity.dto.request.ticket.UpdateTicketRequest;
+import com.lms.identity.dto.response.ticket.TicketAssigneeOptionResponse;
 import com.lms.identity.dto.response.ticket.TicketResponse;
 import com.lms.identity.entity.ticket.TicketModule;
 import org.springframework.data.domain.Page;
+
+import java.util.List;
 
 public interface TicketService {
 
@@ -20,7 +23,8 @@ public interface TicketService {
     TicketResponse getTicket(String ticketId);
 
     /**
-     * Danh sách ticket (ADMIN/MANAGER xem tất cả; TEACHER/COLLABORATOR xem của mình).
+     * Danh sách ticket (ADMIN/MANAGER xem tất cả; TEACHER/COLLABORATOR xem của
+     * mình).
      */
     Page<TicketResponse> listTickets(AuthPrincipal principal, int page, int size);
 
@@ -49,4 +53,10 @@ public interface TicketService {
      * Dùng bởi internal API.
      */
     boolean checkAccess(String userId, TicketModule module);
+
+    /**
+     * Danh sách user có thể assign ticket (TEACHER/COLLABORATOR) cho UI chọn
+     * assignee.
+     */
+    List<TicketAssigneeOptionResponse> listAssignableUsers(String query);
 }

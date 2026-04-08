@@ -8,20 +8,20 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {
-        "com.lms.quiz",
-        "com.lms.content.common",
-        "com.lms.common"
+                "com.lms.quiz",
+                "com.lms.content.common",
+                "com.lms.common"
 })
 @EntityScan(basePackages = {
-        "com.lms.quiz.entity",
-        "com.lms.content.common.entity"
+                "com.lms.quiz.entity",
+                "com.lms.content.common.entity"
 })
 @EnableJpaRepositories(basePackages = {
-        "com.lms.quiz.repository"
+                "com.lms.quiz.repository"
 })
 public class RepoQuizApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(RepoQuizApplication.class, args);
-    }
+        public static void main(String[] args) {
+                SpringApplication.run(RepoQuizApplication.class, args);
+        }
 }

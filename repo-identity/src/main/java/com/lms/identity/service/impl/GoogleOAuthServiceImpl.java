@@ -11,6 +11,7 @@ import com.lms.identity.entity.User;
 import com.lms.identity.entity.UserStatus;
 import com.lms.identity.repository.RoleRepository;
 import com.lms.identity.repository.UserRepository;
+import com.lms.identity.repository.ExternalTeacherRepository;
 import com.lms.identity.service.DeviceService;
 import com.lms.identity.service.GoogleOAuthService;
 import com.lms.identity.service.JwtTokenService;
@@ -32,6 +33,8 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     private final JwtTokenService jwtTokenService;
     private final DeviceService deviceService;
     private final OtpService otpService;
+    private final ExternalTeacherRepository externalTeacherRepository;
+
 
     @Transactional
     @Override
@@ -83,8 +86,10 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
     private User createGoogleUser(String googleId, String email, String name, String pictureUrl, Boolean emailVerified) {
         log.info("Creating new Google user for email: {}", email);
 
-        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseThrow(() -> new ApiException(ErrorCode.E221, "Role not found: ROLE_USER"));
+        Role assignedRole = roleRepository.findByName(
+                        externalTeacherRepository.existsByEmail(email) ? RoleName.ROLE_TEACHER : RoleName.ROLE_USER)
+                .orElseThrow(() -> new ApiException(ErrorCode.E221, "Role not found"));
+
         User user = User.builder()
                 .googleId(googleId)
                 .email(email)
@@ -96,7 +101,8 @@ public class GoogleOAuthServiceImpl implements GoogleOAuthService {
                 .password(null) // No password for Google users
                 .build();
 
-        user.getRoles().add(userRole);
+        user.getRoles().add(assignedRole);
+
         return userRepository.save(user);
     }
     private User updateExistingUser(User user, String googleId, String name, String pictureUrl, Boolean emailVerified) {

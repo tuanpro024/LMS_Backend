@@ -2,6 +2,8 @@ package com.lms.aipractice.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.PackageApiDelegate;
 import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
@@ -30,6 +32,7 @@ public class PackageController {
     }
 
     @PostMapping
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
             @RequestBody @Valid CreatePackageRequest request, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
@@ -52,6 +55,7 @@ public class PackageController {
     }
 
     @PutMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<PackageResponse>> update(
             @PathVariable String id,
             @RequestBody @Valid UpdatePackageRequest request,
@@ -61,6 +65,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
         delegate.deletePackage(id, p.userId());
@@ -68,6 +73,7 @@ public class PackageController {
     }
 
     @PostMapping("/{packageId}/folders/{folderId}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<PackageResponse>> addFolder(
             @PathVariable String packageId, @PathVariable String folderId, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
@@ -75,6 +81,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{packageId}/folders/{folderId}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<PackageResponse>> removeFolder(
             @PathVariable String packageId, @PathVariable String folderId, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();

@@ -2,6 +2,8 @@ package com.lms.videocourse.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.request.CreateStudySetRequest;
 import com.lms.content.common.dto.request.UpdateStudySetRequest;
@@ -10,7 +12,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +30,7 @@ public class StudySetController {
     private final StudySetApiDelegate studySetDelegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<StudySetResponse>> createStudySet(
             @RequestBody @Valid CreateStudySetRequest request,
             Authentication authentication) {
@@ -66,7 +67,7 @@ public class StudySetController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<StudySetResponse>> updateStudySet(
             @PathVariable String id,
             @RequestBody @Valid UpdateStudySetRequest request,
@@ -77,7 +78,7 @@ public class StudySetController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN', 'ROLE_TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,
             Authentication authentication) {

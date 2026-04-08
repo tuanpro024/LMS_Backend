@@ -1,6 +1,8 @@
 package com.lms.quiz.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.quiz.dto.request.CreateQuestionRequest;
 import com.lms.quiz.dto.response.QuestionResponse;
 import com.lms.quiz.service.IQuestionService;
@@ -22,7 +24,7 @@ public class QuizQuestionController {
     private final IQuestionService questionService;
 
     @PostMapping("/{quizId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<ApiResponse<QuestionResponse>> addQuestion(
             @PathVariable String quizId,
             @Valid @RequestBody CreateQuestionRequest request,
@@ -39,7 +41,7 @@ public class QuizQuestionController {
     }
 
     @PutMapping("/{questionId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<ApiResponse<QuestionResponse>> updateQuestion(
             @PathVariable String questionId,
             @Valid @RequestBody CreateQuestionRequest request,
@@ -49,7 +51,7 @@ public class QuizQuestionController {
     }
 
     @DeleteMapping("/{questionId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<Void> deleteQuestion(
             @PathVariable String questionId,
             Authentication authentication) {

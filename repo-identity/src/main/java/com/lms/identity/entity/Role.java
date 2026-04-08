@@ -18,6 +18,6 @@ import com.lms.common.jpa.BaseEntity;
 public class Role extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false, length = 50)
     private RoleName name;
 }

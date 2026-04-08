@@ -1,5 +1,7 @@
 package com.lms.kanjiorigin.controller;
 
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
@@ -15,7 +17,6 @@ import com.lms.kanjiorigin.service.KanjiOriginService;
 import com.lms.kanjiorigin.service.KanjiProgressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,13 +31,13 @@ public class KanjiOriginController {
     private final KanjiProgressService kanjiProgressService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.KANJI_ORIGIN)
     public ApiResponse<KanjiOriginResponse> createOrigin(@Valid @RequestBody CreateKanjiOriginRequest request) {
         return ApiResponse.ok(kanjiOriginService.createOrigin(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.KANJI_ORIGIN)
     public ApiResponse<KanjiOriginResponse> updateOrigin(
             @PathVariable String id,
             @Valid @RequestBody UpdateKanjiOriginRequest request) {
@@ -44,7 +45,7 @@ public class KanjiOriginController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.KANJI_ORIGIN)
     public ApiResponse<Void> deleteOrigin(@PathVariable String id) {
         kanjiOriginService.deleteOrigin(id);
         return ApiResponse.ok(null);

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,13 +24,44 @@ public class DataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
+        migrateRoleNameColumnIfNeeded();
         initializeRoles();
         initializeAdminUser();
         initializeTeacherUser();
         initializeTeacherManagerUser();
+        initializeCollaboratorUser();
+    }
+
+    /**
+     * Legacy DB có thể đang dùng ENUM cho roles.name.
+     * Khi thêm role mới (ví dụ ROLE_COLLABORATOR), MySQL sẽ ném Data truncated nếu ENUM chưa được cập nhật.
+     */
+    private void migrateRoleNameColumnIfNeeded() {
+        try {
+            String dataType = jdbcTemplate.queryForObject(
+                    "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS " +
+                            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'roles' AND COLUMN_NAME = 'name'",
+                    String.class);
+
+            Integer maxLength = jdbcTemplate.queryForObject(
+                    "SELECT CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS " +
+                            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'roles' AND COLUMN_NAME = 'name'",
+                    Integer.class);
+
+            boolean shouldAlter = "enum".equalsIgnoreCase(dataType)
+                    || (maxLength != null && maxLength < 50);
+
+            if (shouldAlter) {
+                jdbcTemplate.execute("ALTER TABLE roles MODIFY COLUMN name VARCHAR(50) NOT NULL");
+                log.warn("Migrated roles.name to VARCHAR(50) to support new role values.");
+            }
+        } catch (Exception ex) {
+            log.warn("Skip roles.name migration check: {}", ex.getMessage());
+        }
     }
 
     private void initializeRoles() {
@@ -73,6 +105,17 @@ public class DataInitializer implements CommandLineRunner {
             teacherManagerRole.onCreate();
             roleRepository.save(teacherManagerRole);
             log.info("Created ROLE_TEACHER_MANAGER");
+        }
+
+        // ROLE_COLLABORATOR
+        if (roleRepository.findByName(RoleName.ROLE_COLLABORATOR).isEmpty()) {
+            Role collaboratorRole = Role.builder()
+                    .name(RoleName.ROLE_COLLABORATOR)
+                    .build();
+            collaboratorRole.setId("01JFZC5Y3K1M7X9C6T2B4N8PX");
+            collaboratorRole.onCreate();
+            roleRepository.save(collaboratorRole);
+            log.info("Created ROLE_COLLABORATOR");
         }
     }
 
@@ -119,6 +162,29 @@ public class DataInitializer implements CommandLineRunner {
             teacher.onCreate();
             userRepository.save(teacher);
             log.info("Created teacher user: teacher@local.dev / teacher123");
+        }
+    }
+
+    private void initializeCollaboratorUser() {
+        if (userRepository.findByEmail("collaborator@local.dev").isEmpty()) {
+            Role collaboratorRole = roleRepository.findByName(RoleName.ROLE_COLLABORATOR)
+                    .orElseThrow(() -> new RuntimeException("ROLE_COLLABORATOR not found"));
+
+            Set<Role> roles = new HashSet<>();
+            roles.add(collaboratorRole);
+
+            User collaborator = User.builder()
+                    .email("collaborator@local.dev")
+                    .password(passwordEncoder.encode("collab123"))
+                    .fullName("Collaborator Demo")
+                    .status(UserStatus.ACTIVE)
+                    .emailVerified(true)
+                    .roles(roles)
+                    .build();
+            collaborator.setId("01JFZC5Y3K1M7X9C6T2B4N8PY");
+            collaborator.onCreate();
+            userRepository.save(collaborator);
+            log.info("Created collaborator user: collaborator@local.dev / collab123");
         }
     }
 

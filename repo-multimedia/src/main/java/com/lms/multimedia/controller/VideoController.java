@@ -1,6 +1,8 @@
 package com.lms.multimedia.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.multimedia.dto.request.VideoWebhookRequest;
 import com.lms.multimedia.dto.response.VideoResponse;
 import com.lms.multimedia.dto.response.VideoDetailResponse;
@@ -78,7 +80,7 @@ public class VideoController {
      * @param id Video ID
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<Void>> deleteVideo(@PathVariable String id) {
         log.info("Soft deleting video with id: {}", id);
         videoService.softDeleteVideo(id);

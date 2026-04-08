@@ -2,6 +2,8 @@ package com.lms.aipractice.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.FolderApiDelegate;
 import com.lms.content.common.dto.request.CreateFolderRequest;
 import com.lms.content.common.dto.request.UpdateFolderRequest;
@@ -23,6 +25,7 @@ public class FolderController {
     private final FolderApiDelegate delegate;
 
     @PostMapping
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<FolderResponse>> create(
             @RequestBody @Valid CreateFolderRequest request, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
@@ -41,6 +44,7 @@ public class FolderController {
     }
 
     @PutMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<FolderResponse>> update(
             @PathVariable String id,
             @RequestBody @Valid UpdateFolderRequest request,
@@ -50,6 +54,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
         delegate.deleteFolder(id, p.userId());
@@ -57,6 +62,7 @@ public class FolderController {
     }
 
     @PostMapping("/{folderId}/study-sets/{studySetId}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<FolderResponse>> addStudySet(
             @PathVariable String folderId, @PathVariable String studySetId, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
@@ -64,6 +70,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{folderId}/study-sets/{studySetId}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<FolderResponse>> removeStudySet(
             @PathVariable String folderId, @PathVariable String studySetId, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();

@@ -2,6 +2,8 @@ package com.lms.pronunciation.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.FolderApiDelegate;
 import com.lms.content.common.dto.request.CreateFolderRequest;
 import com.lms.content.common.dto.request.UpdateFolderRequest;
@@ -23,6 +25,7 @@ public class FolderController {
     private final FolderApiDelegate delegate;
 
     @PostMapping
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @RequestBody @Valid CreateFolderRequest request,
             Authentication authentication) {
@@ -56,6 +59,7 @@ public class FolderController {
     }
 
     @PutMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<FolderResponse>> updateFolder(
             @PathVariable String id,
             @RequestBody @Valid UpdateFolderRequest request,
@@ -66,6 +70,7 @@ public class FolderController {
     }
 
     @PatchMapping("/{id}/privacy")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<Void>> updateFolderPrivacy(
             @PathVariable String id,
             @RequestParam boolean isPrivate,
@@ -76,6 +81,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<Void>> deleteFolder(
             @PathVariable String id,
             Authentication authentication) {
@@ -85,6 +91,7 @@ public class FolderController {
     }
 
     @PostMapping("/{folderId}/study-sets/{studySetId}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<FolderResponse>> addStudySetToFolder(
             @PathVariable String folderId,
             @PathVariable String studySetId,
@@ -95,6 +102,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{folderId}/study-sets/{studySetId}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<FolderResponse>> removeStudySetFromFolder(
             @PathVariable String folderId,
             @PathVariable String studySetId,

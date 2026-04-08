@@ -1,5 +1,7 @@
 package com.lms.writing.controller;
 
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.content.common.delegate.api.PackageApiDelegate;
@@ -14,7 +16,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,7 +37,7 @@ public class PackageController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
             @RequestBody @Valid CreatePackageRequest request,
             Authentication authentication) {
@@ -61,7 +62,7 @@ public class PackageController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<PackageResponse>> updatePackage(
             @PathVariable String id,
             @RequestBody @Valid UpdatePackageRequest request,
@@ -72,7 +73,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<Void>> deletePackage(
             @PathVariable String id,
             Authentication authentication) {
@@ -82,7 +83,7 @@ public class PackageController {
     }
 
     @PostMapping("/{packageId}/folders/{folderId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<PackageResponse>> addFolderToPackage(
             @PathVariable String packageId,
             @PathVariable String folderId,
@@ -93,7 +94,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{packageId}/folders/{folderId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<PackageResponse>> removeFolderFromPackage(
             @PathVariable String packageId,
             @PathVariable String folderId,
@@ -104,7 +105,7 @@ public class PackageController {
     }
 
     @PostMapping("/import-excel")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
             @RequestParam("file") MultipartFile file,
             @RequestParam("typeName") TypeName typeName,

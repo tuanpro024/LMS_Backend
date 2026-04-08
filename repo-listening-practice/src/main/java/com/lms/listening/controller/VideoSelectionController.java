@@ -2,6 +2,8 @@ package com.lms.listening.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.listening.dto.request.AddVideoRequest;
 import com.lms.listening.dto.response.VideoMetadataResponse;
 import com.lms.listening.service.VideoMetadataService;
@@ -31,7 +33,7 @@ public class VideoSelectionController {
          * Add video to study set
          */
         @PostMapping("/{studySetId}/videos")
-        @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
+        @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
         public ResponseEntity<ApiResponse<VideoMetadataResponse>> addVideoToStudySet(
                         @PathVariable String studySetId,
                         @RequestBody @Valid AddVideoRequest request,
@@ -59,7 +61,7 @@ public class VideoSelectionController {
          * Remove video from study set
          */
         @DeleteMapping("/{studySetId}/videos/{videoCode}")
-        @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
+        @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
         public ResponseEntity<ApiResponse<Void>> removeVideoFromStudySet(
                         @PathVariable String studySetId,
                         @PathVariable String videoCode,
@@ -76,7 +78,7 @@ public class VideoSelectionController {
          * Update video display order
          */
         @PutMapping("/{studySetId}/videos/{videoCode}/display-order")
-        @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
+        @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
         public ResponseEntity<ApiResponse<VideoMetadataResponse>> updateVideoDisplayOrder(
                         @PathVariable String studySetId,
                         @PathVariable String videoCode,
@@ -95,7 +97,7 @@ public class VideoSelectionController {
          * Refresh video metadata
          */
         @PostMapping("/{studySetId}/videos/{videoCode}/refresh")
-        @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
+        @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
         public ResponseEntity<ApiResponse<VideoMetadataResponse>> refreshVideoMetadata(
                         @PathVariable String studySetId,
                         @PathVariable String videoCode) {

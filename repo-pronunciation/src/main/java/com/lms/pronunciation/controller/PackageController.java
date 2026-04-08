@@ -2,6 +2,8 @@ package com.lms.pronunciation.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.PackageApiDelegate;
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.request.CreatePackageRequest;
@@ -35,6 +37,7 @@ public class PackageController {
     }
 
     @PostMapping
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
             @RequestBody @Valid CreatePackageRequest request,
             Authentication authentication) {
@@ -59,6 +62,7 @@ public class PackageController {
     }
 
     @PutMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<PackageResponse>> updatePackage(
             @PathVariable String id,
             @RequestBody @Valid UpdatePackageRequest request,
@@ -69,6 +73,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<Void>> deletePackage(
             @PathVariable String id,
             Authentication authentication) {
@@ -78,6 +83,7 @@ public class PackageController {
     }
 
     @PostMapping("/{packageId}/folders/{folderId}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<PackageResponse>> addFolderToPackage(
             @PathVariable String packageId,
             @PathVariable String folderId,
@@ -88,6 +94,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{packageId}/folders/{folderId}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<PackageResponse>> removeFolderFromPackage(
             @PathVariable String packageId,
             @PathVariable String folderId,
@@ -98,6 +105,7 @@ public class PackageController {
     }
 
     @PostMapping("/import-excel")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
             @RequestParam("file") MultipartFile file,
             @RequestParam("typeName") TypeName typeName,

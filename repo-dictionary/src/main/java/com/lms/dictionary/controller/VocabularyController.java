@@ -1,5 +1,7 @@
 package com.lms.dictionary.controller;
 
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.dto.PageResponse;
 import com.lms.common.dto.PaginationRequest;
 import com.lms.common.dto.ApiResponse;
@@ -31,16 +33,19 @@ public class VocabularyController {
     }
 
     @PostMapping
+    @RequiresTicket(module = TicketModuleEnum.DICTIONARY)
     public ApiResponse<VocabularyResponse> createVocabulary(@Valid @RequestBody CreateVocabularyRequest request) {
         return ApiResponse.ok(vocabularyService.createVocabulary(request));
     }
 
     @PutMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.DICTIONARY)
     public ApiResponse<VocabularyResponse> updateVocabulary(@PathVariable Long id, @RequestBody @Valid UpdateVocabularyRequest request) {
         return ApiResponse.ok(vocabularyService.updateVocabulary(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.DICTIONARY)
     public ApiResponse<Void> deleteVocabulary(@PathVariable Long id) {
         vocabularyService.deleteVocabulary(id);
         return ApiResponse.ok(null);
@@ -57,6 +62,7 @@ public class VocabularyController {
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @RequiresTicket(module = TicketModuleEnum.DICTIONARY)
     public ApiResponse<ImportResult> importVocabularies(@RequestParam("file") MultipartFile file) {
         return ApiResponse.ok(vocabularyService.importVocabularies(file));
     }

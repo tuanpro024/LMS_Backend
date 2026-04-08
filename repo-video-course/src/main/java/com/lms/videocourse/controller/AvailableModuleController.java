@@ -1,6 +1,8 @@
 package com.lms.videocourse.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.videocourse.dto.response.AvailableModuleResponse;
 import com.lms.videocourse.service.IAvailableModuleService;
 import lombok.RequiredArgsConstructor;
@@ -20,13 +22,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/available-modules")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
 public class AvailableModuleController {
 
     private final IAvailableModuleService availableModuleService;
 
     /** Get all available study sets from all repos */
     @GetMapping
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAllAvailableModules(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAllAvailableModules(q)));
@@ -34,6 +36,7 @@ public class AvailableModuleController {
 
     /** Get available flashcard study sets */
     @GetMapping("/flashcard")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableFlashcardSets(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailableFlashcardSets(q)));
@@ -41,6 +44,7 @@ public class AvailableModuleController {
 
     /** Get available writing study sets */
     @GetMapping("/writing")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableWritingSets(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailableWritingSets(q)));
@@ -48,6 +52,7 @@ public class AvailableModuleController {
 
     /** Get available kanji study sets */
     @GetMapping({"/kanji", "/kanji-origin"})
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableKanjiSets(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailableKanjiSets(q)));
@@ -55,6 +60,7 @@ public class AvailableModuleController {
 
     /** Get available quiz study sets */
     @GetMapping("/quiz")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableQuizSets(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailableQuizSets(q)));
@@ -62,6 +68,7 @@ public class AvailableModuleController {
 
     /** Get available listening practice study sets */
     @GetMapping("/listening")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableListeningSets(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailableListeningSets(q)));
@@ -69,6 +76,7 @@ public class AvailableModuleController {
 
     /** Get available pronunciation study sets */
     @GetMapping("/pronunciation")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailablePronunciationSets(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailablePronunciationSets(q)));

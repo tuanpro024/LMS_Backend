@@ -3,6 +3,8 @@ package com.lms.learningpath.controller;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.exception.ErrorCode;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.FolderApiDelegate;
 import com.lms.content.common.dto.request.CreateFolderRequest;
 import com.lms.content.common.dto.request.UpdateFolderRequest;
@@ -11,7 +13,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +34,7 @@ public class FolderController {
      * Create a new folder
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @RequestBody @Valid CreateFolderRequest request,
             Authentication authentication) {
@@ -83,7 +84,7 @@ public class FolderController {
      * Update folder
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<FolderResponse>> updateFolder(
             @PathVariable String id,
             @RequestBody @Valid UpdateFolderRequest request,
@@ -98,7 +99,7 @@ public class FolderController {
      * Delete folder
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> deleteFolder(
             @PathVariable String id,
             Authentication authentication) {
@@ -112,7 +113,7 @@ public class FolderController {
      * Add a StudySet to a Folder
      */
     @PostMapping("/{folderId}/study-sets/{studySetId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<FolderResponse>> addStudySetToFolder(
             @PathVariable String folderId,
             @PathVariable String studySetId,
@@ -127,7 +128,7 @@ public class FolderController {
      * Remove a StudySet from a Folder
      */
     @DeleteMapping("/{folderId}/study-sets/{studySetId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<FolderResponse>> removeStudySetFromFolder(
             @PathVariable String folderId,
             @PathVariable String studySetId,

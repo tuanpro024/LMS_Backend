@@ -34,6 +34,7 @@ public class ScheduleModuleController {
      * POST /schedule-modules
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<ScheduleModuleResponse>> addModule(
             @RequestBody @Valid AddModuleToScheduleRequest request) {
 
@@ -46,6 +47,7 @@ public class ScheduleModuleController {
      * POST /schedule-modules/import  (multipart/form-data)
      */
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<ScheduleModuleResponse>> importModule(
             @RequestPart("request") @Valid ImportModuleToScheduleRequest request,
             @RequestPart("file") MultipartFile file) {
@@ -79,6 +81,7 @@ public class ScheduleModuleController {
      * DELETE /schedule-modules/{id}
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<Void>> removeModule(@PathVariable String id) {
         scheduleModuleService.removeModule(id);
         return ResponseEntity.ok(ApiResponse.ok(null));
@@ -89,6 +92,7 @@ public class ScheduleModuleController {
      * PUT /schedule-modules/by-schedule/{scheduleId}/reorder
      */
     @PutMapping("/by-schedule/{scheduleId}/reorder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<Void>> reorderModules(
             @PathVariable String scheduleId,
             @RequestBody @Valid ReorderScheduleModulesRequest request) {

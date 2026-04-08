@@ -24,6 +24,7 @@ public class AiPracticeItemController {
     private final AiPracticeItemService itemService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<AiPracticeItemResponse>> create(
             @Valid @RequestBody CreateAiPracticeItemRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -31,6 +32,7 @@ public class AiPracticeItemController {
     }
 
     @PostMapping(value = "/with-audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<AiPracticeItemResponse>> createWithAudio(
             @Valid @RequestPart("data") CreateAiPracticeItemRequest request,
             @RequestPart("audio") MultipartFile audioFile) {
@@ -39,6 +41,7 @@ public class AiPracticeItemController {
     }
 
     @PostMapping(value = "/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<AiPracticeItemResponse>> createWithImage(
             @Valid @RequestPart("data") CreateAiPracticeItemRequest request,
             @RequestPart("image") MultipartFile imageFile) {
@@ -47,6 +50,7 @@ public class AiPracticeItemController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<AiPracticeItemResponse>> update(
             @PathVariable String id,
             @Valid @RequestBody UpdateAiPracticeItemRequest request) {
@@ -54,6 +58,7 @@ public class AiPracticeItemController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
         itemService.delete(id);
         return ResponseEntity.ok(ApiResponse.ok(null));

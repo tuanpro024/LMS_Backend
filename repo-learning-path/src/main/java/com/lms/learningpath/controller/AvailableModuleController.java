@@ -18,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/available-modules")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
 public class AvailableModuleController {
 
     private final IAvailableModuleService availableModuleService;

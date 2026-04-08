@@ -40,6 +40,7 @@ public class PackageController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
             @RequestBody @Valid CreatePackageRequest request,
             Authentication authentication) {
@@ -64,6 +65,7 @@ public class PackageController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<PackageResponse>> updatePackage(
             @PathVariable String id,
             @RequestBody @Valid UpdatePackageRequest request,
@@ -74,6 +76,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deletePackage(
             @PathVariable String id,
             Authentication authentication) {
@@ -83,6 +86,7 @@ public class PackageController {
     }
 
     @PostMapping("/{packageId}/folders/{folderId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<PackageResponse>> addFolderToPackage(
             @PathVariable String packageId,
             @PathVariable String folderId,
@@ -93,6 +97,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{packageId}/folders/{folderId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<PackageResponse>> removeFolderFromPackage(
             @PathVariable String packageId,
             @PathVariable String folderId,
@@ -103,6 +108,7 @@ public class PackageController {
     }
 
     @PostMapping("/import-excel")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ResponseEntity<ApiResponse<HierarchicalImportResult>> importFromPackageExcel(
             @RequestParam("file") MultipartFile file,
             @RequestParam("typeName") TypeName typeName,

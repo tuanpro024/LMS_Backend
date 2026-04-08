@@ -43,6 +43,7 @@ public class SubtitleController {
      * @return List of subtitles
      */
     @GetMapping("/video/{videoId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<List<SubtitleResponse>> getSubtitlesByVideo(@PathVariable String videoId) {
         log.info("Get subtitles for video: {}", videoId);
         List<SubtitleResponse> subtitles = subtitleService.getSubtitlesByVideoId(videoId);
@@ -70,6 +71,7 @@ public class SubtitleController {
      * @return Updated subtitle
      */
     @PutMapping("/{subtitleId}/activate")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<SubtitleResponse> setActiveSubtitle(@PathVariable String subtitleId) {
         log.info("Set active subtitle: {}", subtitleId);
         SubtitleResponse response = subtitleService.setActiveSubtitle(subtitleId);
@@ -83,6 +85,7 @@ public class SubtitleController {
      * @return No content
      */
     @DeleteMapping("/{subtitleId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<Void> deleteSubtitle(@PathVariable String subtitleId) {
         log.info("Delete subtitle: {}", subtitleId);
         subtitleService.deleteSubtitle(subtitleId);

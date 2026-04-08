@@ -27,6 +27,7 @@ public class FolderController {
     private final FolderApiDelegate delegate;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @RequestBody @Valid CreateFolderRequest request,
             Authentication authentication) {
@@ -51,6 +52,7 @@ public class FolderController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<FolderResponse>> updateFolder(
             @PathVariable String id,
             @RequestBody @Valid UpdateFolderRequest request,
@@ -63,6 +65,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteFolder(
             @PathVariable String id,
             Authentication authentication) {
@@ -74,6 +77,7 @@ public class FolderController {
     }
 
     @PostMapping("/{folderId}/study-sets/{studySetId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<FolderResponse>> addStudySetToFolder(
             @PathVariable String folderId,
             @PathVariable String studySetId,
@@ -86,6 +90,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{folderId}/study-sets/{studySetId}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<FolderResponse>> removeStudySetFromFolder(
             @PathVariable String folderId,
             @PathVariable String studySetId,

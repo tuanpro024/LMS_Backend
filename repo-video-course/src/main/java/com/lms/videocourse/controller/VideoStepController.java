@@ -28,6 +28,7 @@ public class VideoStepController {
 
     /** Create a new step (Admin/Teacher only) */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<VideoStepResponse>> createVideoStep(
             @RequestBody @Valid CreateVideoStepRequest request,
             Authentication authentication) {
@@ -61,6 +62,7 @@ public class VideoStepController {
 
     /** Update a step (Admin/Teacher only) */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<VideoStepResponse>> updateVideoStep(
             @PathVariable String id,
             @RequestBody UpdateVideoStepRequest request,
@@ -72,6 +74,7 @@ public class VideoStepController {
 
     /** Delete (soft-delete) a step (Admin/Teacher only) */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteVideoStep(
             @PathVariable String id,
             Authentication authentication) {

@@ -22,11 +22,13 @@ public class PronunciationItemController {
     private final PronunciationItemService pronunciationItemService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<PronunciationItemResponse> create(@Valid @RequestBody CreatePronunciationItemRequest request) {
         return ApiResponse.ok(pronunciationItemService.create(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<PronunciationItemResponse> update(
             @PathVariable String id,
             @Valid @RequestBody UpdatePronunciationItemRequest request) {
@@ -34,6 +36,7 @@ public class PronunciationItemController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
     public ApiResponse<Void> delete(@PathVariable String id) {
         pronunciationItemService.delete(id);
         return ApiResponse.ok(null);

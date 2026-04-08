@@ -31,6 +31,7 @@ public class VideoModuleController {
 
     /** Create a new video module (Admin/Teacher only) */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<VideoModuleResponse>> createVideoModule(
             @RequestBody @Valid CreateVideoModuleRequest request,
             Authentication authentication) {
@@ -73,6 +74,7 @@ public class VideoModuleController {
 
     /** Update a video module (Admin/Teacher only) */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<VideoModuleResponse>> updateVideoModule(
             @PathVariable String id,
             @RequestBody UpdateVideoModuleRequest request,
@@ -84,6 +86,7 @@ public class VideoModuleController {
 
     /** Delete (soft-delete) a video module (Admin/Teacher only) */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteVideoModule(
             @PathVariable String id,
             Authentication authentication) {

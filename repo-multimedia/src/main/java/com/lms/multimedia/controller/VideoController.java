@@ -78,6 +78,7 @@ public class VideoController {
      * @param id Video ID
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteVideo(@PathVariable String id) {
         log.info("Soft deleting video with id: {}", id);
         videoService.softDeleteVideo(id);

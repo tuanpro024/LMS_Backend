@@ -30,11 +30,13 @@ public class KanjiOriginController {
     private final KanjiProgressService kanjiProgressService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<KanjiOriginResponse> createOrigin(@Valid @RequestBody CreateKanjiOriginRequest request) {
         return ApiResponse.ok(kanjiOriginService.createOrigin(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<KanjiOriginResponse> updateOrigin(
             @PathVariable String id,
             @Valid @RequestBody UpdateKanjiOriginRequest request) {
@@ -42,6 +44,7 @@ public class KanjiOriginController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<Void> deleteOrigin(@PathVariable String id) {
         kanjiOriginService.deleteOrigin(id);
         return ApiResponse.ok(null);

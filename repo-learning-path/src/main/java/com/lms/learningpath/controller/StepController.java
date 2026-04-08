@@ -32,6 +32,7 @@ public class StepController {
      * Create a new step (Admin/Teacher only)
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<StepResponse>> createStep(
             @RequestBody @Valid CreateStepRequest request,
             Authentication authentication) {
@@ -82,6 +83,7 @@ public class StepController {
      * Update a step (Admin/Teacher only)
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<StepResponse>> updateStep(
             @PathVariable String id,
             @RequestBody @Valid UpdateStepRequest request,
@@ -96,6 +98,7 @@ public class StepController {
      * Delete a step (Admin/Teacher only)
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> deleteStep(
             @PathVariable String id,
             Authentication authentication) {
@@ -109,6 +112,7 @@ public class StepController {
      * Reorder steps within a learning path (Admin/Teacher only)
      */
     @PutMapping("/learning-path/{learningPathId}/reorder")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Void>> reorderSteps(
             @PathVariable String learningPathId,
             @RequestBody @Valid ReorderItemsRequest request) {

@@ -19,6 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/available-videos")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
 public class AvailableVideoController {
 
     private final IAvailableVideoService availableVideoService;

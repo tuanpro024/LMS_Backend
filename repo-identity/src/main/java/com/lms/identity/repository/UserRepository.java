@@ -30,5 +30,6 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
     List<User> findByStatus(@Param("status") UserStatus status);
 
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName AND u.deleted = false")
-    List<User> findByRolesName(@Param("roleName") String roleName);
+    List<User> findByRolesName(@Param("roleName") com.lms.identity.entity.RoleName roleName);
 }
+

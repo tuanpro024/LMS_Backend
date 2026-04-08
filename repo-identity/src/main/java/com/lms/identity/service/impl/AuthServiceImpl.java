@@ -9,6 +9,7 @@ import com.lms.identity.dto.request.SignupRequest;
 import com.lms.identity.entity.*;
 import com.lms.identity.repository.RoleRepository;
 import com.lms.identity.repository.UserRepository;
+import com.lms.identity.repository.ExternalTeacherRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,14 +31,18 @@ public class AuthServiceImpl implements AuthService {
     private final OtpService otpService;
     private final DeviceService deviceService;
     private final LoginHistoryService loginHistoryService;
+    private final ExternalTeacherRepository externalTeacherRepository;
+
     @Transactional
     @Override
     public AuthResponse signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ApiException(ErrorCode.E255, "Email already in use");
         }
-        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseThrow(() -> new ApiException(ErrorCode.E221, "Role not found data: ROLE_USER"));
+        Role assignedRole = roleRepository.findByName(
+                        externalTeacherRepository.existsByEmail(request.getEmail()) ? RoleName.ROLE_TEACHER : RoleName.ROLE_USER)
+                .orElseThrow(() -> new ApiException(ErrorCode.E221, "Role not found"));
+
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -49,7 +54,8 @@ public class AuthServiceImpl implements AuthService {
                 .status(UserStatus.ACTIVE)
                 .emailVerified(false)
                 .build();
-        user.getRoles().add(userRole);
+        user.getRoles().add(assignedRole);
+
         User saved = userRepository.save(user);
         // generate verification token (for demo return via response header)
         emailVerificationService.createToken(saved);
@@ -137,8 +143,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Get user role
-        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseThrow(() -> new ApiException(ErrorCode.E221, "Role not found data: ROLE_USER"));
+        Role assignedRole = roleRepository.findByName(
+                        externalTeacherRepository.existsByEmail(request.getEmail()) ? RoleName.ROLE_TEACHER : RoleName.ROLE_USER)
+                .orElseThrow(() -> new ApiException(ErrorCode.E221, "Role not found"));
 
         // Create user with emailVerified = false
         User user = User.builder()
@@ -152,7 +159,8 @@ public class AuthServiceImpl implements AuthService {
                 .status(UserStatus.ACTIVE)
                 .emailVerified(false)
                 .build();
-        user.getRoles().add(userRole);
+        user.getRoles().add(assignedRole);
+
         User saved = userRepository.save(user);
 
         // Generate and send OTP

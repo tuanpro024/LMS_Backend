@@ -1,6 +1,7 @@
 package com.lms.aipractice.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.aipractice.adapter.HskApiClient;
 import com.lms.aipractice.adapter.normalizer.GradingResultNormalizer;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -105,13 +107,59 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
         AiPracticeAttempt attempt = getAttemptOwned(attemptId, userId);
         attempt.setStatus(AttemptStatus.SUBMITTED);
         attempt.setSubmittedAt(Instant.now());
-        return mapper.toAttemptResponse(attemptRepository.save(attempt));
+        AiPracticeAttempt saved = attemptRepository.save(attempt);
+
+        // Handle race where all grading jobs completed before user clicked submit.
+        // Re-aggregate immediately so status can advance to GRADED without waiting for another event.
+        saved = refreshAttemptAggregate(saved);
+        return mapper.toAttemptResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public AttemptResponse getAttempt(String attemptId, String userId) {
         return mapper.toAttemptResponse(getAttemptOwned(attemptId, userId));
+    }
+
+    @Override
+    @Transactional
+    public List<AttemptResponse> getLatestAttemptsByStudySetIds(List<String> studySetIds, String userId) {
+        if (studySetIds == null || studySetIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> distinctStudySetIds = studySetIds.stream()
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
+
+        if (distinctStudySetIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<AiPracticeAttempt> attempts = attemptRepository
+                .findByUserIdAndStudySetIdInAndDeletedFalseOrderByCreatedAtDesc(userId, distinctStudySetIds);
+
+        Map<String, AiPracticeAttempt> latestSubmittedOrGradedByStudySet = new LinkedHashMap<>();
+        Map<String, AiPracticeAttempt> latestAnyByStudySet = new LinkedHashMap<>();
+
+        for (AiPracticeAttempt attempt : attempts) {
+            String studySetId = attempt.getStudySetId();
+            latestAnyByStudySet.putIfAbsent(studySetId, attempt);
+
+            if (isLatestAttemptCandidate(attempt)) {
+                latestSubmittedOrGradedByStudySet.putIfAbsent(studySetId, attempt);
+            }
+        }
+
+        return distinctStudySetIds.stream()
+                .map(studySetId -> latestSubmittedOrGradedByStudySet.getOrDefault(
+                        studySetId,
+                        latestAnyByStudySet.get(studySetId)))
+                .filter(attempt -> attempt != null)
+                .map(this::refreshAttemptAggregate)
+                .map(mapper::toAttemptResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -123,7 +171,9 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
         List<GradingResultResponse> responses = new ArrayList<>();
 
         for (AiPracticeAnswer answer : answers) {
-            AiGradingJob job = jobRepository.findByAnswerIdAndDeletedFalse(answer.getId()).orElse(null);
+            AiGradingJob job = jobRepository
+                    .findTopByAnswerIdAndDeletedFalseOrderByCreatedAtDesc(answer.getId())
+                    .orElse(null);
             if (job == null) {
                 responses.add(GradingResultResponse.builder()
                         .answerId(answer.getId())
@@ -142,6 +192,10 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
             AiGradingResult result = (job.getStatus() == GradingJobStatus.COMPLETED)
                     ? resultRepository.findByGradingJobIdAndDeletedFalse(job.getId()).orElse(null)
                     : null;
+
+            if (job.getStatus() == GradingJobStatus.COMPLETED && item != null) {
+                result = healNormalizedResultIfNeeded(job, item, result);
+            }
 
             GradingResultResponse.GradingResultResponseBuilder rb = GradingResultResponse.builder()
                     .jobId(job.getId())
@@ -185,6 +239,88 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
             throw new ApiException(ErrorCode.E227, "Access denied for attempt: " + attemptId);
         }
         return attempt;
+    }
+
+    private AiPracticeAttempt refreshAttemptAggregate(AiPracticeAttempt attempt) {
+        List<AiPracticeAnswer> answers = answerRepository.findByAttemptIdAndDeletedFalse(attempt.getId());
+
+        double totalScore = 0D;
+        double maxScore = 0D;
+        boolean allTerminal = !answers.isEmpty();
+
+        for (AiPracticeAnswer answer : answers) {
+            AiGradingJob latestJob = jobRepository
+                    .findTopByAnswerIdAndDeletedFalseOrderByCreatedAtDesc(answer.getId())
+                    .orElse(null);
+
+            if (latestJob == null || !isTerminalJobStatus(latestJob.getStatus())) {
+                allTerminal = false;
+                continue;
+            }
+
+            AiGradingJob scoringJob = latestJob.getStatus() == GradingJobStatus.COMPLETED
+                    ? latestJob
+                    : jobRepository.findTopByAnswerIdAndStatusAndDeletedFalseOrderByCreatedAtDesc(
+                            answer.getId(),
+                            GradingJobStatus.COMPLETED).orElse(null);
+
+            if (scoringJob == null) {
+                continue;
+            }
+
+            AiGradingResult result = resultRepository.findByGradingJobIdAndDeletedFalse(scoringJob.getId()).orElse(null);
+            if (result == null) {
+                continue;
+            }
+
+            if (result.getNormalizedScore() != null) {
+                totalScore += result.getNormalizedScore();
+            }
+            if (result.getNormalizedMaxScore() != null) {
+                maxScore += result.getNormalizedMaxScore();
+            }
+        }
+
+        double progressPercent = maxScore > 0 ? (totalScore / maxScore) * 100D : 0D;
+        attempt.setTotalScore(totalScore);
+        attempt.setMaxScore(maxScore > 0 ? maxScore : null);
+        attempt.setProgressPercent(progressPercent);
+
+        if (allTerminal && shouldPromoteToGraded(attempt)) {
+            attempt.setStatus(AttemptStatus.GRADED);
+        }
+
+        return attemptRepository.save(attempt);
+    }
+
+    private boolean isTerminalJobStatus(GradingJobStatus status) {
+        return status == GradingJobStatus.COMPLETED
+                || status == GradingJobStatus.FAILED
+                || status == GradingJobStatus.TIMEOUT;
+    }
+
+    private boolean isLatestAttemptCandidate(AiPracticeAttempt attempt) {
+        AttemptStatus status = attempt.getStatus();
+        if (status == AttemptStatus.SUBMITTED || status == AttemptStatus.GRADED) {
+            return true;
+        }
+
+        if (attempt.getSubmittedAt() != null) {
+            return true;
+        }
+
+        return attempt.getTotalScore() != null
+                || attempt.getMaxScore() != null
+                || attempt.getProgressPercent() != null;
+    }
+
+    private boolean shouldPromoteToGraded(AiPracticeAttempt attempt) {
+        if (attempt.getStatus() == AttemptStatus.SUBMITTED) {
+            return true;
+        }
+
+        return attempt.getStatus() == AttemptStatus.IN_PROGRESS
+                && attempt.getSubmittedAt() != null;
     }
 
     private boolean shouldRecoverLegacyWritingFailure(AiGradingJob job, AiPracticeItem item) {
@@ -233,6 +369,92 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
             log.info("Recovered legacy writing job {} from FAILED to COMPLETED", job.getId());
         } catch (Exception ex) {
             log.warn("Failed to recover legacy writing job {}: {}", job.getId(), ex.getMessage());
+        }
+    }
+
+    private AiGradingResult healNormalizedResultIfNeeded(AiGradingJob job, AiPracticeItem item,
+            AiGradingResult existing) {
+        String rawJson = job.getResponsePayloadJson();
+        if (rawJson == null || rawJson.isBlank()) {
+            return existing;
+        }
+
+        boolean speakingSubtype = item.getQuestionSubtype() != null
+                && item.getQuestionSubtype().name().startsWith("SPEAKING_");
+        boolean audioSubtype = item.getQuestionSubtype() == AiItemSubtype.AUDIO_COMPARE;
+
+        if (!needsNormalizationRefresh(job, existing, speakingSubtype, audioSubtype)) {
+            return existing;
+        }
+
+        AiGradingResult normalized = speakingSubtype
+                ? normalizer.normalizeSpeaking(job.getId(), rawJson)
+                : audioSubtype
+                        ? normalizer.normalizeAudioCompare(job.getId(), rawJson)
+                        : normalizer.normalizeWriting(job.getId(), rawJson);
+
+        if (existing != null) {
+            existing.setNormalizedScore(normalized.getNormalizedScore());
+            existing.setNormalizedMaxScore(normalized.getNormalizedMaxScore());
+            existing.setNormalizedLevel(normalized.getNormalizedLevel());
+            existing.setDeductionsJson(normalized.getDeductionsJson());
+            existing.setFeedbackText(normalized.getFeedbackText());
+            existing.setTranscriptText(normalized.getTranscriptText());
+            existing.setAnalyticsJson(normalized.getAnalyticsJson());
+            return resultRepository.save(existing);
+        }
+
+        return resultRepository.save(normalized);
+    }
+
+    private boolean needsNormalizationRefresh(
+            AiGradingJob job,
+            AiGradingResult existing,
+            boolean speakingSubtype,
+            boolean audioSubtype) {
+
+        if (existing == null) {
+            return true;
+        }
+
+        if (speakingSubtype || audioSubtype) {
+            return false;
+        }
+
+        try {
+            JsonNode root = objectMapper.readTree(job.getResponsePayloadJson());
+            JsonNode data = root.has("result") ? root.path("result") : root;
+
+            if (data.isMissingNode()) {
+                return false;
+            }
+
+            if (!root.has("result")) {
+                return false;
+            }
+
+            Double providerMaxScore = null;
+            if (data.has("max_score_per_question")) {
+                providerMaxScore = data.path("max_score_per_question").asDouble();
+            } else if (data.has("max_score")) {
+                providerMaxScore = data.path("max_score").asDouble();
+            }
+
+            if (providerMaxScore == null) {
+                return false;
+            }
+
+            Double storedMaxScore = existing.getNormalizedMaxScore();
+            if (storedMaxScore == null) {
+                return true;
+            }
+
+            return Math.abs(storedMaxScore - providerMaxScore) > 0.0001
+                    || existing.getAnalyticsJson() == null;
+        } catch (Exception ex) {
+            log.debug("Skip normalization refresh check for job {} due to parse error: {}", job.getId(),
+                    ex.getMessage());
+            return false;
         }
     }
 }

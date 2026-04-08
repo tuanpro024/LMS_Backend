@@ -11,7 +11,10 @@ import java.util.Optional;
 @Repository
 public interface AiGradingJobRepository extends JpaRepository<AiGradingJob, String> {
 
-    Optional<AiGradingJob> findByAnswerIdAndDeletedFalse(String answerId);
+    Optional<AiGradingJob> findTopByAnswerIdAndDeletedFalseOrderByCreatedAtDesc(String answerId);
+
+    Optional<AiGradingJob> findTopByAnswerIdAndStatusAndDeletedFalseOrderByCreatedAtDesc(
+            String answerId, GradingJobStatus status);
 
     List<AiGradingJob> findByAttemptIdAndDeletedFalse(String attemptId);
 

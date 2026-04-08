@@ -68,8 +68,8 @@ app:
     topics:
       ai-practice-progress-events: ai-practice.progress.events
   multimedia:
-    base-url: ${MULTIMEDIA_BASE_URL:http://localhost:8091}
-    public-base-url: ${MULTIMEDIA_PUBLIC_BASE_URL:${app.multimedia.base-url}}
+    base-url: ${MULTIMEDIA_BASE_URL:https://lms.dangch.tech}
+    public-base-url: ${MULTIMEDIA_PUBLIC_BASE_URL:https://lms.dangch.tech}
     timeout-ms: ${MULTIMEDIA_TIMEOUT_MS:30000}
   ai:
     hsk-api:

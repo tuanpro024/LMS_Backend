@@ -2,6 +2,8 @@ package com.lms.videocourse.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.videocourse.dto.request.CreateVideoStepRequest;
 import com.lms.videocourse.dto.request.UpdateVideoStepRequest;
 import com.lms.videocourse.dto.response.VideoStepResponse;
@@ -28,7 +30,7 @@ public class VideoStepController {
 
     /** Create a new step (Admin/Teacher only) */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<VideoStepResponse>> createVideoStep(
             @RequestBody @Valid CreateVideoStepRequest request,
             Authentication authentication) {
@@ -62,7 +64,7 @@ public class VideoStepController {
 
     /** Update a step (Admin/Teacher only) */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<VideoStepResponse>> updateVideoStep(
             @PathVariable String id,
             @RequestBody UpdateVideoStepRequest request,
@@ -74,7 +76,7 @@ public class VideoStepController {
 
     /** Delete (soft-delete) a step (Admin/Teacher only) */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<Void>> deleteVideoStep(
             @PathVariable String id,
             Authentication authentication) {

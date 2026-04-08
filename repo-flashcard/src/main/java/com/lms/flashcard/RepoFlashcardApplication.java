@@ -9,7 +9,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @SpringBootApplication
 @ComponentScan(basePackages = {
                 "com.lms.flashcard",
-                "com.lms.content.common"
+                "com.lms.content.common",
+                "com.lms.common"
 
 })
 @EntityScan(basePackages = {

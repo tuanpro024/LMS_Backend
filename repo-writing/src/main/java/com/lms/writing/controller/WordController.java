@@ -1,5 +1,7 @@
 package com.lms.writing.controller;
 
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.security.AuthPrincipal;
 import org.springframework.security.core.Authentication;
 import com.lms.common.dto.ApiResponse;
@@ -12,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +27,7 @@ public class WordController {
     private final WordService wordService;
 
     @PostMapping("/bulk")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<List<WordResponse>>> addWordsToStudySet(
             @RequestBody @Valid AddWordsToStudySetRequest request,
             Authentication authentication) {
@@ -54,7 +55,7 @@ public class WordController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<WordResponse>> updateWord(
             @PathVariable String id,
             @Valid @RequestBody UpdateWordRequest request,
@@ -75,7 +76,7 @@ public class WordController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN','TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<Void>> deleteWord(
             @PathVariable String id,
             Authentication authentication) {

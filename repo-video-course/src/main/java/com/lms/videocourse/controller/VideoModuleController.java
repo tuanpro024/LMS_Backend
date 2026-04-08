@@ -2,6 +2,8 @@ package com.lms.videocourse.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.videocourse.dto.request.CreateVideoModuleRequest;
 import com.lms.videocourse.dto.request.UpdateVideoModuleRequest;
 import com.lms.videocourse.dto.response.VideoModuleResponse;
@@ -31,7 +33,7 @@ public class VideoModuleController {
 
     /** Create a new video module (Admin/Teacher only) */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<VideoModuleResponse>> createVideoModule(
             @RequestBody @Valid CreateVideoModuleRequest request,
             Authentication authentication) {
@@ -74,7 +76,7 @@ public class VideoModuleController {
 
     /** Update a video module (Admin/Teacher only) */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<VideoModuleResponse>> updateVideoModule(
             @PathVariable String id,
             @RequestBody UpdateVideoModuleRequest request,
@@ -86,7 +88,7 @@ public class VideoModuleController {
 
     /** Delete (soft-delete) a video module (Admin/Teacher only) */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<Void>> deleteVideoModule(
             @PathVariable String id,
             Authentication authentication) {

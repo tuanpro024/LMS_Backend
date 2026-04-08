@@ -1,5 +1,7 @@
 package com.lms.flashcard.controller;
 
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.content.common.delegate.api.FolderApiDelegate;
@@ -10,7 +12,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +29,7 @@ public class FolderController {
     private final FolderApiDelegate delegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @RequestBody @Valid CreateFolderRequest request,
             Authentication authentication) {
@@ -62,7 +63,7 @@ public class FolderController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<FolderResponse>> updateFolder(
             @PathVariable String id,
             @RequestBody @Valid UpdateFolderRequest request,
@@ -73,7 +74,7 @@ public class FolderController {
     }
 
     @PatchMapping("/{id}/privacy")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<Void>> updateFolderPrivacy(
             @PathVariable String id,
             @RequestParam boolean isPrivate,
@@ -84,7 +85,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<Void>> deleteFolder(
             @PathVariable String id,
             Authentication authentication) {
@@ -94,7 +95,7 @@ public class FolderController {
     }
 
     @PostMapping("/{folderId}/study-sets/{studySetId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<FolderResponse>> addStudySetToFolder(
             @PathVariable String folderId,
             @PathVariable String studySetId,
@@ -105,7 +106,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{folderId}/study-sets/{studySetId}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<FolderResponse>> removeStudySetFromFolder(
             @PathVariable String folderId,
             @PathVariable String studySetId,

@@ -1,6 +1,8 @@
 package com.lms.learningpath.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.learningpath.dto.response.AvailableModuleResponse;
 import com.lms.learningpath.service.IAvailableModuleService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/available-modules")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
 public class AvailableModuleController {
 
     private final IAvailableModuleService availableModuleService;
@@ -27,6 +28,7 @@ public class AvailableModuleController {
      * Get all available modules from all repos
      */
     @GetMapping
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAllAvailableModules(
             @RequestParam(required = false) String q) {
 
@@ -38,6 +40,7 @@ public class AvailableModuleController {
      * Get available flashcard study sets
      */
     @GetMapping("/flashcard")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableFlashcardSets(
             @RequestParam(required = false) String q) {
 
@@ -49,6 +52,7 @@ public class AvailableModuleController {
      * Get available writing study sets
      */
     @GetMapping("/writing")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableWritingSets(
             @RequestParam(required = false) String q) {
 
@@ -60,6 +64,7 @@ public class AvailableModuleController {
      * Get available kanji-origin study sets
      */
     @GetMapping("/kanji")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableKanjiSets(
             @RequestParam(required = false) String q) {
 

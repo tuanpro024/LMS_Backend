@@ -1,5 +1,7 @@
 package com.lms.quiz.controller;
 
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.dto.ApiResponse;
 import com.lms.quiz.dto.request.CreateQuizRequest;
 import com.lms.quiz.dto.response.QuizDetailResponse;
@@ -9,7 +11,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class QuizController {
     private final IQuizService quizService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<ApiResponse<QuizDetailResponse>> createQuiz(
             @Valid @RequestBody CreateQuizRequest request,
             Authentication authentication) {
@@ -50,7 +51,7 @@ public class QuizController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<ApiResponse<QuizDetailResponse>> updateQuiz(
             @PathVariable String id,
             @Valid @RequestBody CreateQuizRequest request,
@@ -60,7 +61,7 @@ public class QuizController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<Void> deleteQuiz(@PathVariable String id, Authentication authentication) {
         quizService.deleteQuiz(id, authentication.getName());
         return ResponseEntity.noContent().build();

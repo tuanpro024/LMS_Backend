@@ -1,5 +1,7 @@
 package com.lms.pronunciation.controller;
 
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.dto.PageResponse;
 import com.lms.pronunciation.dto.request.CreatePronunciationItemRequest;
@@ -9,7 +11,6 @@ import com.lms.pronunciation.dto.response.PronunciationItemResponse;
 import com.lms.pronunciation.service.PronunciationItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,13 +23,13 @@ public class PronunciationItemController {
     private final PronunciationItemService pronunciationItemService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ApiResponse<PronunciationItemResponse> create(@Valid @RequestBody CreatePronunciationItemRequest request) {
         return ApiResponse.ok(pronunciationItemService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ApiResponse<PronunciationItemResponse> update(
             @PathVariable String id,
             @Valid @RequestBody UpdatePronunciationItemRequest request) {
@@ -36,7 +37,7 @@ public class PronunciationItemController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ROLE_TEACHER', 'ROLE_ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ApiResponse<Void> delete(@PathVariable String id) {
         pronunciationItemService.delete(id);
         return ApiResponse.ok(null);

@@ -1,5 +1,7 @@
 package com.lms.flashcard.controller;
 
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.flashcard.dto.request.AddCardsToStudySetRequest;
@@ -11,7 +13,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ public class CardController {
     private final CardService cardService;
 
     @PostMapping("/bulk")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<List<CardResponse>>> addCardsToStudySet(
             @RequestBody @Valid AddCardsToStudySetRequest request,
             Authentication authentication) {
@@ -53,7 +54,7 @@ public class CardController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<CardResponse>> updateCard(
             @PathVariable String id,
             @Valid @RequestBody UpdateCardRequest request,
@@ -75,7 +76,7 @@ public class CardController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<Void>> deleteCard(
             @PathVariable String id,
             Authentication authentication) {

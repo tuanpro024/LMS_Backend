@@ -2,6 +2,8 @@ package com.lms.pronunciation.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.request.CreateStudySetRequest;
 import com.lms.content.common.dto.request.UpdateStudySetRequest;
@@ -23,6 +25,7 @@ public class StudySetController {
     private final StudySetApiDelegate delegate;
 
     @PostMapping
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<StudySetResponse>> createStudySet(
             @RequestBody @Valid CreateStudySetRequest request,
             Authentication authentication) {
@@ -66,6 +69,7 @@ public class StudySetController {
     }
 
     @PutMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<StudySetResponse>> updateStudySet(
             @PathVariable String id,
             @RequestBody @Valid UpdateStudySetRequest request,
@@ -84,6 +88,7 @@ public class StudySetController {
     }
 
     @DeleteMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.PRONUNCIATION)
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,
             Authentication authentication) {

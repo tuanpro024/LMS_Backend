@@ -2,6 +2,8 @@ package com.lms.learningpath.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.entity.TypeName;
 import com.lms.learningpath.dto.excel.LearningPathImportResult;
 import com.lms.learningpath.dto.request.CreateLearningPathRequest;
@@ -37,7 +39,7 @@ public class LearningPathController {
      * Create a new learning path (Admin/Teacher only)
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<LearningPathResponse>> createLearningPath(
             @RequestBody @Valid CreateLearningPathRequest request,
             Authentication authentication) {
@@ -88,7 +90,7 @@ public class LearningPathController {
      * Update a learning path (Admin/Teacher only)
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<LearningPathResponse>> updateLearningPath(
             @PathVariable String id,
             @RequestBody @Valid UpdateLearningPathRequest request,
@@ -103,7 +105,7 @@ public class LearningPathController {
      * Delete a learning path (Admin/Teacher only)
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> deleteLearningPath(
             @PathVariable String id,
             Authentication authentication) {
@@ -118,7 +120,7 @@ public class LearningPathController {
      * Supports hybrid 2-phase import: external content creation + local hierarchy.
      */
     @PostMapping("/import-excel")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<LearningPathImportResult>> importFromExcel(
             @RequestParam("file") MultipartFile file,
             @RequestParam("typeName") String typeNameStr,

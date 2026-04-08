@@ -2,6 +2,8 @@ package com.lms.aipractice.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.request.CreateStudySetRequest;
 import com.lms.content.common.dto.request.UpdateStudySetRequest;
@@ -23,6 +25,7 @@ public class StudySetController {
     private final StudySetApiDelegate delegate;
 
     @PostMapping
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<StudySetResponse>> create(
             @RequestBody @Valid CreateStudySetRequest request, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
@@ -50,6 +53,7 @@ public class StudySetController {
     }
 
     @PutMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<StudySetResponse>> update(
             @PathVariable String id,
             @RequestBody @Valid UpdateStudySetRequest request,
@@ -59,6 +63,7 @@ public class StudySetController {
     }
 
     @DeleteMapping("/{id}")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
         delegate.deleteStudySet(id, p.userId());

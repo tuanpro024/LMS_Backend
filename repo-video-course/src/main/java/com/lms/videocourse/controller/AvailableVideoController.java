@@ -1,6 +1,8 @@
 package com.lms.videocourse.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.videocourse.dto.response.AvailableVideoResponse;
 import com.lms.videocourse.service.IAvailableVideoService;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +21,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/admin/available-videos")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
 public class AvailableVideoController {
 
     private final IAvailableVideoService availableVideoService;
@@ -29,6 +30,7 @@ public class AvailableVideoController {
      * Optional query param for title search.
      */
     @GetMapping
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableVideoResponse>>> getAllAvailableVideos(
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableVideoService.getAllAvailableVideos(q)));
@@ -39,6 +41,7 @@ public class AvailableVideoController {
      * Use this to preview a specific video before embedding it into a VideoModule.
      */
     @GetMapping("/{videoCode}")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<AvailableVideoResponse>> getVideoByCode(
             @PathVariable String videoCode) {
         return ResponseEntity.ok(ApiResponse.ok(availableVideoService.getVideoByCode(videoCode)));

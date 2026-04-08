@@ -2,6 +2,8 @@ package com.lms.learningpath.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.learningpath.dto.request.AddModuleToStepRequest;
 import com.lms.learningpath.dto.request.ReorderItemsRequest;
 import com.lms.learningpath.dto.response.StepModuleResponse;
@@ -31,7 +33,7 @@ public class StepModuleController {
      * Add a module to a step (Admin/Teacher only)
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<StepModuleResponse>> addModuleToStep(
             @RequestBody @Valid AddModuleToStepRequest request,
             Authentication authentication) {
@@ -65,7 +67,7 @@ public class StepModuleController {
      * Remove a module from a step (Admin/Teacher only)
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> removeModuleFromStep(
             @PathVariable String id,
             Authentication authentication) {
@@ -79,7 +81,7 @@ public class StepModuleController {
      * Reorder modules within a step (Admin/Teacher only)
      */
     @PutMapping("/step/{stepId}/reorder")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> reorderModules(
             @PathVariable String stepId,
             @RequestBody @Valid ReorderItemsRequest request) {

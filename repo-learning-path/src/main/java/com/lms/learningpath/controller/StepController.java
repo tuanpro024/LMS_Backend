@@ -2,6 +2,8 @@ package com.lms.learningpath.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.learningpath.dto.request.CreateStepRequest;
 import com.lms.learningpath.dto.request.ReorderItemsRequest;
 import com.lms.learningpath.dto.request.UpdateStepRequest;
@@ -32,7 +34,7 @@ public class StepController {
      * Create a new step (Admin/Teacher only)
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<StepResponse>> createStep(
             @RequestBody @Valid CreateStepRequest request,
             Authentication authentication) {
@@ -83,7 +85,7 @@ public class StepController {
      * Update a step (Admin/Teacher only)
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<StepResponse>> updateStep(
             @PathVariable String id,
             @RequestBody @Valid UpdateStepRequest request,
@@ -98,7 +100,7 @@ public class StepController {
      * Delete a step (Admin/Teacher only)
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> deleteStep(
             @PathVariable String id,
             Authentication authentication) {
@@ -112,7 +114,7 @@ public class StepController {
      * Reorder steps within a learning path (Admin/Teacher only)
      */
     @PutMapping("/learning-path/{learningPathId}/reorder")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> reorderSteps(
             @PathVariable String learningPathId,
             @RequestBody @Valid ReorderItemsRequest request) {

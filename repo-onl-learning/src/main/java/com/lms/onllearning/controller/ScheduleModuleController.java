@@ -1,10 +1,14 @@
 package com.lms.onllearning.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.AuthPrincipal;
 import com.lms.onllearning.dto.request.AddModuleToScheduleRequest;
 import com.lms.onllearning.dto.request.ImportModuleToScheduleRequest;
 import com.lms.onllearning.dto.request.ReorderScheduleModulesRequest;
+import com.lms.onllearning.dto.request.UpdateMyScheduleModuleProgressRequest;
+import com.lms.onllearning.dto.response.CourseStudentModuleProgressResponse;
 import com.lms.onllearning.dto.response.ScheduleModuleResponse;
+import com.lms.onllearning.dto.response.ScheduleSessionProgressResponse;
 import com.lms.onllearning.service.IScheduleModuleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -74,6 +79,62 @@ public class ScheduleModuleController {
             @PathVariable String scheduleId) {
 
         return ResponseEntity.ok(ApiResponse.ok(scheduleModuleService.getByScheduleId(scheduleId)));
+    }
+
+    /**
+     * Lấy tiến độ ôn luyện theo buổi học của học viên hiện tại.
+     * GET /schedule-modules/by-schedule/{scheduleId}/my-progress?courseId={courseId}
+     */
+    @GetMapping("/by-schedule/{scheduleId}/my-progress")
+    public ResponseEntity<ApiResponse<ScheduleSessionProgressResponse>> getMySessionProgress(
+            @PathVariable String scheduleId,
+            @RequestParam(required = false) String courseId,
+            Authentication authentication) {
+
+        String userId = authentication != null ? authentication.getName() : null;
+        String email = userId;
+
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
+            userId = principal.userId();
+            email = principal.email();
+        }
+
+        ScheduleSessionProgressResponse response = scheduleModuleService
+                .getMySessionProgress(courseId, scheduleId, userId, email);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    /**
+     * Lấy tiến độ module của tất cả học viên.
+     * GET /schedule-modules/all-student-progress
+     */
+    @GetMapping("/all-student-progress")
+    public ResponseEntity<ApiResponse<List<CourseStudentModuleProgressResponse>>> getAllStudentProgress() {
+
+        List<CourseStudentModuleProgressResponse> response = scheduleModuleService.getAllStudentProgress();
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    /**
+     * Học viên cập nhật tiến độ module của mình trong online-course.
+     * POST /schedule-modules/{moduleId}/my-progress
+     */
+    @PostMapping("/{moduleId}/my-progress")
+    public ResponseEntity<ApiResponse<Void>> updateMyModuleProgress(
+            @PathVariable String moduleId,
+            @RequestBody @Valid UpdateMyScheduleModuleProgressRequest request,
+            Authentication authentication) {
+
+        String userId = authentication != null ? authentication.getName() : null;
+        String email = userId;
+
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
+            userId = principal.userId();
+            email = principal.email();
+        }
+
+        scheduleModuleService.updateMyModuleProgress(moduleId, userId, email, request);
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
     /**

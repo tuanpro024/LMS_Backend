@@ -1,5 +1,7 @@
 package com.lms.learningpath.service.impl;
 
+import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.repository.StudySetRepository;
 import com.lms.learningpath.exception.ResourceAlreadyExistsException;
 import com.lms.learningpath.exception.ResourceNotFoundException;
 import com.lms.learningpath.dto.request.CreateLearningPathRequest;
@@ -28,6 +30,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     private final LearningPathRepository learningPathRepository;
     private final LearningPathProgressRepository learningPathProgressRepository;
     private final StepRepository stepRepository;
+    private final StudySetRepository studySetRepository;
     private final LearningPathMapper learningPathMapper;
 
     @Override
@@ -35,7 +38,13 @@ public class LearningPathServiceImpl implements ILearningPathService {
     public LearningPathResponse createLearningPath(CreateLearningPathRequest request, String userId) {
         log.info("Creating learning path: {} for study set: {}", request.getTitle(), request.getStudySetId());
 
+        StudySet studySet = studySetRepository.findById(request.getStudySetId())
+                .filter(s -> !s.isDeleted())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Study set not found with id: " + request.getStudySetId()));
+
         LearningPath learningPath = learningPathMapper.toEntity(request, userId);
+        learningPath.setStudySet(studySet);
         learningPath = learningPathRepository.save(learningPath);
 
         log.info("Successfully created learning path: {}", learningPath.getId());
@@ -43,6 +52,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public LearningPathResponse getLearningPathById(String id) {
         LearningPath learningPath = findLearningPathById(id);
         LearningPathResponse response = learningPathMapper.toResponse(learningPath);
@@ -55,6 +65,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public LearningPathResponse getLearningPathWithProgress(String id, String userId) {
         LearningPath learningPath = findLearningPathById(id);
         LearningPathResponse response = learningPathMapper.toResponse(learningPath);
@@ -74,6 +85,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<LearningPathResponse> getLearningPathsByStudySetId(String studySetId) {
         List<LearningPath> learningPaths = learningPathRepository
                 .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
@@ -89,6 +101,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<LearningPathResponse> getLearningPathsByStudySetIdWithProgress(String studySetId, String userId) {
         List<LearningPath> learningPaths = learningPathRepository
                 .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
@@ -137,7 +150,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     }
 
     private LearningPath findLearningPathById(String id) {
-        return learningPathRepository.findById(id)
+        return learningPathRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Learning path not found with id: " + id));
     }
 }

@@ -49,6 +49,7 @@ public class DuplicateContentChecker {
                     return searchByTitle(writingClient.searchStudySets(title), title);
 
                 case KANJI:
+                case KANJI_ORIGIN:
                     return searchByTitle(kanjiClient.searchStudySets(title), title);
 
                 case QUIZ:

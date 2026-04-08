@@ -10,10 +10,12 @@ import com.lms.learningpath.exception.ResourceNotFoundException;
 import com.lms.learningpath.dto.request.AddModuleToStepRequest;
 import com.lms.learningpath.dto.request.ReorderItemsRequest;
 import com.lms.learningpath.dto.response.StepModuleResponse;
+import com.lms.learningpath.entity.Step;
 import com.lms.learningpath.entity.StepModule;
 import com.lms.learningpath.entity.enums.ModuleType;
 import com.lms.learningpath.mapper.StepModuleMapper;
 import com.lms.learningpath.repository.StepModuleRepository;
+import com.lms.learningpath.repository.StepRepository;
 import com.lms.learningpath.service.IStepModuleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 public class StepModuleServiceImpl implements IStepModuleService {
 
     private final StepModuleRepository stepModuleRepository;
+    private final StepRepository stepRepository;
     private final StepModuleMapper stepModuleMapper;
     private final FlashcardClient flashcardClient;
     private final WritingClient writingClient;
@@ -41,6 +44,12 @@ public class StepModuleServiceImpl implements IStepModuleService {
     public StepModuleResponse addModuleToStep(AddModuleToStepRequest request, String userId) {
         log.info("Adding module to step: {}", request.getStepId());
 
+        Step step = stepRepository.findByIdAndIsActiveTrue(request.getStepId())
+            .orElseThrow(() -> new ResourceNotFoundException("Step not found with id: " + request.getStepId()));
+
+        ModuleType normalizedModuleType = normalizeModuleType(request.getModuleType());
+        request.setModuleType(normalizedModuleType);
+
         // Check if module order already exists
         if (stepModuleRepository.existsByStepIdAndModuleOrder(
                 request.getStepId(), request.getModuleOrder())) {
@@ -48,7 +57,13 @@ public class StepModuleServiceImpl implements IStepModuleService {
                     "Module with order " + request.getModuleOrder() + " already exists in this step");
         }
 
-        validateContentSetMapping(request.getModuleType(), request.getContentSetId());
+        if (stepModuleRepository.existsByStepIdAndContentSetIdAndIsActiveTrue(
+            step.getId(), request.getContentSetId())) {
+            throw new ResourceAlreadyExistsException(
+                "Content set " + request.getContentSetId() + " already exists in this step");
+        }
+
+        validateContentSetMapping(normalizedModuleType, request.getContentSetId());
 
         StepModule stepModule = stepModuleMapper.toEntity(request);
         stepModule = stepModuleRepository.save(stepModule);
@@ -92,6 +107,10 @@ public class StepModuleServiceImpl implements IStepModuleService {
 
         for (ReorderItemsRequest.ReorderItem item : request.getItems()) {
             StepModule stepModule = findStepModuleById(item.getId());
+            if (!stepId.equals(stepModule.getStepId())) {
+                throw new ResourceNotFoundException(
+                        "Step module " + stepModule.getId() + " does not belong to step: " + stepId);
+            }
             stepModule.setModuleOrder(item.getNewOrder());
             stepModuleRepository.save(stepModule);
         }
@@ -100,8 +119,15 @@ public class StepModuleServiceImpl implements IStepModuleService {
     }
 
     private StepModule findStepModuleById(String id) {
-        return stepModuleRepository.findById(id)
+        return stepModuleRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Step module not found with id: " + id));
+    }
+
+    private ModuleType normalizeModuleType(ModuleType moduleType) {
+        if (moduleType == null) {
+            return null;
+        }
+        return moduleType == ModuleType.KANJI_ORIGIN ? ModuleType.KANJI : moduleType;
     }
 
     private void validateContentSetMapping(ModuleType moduleType, String contentSetId) {
@@ -113,7 +139,7 @@ public class StepModuleServiceImpl implements IStepModuleService {
             boolean exists = switch (moduleType) {
                 case FLASHCARD -> flashcardClient.getStudySetById(contentSetId).data() != null;
                 case WRITING -> writingClient.getStudySetById(contentSetId).data() != null;
-                case KANJI -> kanjiOriginClient.getStudySetById(contentSetId).data() != null;
+                case KANJI, KANJI_ORIGIN -> kanjiOriginClient.getStudySetById(contentSetId).data() != null;
                 case QUIZ -> quizClient.getStudySetById(contentSetId).data() != null;
                 case PRONUNCIATION -> pronunciationClient.getStudySetById(contentSetId).data() != null;
                 default -> true;

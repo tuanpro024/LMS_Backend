@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 public class StepServiceImpl implements IStepService {
 
     private final StepRepository stepRepository;
+    private final LearningPathRepository learningPathRepository;
     private final StepProgressRepository stepProgressRepository;
     private final StepUnlockRuleRepository stepUnlockRuleRepository;
     private final StepModuleRepository stepModuleRepository;
@@ -36,6 +37,11 @@ public class StepServiceImpl implements IStepService {
     @Transactional
     public StepResponse createStep(CreateStepRequest request, String userId) {
         log.info("Creating step: {} for learning path: {}", request.getTitle(), request.getLearningPathId());
+
+        if (!learningPathRepository.existsByIdAndIsActiveTrue(request.getLearningPathId())) {
+            throw new ResourceNotFoundException(
+                    "Learning path not found with id: " + request.getLearningPathId());
+        }
 
         // Check if step order already exists
         if (stepRepository.existsByLearningPathIdAndStepOrder(
@@ -162,6 +168,10 @@ public class StepServiceImpl implements IStepService {
 
         for (ReorderItemsRequest.ReorderItem item : request.getItems()) {
             Step step = findStepById(item.getId());
+            if (!learningPathId.equals(step.getLearningPathId())) {
+                throw new ResourceNotFoundException(
+                        "Step " + step.getId() + " does not belong to learning path: " + learningPathId);
+            }
             step.setStepOrder(item.getNewOrder());
             stepRepository.save(step);
 
@@ -225,7 +235,7 @@ public class StepServiceImpl implements IStepService {
     }
 
     private Step findStepById(String id) {
-        return stepRepository.findById(id)
+        return stepRepository.findByIdAndIsActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Step not found with id: " + id));
     }
 }

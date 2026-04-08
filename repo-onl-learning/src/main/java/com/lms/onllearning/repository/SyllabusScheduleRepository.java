@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SyllabusScheduleRepository extends JpaRepository<SyllabusSchedule, String> {
     @Transactional
@@ -24,4 +25,8 @@ public interface SyllabusScheduleRepository extends JpaRepository<SyllabusSchedu
     List<SyllabusSchedule> findBySyllabusId(String syllabusId);
 
     List<SyllabusSchedule> findBySyllabusIdOrderBySessionNoAsc(String syllabusId);
+
+    Optional<SyllabusSchedule> findFirstBySyllabus_IdAndSessionNoGreaterThanOrderBySessionNoAsc(
+            String syllabusId,
+            Integer sessionNo);
 }

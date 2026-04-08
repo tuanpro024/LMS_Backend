@@ -324,7 +324,9 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                 }
 
                 List<StepModule> kanjiModules = stepModuleRepository
-                                .findByModuleTypeAndContentSetIdAndIsActiveTrue(ModuleType.KANJI, event.studySetId());
+                                .findByModuleTypeInAndContentSetIdAndIsActiveTrue(
+                                                List.of(ModuleType.KANJI, ModuleType.KANJI_ORIGIN),
+                                                event.studySetId());
 
                 if (kanjiModules.isEmpty()) {
                         consumedKanjiProgressEventRepository.save(ConsumedKanjiProgressEvent.builder()

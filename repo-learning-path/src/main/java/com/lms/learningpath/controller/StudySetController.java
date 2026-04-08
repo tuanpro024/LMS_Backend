@@ -1,6 +1,7 @@
 package com.lms.learningpath.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.exception.ErrorCode;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.common.security.RequiresTicket;
 import com.lms.common.security.TicketModuleEnum;
@@ -79,10 +80,14 @@ public class StudySetController {
      * Get my study sets (created by current user)
      */
     @GetMapping("/my-sets")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<StudySetResponse>>> getMyStudySets(
             Authentication authentication) {
 
-        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthPrincipal principal)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(ErrorCode.UNAUTHORIZED.code(), "Authentication required"));
+        }
         List<StudySetResponse> response = studySetDelegate.getStudySetsByUserId(principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
     }

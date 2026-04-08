@@ -93,3 +93,8 @@ app:
 #    url: ${FRONTEND_URL:http://localhost:3000}
      url: ${FRONTEND_URL:https://lms.dangch.tech}
 
+cms:
+  base-url: ${CMS_BASE_URL:https://cms.dangch.tech}
+  webclient:
+    max-in-memory-mb: 16
+

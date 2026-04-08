@@ -47,7 +47,7 @@ public class LearningPathMapper {
     public LearningPathResponse toResponse(LearningPath entity) {
         return LearningPathResponse.builder()
                 .id(entity.getId())
-                .studySetId(entity.getStudySet().getId())
+                .studySetId(entity.getStudySet() != null ? entity.getStudySet().getId() : null)
                 .title(entity.getTitle())
                 .description(entity.getDescription())
                 .thumbnail(entity.getThumbnail())

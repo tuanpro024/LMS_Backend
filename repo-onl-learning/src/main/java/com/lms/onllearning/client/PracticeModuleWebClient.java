@@ -2,6 +2,7 @@ package com.lms.onllearning.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.lms.common.dto.ApiResponse;
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.response.StudySetResponse;
@@ -24,6 +25,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * WebClient wrapper để gọi các repo ôn luyện (flashcard, writing, kanji, pronunciation, quiz).
@@ -183,5 +185,203 @@ public class PracticeModuleWebClient {
             log.warn("PracticeModuleWebClient.getStudySets({}, q={}) failed: {}", serviceBaseUrl, query, e.getMessage());
             return new ArrayList<>();
         }
+    }
+
+    public Double getFlashcardProgressPercentage(String serviceBaseUrl, String studySetId) {
+        try {
+            String raw = getRaw(serviceBaseUrl + "/study-sets/" + studySetId + "/progress");
+            if (raw == null || raw.isBlank()) {
+                return null;
+            }
+            ObjectMapper om = new ObjectMapper();
+            JsonNode root = om.readTree(raw);
+            return normalizeToPercentage(extractDouble(root, "progressPercentage"));
+        } catch (Exception ex) {
+            log.warn("Failed to fetch flashcard progress for studySetId={}: {}", studySetId, ex.getMessage());
+            return null;
+        }
+    }
+
+    public Double getKanjiProgressPercentage(String serviceBaseUrl, String studySetId) {
+        try {
+            String raw = getRaw(serviceBaseUrl + "/study-sets/" + studySetId + "/progress");
+            if (raw == null || raw.isBlank()) {
+                return null;
+            }
+            ObjectMapper om = new ObjectMapper();
+            JsonNode root = om.readTree(raw);
+            JsonNode data = root.path("data");
+            return normalizeToPercentage(extractDouble(data, "progressPercentage"));
+        } catch (Exception ex) {
+            log.warn("Failed to fetch kanji progress for studySetId={}: {}", studySetId, ex.getMessage());
+            return null;
+        }
+    }
+
+    public Double getPronunciationProgressPercentage(String serviceBaseUrl, String studySetId) {
+        try {
+            String raw = getRaw(serviceBaseUrl + "/pronunciation-progress/study-sets/" + studySetId);
+            if (raw == null || raw.isBlank()) {
+                return null;
+            }
+            ObjectMapper om = new ObjectMapper();
+            JsonNode root = om.readTree(raw);
+            JsonNode data = root.path("data");
+            return normalizeToPercentage(extractDouble(data, "progressPercentage"));
+        } catch (Exception ex) {
+            log.warn("Failed to fetch pronunciation progress for studySetId={}: {}", studySetId, ex.getMessage());
+            return null;
+        }
+    }
+
+    public Double getWritingProgressPercentage(String serviceBaseUrl, String studySetId) {
+        try {
+            String learnedRaw = getRaw(serviceBaseUrl + "/study-sets/" + studySetId + "/count/learned");
+            String unlearnedRaw = getRaw(serviceBaseUrl + "/study-sets/" + studySetId + "/count/unlearned");
+            if (learnedRaw == null || unlearnedRaw == null) {
+                return null;
+            }
+
+            ObjectMapper om = new ObjectMapper();
+            JsonNode learnedRoot = om.readTree(learnedRaw);
+            JsonNode unlearnedRoot = om.readTree(unlearnedRaw);
+
+            long learned = extractLong(learnedRoot.path("data"));
+            long unlearned = extractLong(unlearnedRoot.path("data"));
+            long total = learned + unlearned;
+            if (total <= 0) {
+                return 0.0;
+            }
+
+            return (learned * 100.0) / total;
+        } catch (Exception ex) {
+            log.warn("Failed to fetch writing progress for studySetId={}: {}", studySetId, ex.getMessage());
+            return null;
+        }
+    }
+
+    public Double getQuizStudySetProgressPercentage(String serviceBaseUrl, String studySetId) {
+        try {
+            String quizzesRaw = getRaw(serviceBaseUrl + "/quizzes/study-set/" + studySetId);
+            if (quizzesRaw == null || quizzesRaw.isBlank()) {
+                return null;
+            }
+
+            ObjectMapper om = new ObjectMapper();
+            JsonNode quizzesRoot = om.readTree(quizzesRaw);
+            JsonNode quizzes = quizzesRoot.path("data");
+            if (!quizzes.isArray() || quizzes.isEmpty()) {
+                return 0.0;
+            }
+
+            int total = 0;
+            int completed = 0;
+
+            for (JsonNode quiz : quizzes) {
+                String quizId = extractString(quiz, "id");
+                if (quizId == null || quizId.isBlank()) {
+                    continue;
+                }
+                total++;
+
+                String progressRaw = getRaw(serviceBaseUrl + "/attempts/quizzes/" + quizId + "/progress");
+                if (progressRaw == null || progressRaw.isBlank()) {
+                    continue;
+                }
+                JsonNode progressRoot = om.readTree(progressRaw);
+                JsonNode progressData = progressRoot.path("data");
+                if (progressData.path("completed").asBoolean(false)) {
+                    completed++;
+                }
+            }
+
+            if (total <= 0) {
+                return 0.0;
+            }
+            return (completed * 100.0) / total;
+        } catch (Exception ex) {
+            log.warn("Failed to fetch quiz progress for studySetId={}: {}", studySetId, ex.getMessage());
+            return null;
+        }
+    }
+
+    private String getRaw(String url) {
+        String authHeader = getAuthHeader();
+        return webClientBuilder.build()
+                .get()
+                .uri(url)
+                .headers(h -> {
+                    if (authHeader != null) {
+                        h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                    }
+                })
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(TIMEOUT)
+                .block();
+    }
+
+    private Double extractDouble(JsonNode node, String fieldName) {
+        if (node == null || node.isMissingNode()) {
+            return null;
+        }
+        JsonNode value = fieldName == null ? node : node.path(fieldName);
+        if (value.isNumber()) {
+            return value.asDouble();
+        }
+        if (value.isTextual()) {
+            try {
+                return Double.parseDouble(value.asText().trim());
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private long extractLong(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return 0L;
+        }
+        if (node.isNumber()) {
+            return node.asLong();
+        }
+        if (node.isTextual()) {
+            try {
+                return Long.parseLong(node.asText().trim());
+            } catch (Exception ignored) {
+                return 0L;
+            }
+        }
+        return 0L;
+    }
+
+    private String extractString(JsonNode node, String fieldName) {
+        if (node == null || node.isMissingNode()) {
+            return null;
+        }
+        JsonNode value = node.path(fieldName);
+        if (value.isMissingNode() || value.isNull()) {
+            return null;
+        }
+        String text = value.asText();
+        return text == null ? null : text.trim();
+    }
+
+    private Double normalizeToPercentage(Double value) {
+        if (value == null) {
+            return null;
+        }
+        double normalized = value;
+        if (Math.abs(normalized) <= 1.0d) {
+            normalized *= 100.0d;
+        }
+        if (normalized < 0) {
+            normalized = 0;
+        }
+        if (normalized > 100) {
+            normalized = 100;
+        }
+        return Double.valueOf(String.format(Locale.ROOT, "%.2f", normalized));
     }
 }

@@ -23,7 +23,6 @@ public class QuizController {
     private final IQuizService quizService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuizDetailResponse>> createQuiz(
             @Valid @RequestBody CreateQuizRequest request,
             Authentication authentication) {
@@ -50,7 +49,6 @@ public class QuizController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuizDetailResponse>> updateQuiz(
             @PathVariable String id,
             @Valid @RequestBody CreateQuizRequest request,
@@ -60,7 +58,6 @@ public class QuizController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<Void> deleteQuiz(@PathVariable String id, Authentication authentication) {
         quizService.deleteQuiz(id, authentication.getName());
         return ResponseEntity.noContent().build();

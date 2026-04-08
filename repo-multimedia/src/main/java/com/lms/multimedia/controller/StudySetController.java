@@ -27,7 +27,6 @@ public class StudySetController {
     private final StudySetApiDelegate delegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<StudySetResponse>> createStudySet(
             @RequestBody @Valid CreateStudySetRequest request,
             Authentication authentication) {
@@ -60,7 +59,6 @@ public class StudySetController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<StudySetResponse>> updateStudySet(
             @PathVariable String id,
             @RequestBody @Valid UpdateStudySetRequest request,
@@ -73,7 +71,6 @@ public class StudySetController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('TEACHER', 'TEACHER_MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,
             Authentication authentication) {

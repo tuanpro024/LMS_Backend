@@ -22,7 +22,6 @@ public class QuizQuestionController {
     private final IQuestionService questionService;
 
     @PostMapping("/{quizId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionResponse>> addQuestion(
             @PathVariable String quizId,
             @Valid @RequestBody CreateQuestionRequest request,
@@ -39,7 +38,6 @@ public class QuizQuestionController {
     }
 
     @PutMapping("/{questionId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionResponse>> updateQuestion(
             @PathVariable String questionId,
             @Valid @RequestBody CreateQuestionRequest request,
@@ -49,7 +47,6 @@ public class QuizQuestionController {
     }
 
     @DeleteMapping("/{questionId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
     public ResponseEntity<Void> deleteQuestion(
             @PathVariable String questionId,
             Authentication authentication) {

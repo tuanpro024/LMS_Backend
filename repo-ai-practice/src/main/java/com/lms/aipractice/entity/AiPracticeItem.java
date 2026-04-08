@@ -60,7 +60,10 @@ public class AiPracticeItem extends BaseContentItem {
     @Column(name = "original_article_summary", columnDefinition = "TEXT")
     private String originalArticleSummary;
 
-    /** Reference text for AUDIO_COMPARE (reference_text sent to HSK_API audio compare API) */
+    /**
+     * Reference text for AUDIO_COMPARE (reference_text sent to HSK_API audio
+     * compare API)
+     */
     @Column(name = "reference_text", columnDefinition = "TEXT")
     private String referenceText;
 

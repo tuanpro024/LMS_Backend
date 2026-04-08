@@ -14,6 +14,8 @@ public interface OnlineCourseRepository extends JpaRepository<OnlineCourse, Stri
 
     Optional<OnlineCourse> findByIdAndDeletedFalse(String id);
 
+    Optional<OnlineCourse> findFirstBySyllabusIdAndDeletedFalseOrderByCreatedAtDesc(String syllabusId);
+
     @Modifying
     @Query("UPDATE OnlineCourse c SET c.deleted = true WHERE c.cmsSynced = true AND c.deleted = false AND c.id NOT IN :cmsIds")
     void softDeleteCmsCoursesNotIn(@Param("cmsIds") List<String> cmsIds);

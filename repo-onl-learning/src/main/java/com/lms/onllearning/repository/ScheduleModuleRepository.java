@@ -15,6 +15,8 @@ public interface ScheduleModuleRepository extends JpaRepository<ScheduleModule, 
     /** Lấy danh sách module active, sắp xếp theo thứ tự (cho học sinh xem). */
     List<ScheduleModule> findByScheduleIdAndIsActiveTrueAndDeletedFalseOrderByModuleOrderAsc(String scheduleId);
 
+    List<ScheduleModule> findByScheduleIdInAndIsActiveTrueAndDeletedFalseOrderByScheduleIdAscModuleOrderAsc(List<String> scheduleIds);
+
     /**
      * Kiểm tra tồn tại order TRƯỚC KHI thêm (first-check).
      * Unique constraint ở DB là safety net cuối cùng.

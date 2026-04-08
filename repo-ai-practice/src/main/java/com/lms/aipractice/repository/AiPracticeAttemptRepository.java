@@ -19,4 +19,7 @@ public interface AiPracticeAttemptRepository extends JpaRepository<AiPracticeAtt
 
     Optional<AiPracticeAttempt> findByUserIdAndStudySetIdAndStatusAndDeletedFalse(
             String userId, String studySetId, AttemptStatus status);
+
+    List<AiPracticeAttempt> findByUserIdAndStudySetIdInAndDeletedFalseOrderByCreatedAtDesc(
+            String userId, List<String> studySetIds);
 }

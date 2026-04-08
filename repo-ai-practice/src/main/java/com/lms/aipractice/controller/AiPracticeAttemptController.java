@@ -50,6 +50,15 @@ public class AiPracticeAttemptController {
         return ResponseEntity.ok(ApiResponse.ok(attemptService.getAttempt(attemptId, userId)));
     }
 
+    @GetMapping("/attempts/latest")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse<List<AttemptResponse>>> getLatestAttemptsByStudySetIds(
+            @RequestParam("studySetIds") List<String> studySetIds,
+            Authentication auth) {
+        String userId = ((AuthPrincipal) auth.getPrincipal()).userId();
+        return ResponseEntity.ok(ApiResponse.ok(attemptService.getLatestAttemptsByStudySetIds(studySetIds, userId)));
+    }
+
     @PostMapping("/attempts/{attemptId}/submit")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<AttemptResponse>> submitAttempt(

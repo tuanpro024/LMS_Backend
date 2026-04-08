@@ -5,6 +5,7 @@ import com.lms.common.dto.PageResponse;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.identity.dto.request.ticket.CreateTicketRequest;
 import com.lms.identity.dto.request.ticket.UpdateTicketRequest;
+import com.lms.identity.dto.response.ticket.TicketAssigneeOptionResponse;
 import com.lms.identity.dto.response.ticket.TicketResponse;
 import com.lms.identity.service.TicketService;
 import jakarta.validation.Valid;
@@ -14,6 +15,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/tickets")
@@ -111,5 +114,16 @@ public class TicketController {
             @PathVariable("id") String id) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         return ApiResponse.ok(ticketService.closeTicket(id, principal));
+    }
+
+    /**
+     * Danh sách assignee để UI chọn (TEACHER/COLLABORATOR) — ADMIN /
+     * TEACHER_MANAGER.
+     */
+    @GetMapping("/assignees")
+    @PreAuthorize("hasAnyRole('TEACHER_MANAGER', 'ADMIN')")
+    public ApiResponse<List<TicketAssigneeOptionResponse>> listAssignableUsers(
+            @RequestParam(required = false) String q) {
+        return ApiResponse.ok(ticketService.listAssignableUsers(q));
     }
 }

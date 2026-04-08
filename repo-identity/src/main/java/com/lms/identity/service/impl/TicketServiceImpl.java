@@ -8,9 +8,11 @@ import com.lms.common.notification.ResourceType;
 import com.lms.common.security.AuthPrincipal;
 import com.lms.identity.dto.request.ticket.CreateTicketRequest;
 import com.lms.identity.dto.request.ticket.UpdateTicketRequest;
+import com.lms.identity.dto.response.ticket.TicketAssigneeOptionResponse;
 import com.lms.identity.dto.response.ticket.TicketResponse;
 import com.lms.identity.entity.RoleName;
 import com.lms.identity.entity.User;
+import com.lms.identity.entity.UserStatus;
 import com.lms.identity.entity.ticket.Ticket;
 import com.lms.identity.entity.ticket.TicketModule;
 import com.lms.identity.entity.ticket.TicketStatus;
@@ -25,8 +27,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -50,7 +56,8 @@ public class TicketServiceImpl implements TicketService {
         requirePrivileged(principal);
 
         User assignedUser = userRepository.findById(request.getAssignedId())
-                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Assigned user not found: " + request.getAssignedId()));
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
+                        "Assigned user not found: " + request.getAssignedId()));
 
         Ticket ticket = Ticket.builder()
                 .description(request.getDescription())
@@ -122,7 +129,8 @@ public class TicketServiceImpl implements TicketService {
         }
         if (request.getAssignedId() != null) {
             userRepository.findById(request.getAssignedId())
-                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Assigned user not found: " + request.getAssignedId()));
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND,
+                            "Assigned user not found: " + request.getAssignedId()));
             ticket.setAssignedId(request.getAssignedId());
         }
 
@@ -207,6 +215,47 @@ public class TicketServiceImpl implements TicketService {
         return ticketRepository.existsByAssignedIdAndModuleAndStatusNot(userId, module, TicketStatus.CLOSE);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<TicketAssigneeOptionResponse> listAssignableUsers(String query) {
+        List<User> teachers = userRepository.findByRolesName(RoleName.ROLE_TEACHER);
+        List<User> collaborators = userRepository.findByRolesName(RoleName.ROLE_COLLABORATOR);
+
+        Map<String, User> uniqueUsers = new LinkedHashMap<>();
+        teachers.stream()
+                .filter(u -> u.getStatus() == UserStatus.ACTIVE)
+                .forEach(u -> uniqueUsers.put(u.getId(), u));
+        collaborators.stream()
+                .filter(u -> u.getStatus() == UserStatus.ACTIVE)
+                .forEach(u -> uniqueUsers.put(u.getId(), u));
+
+        String normalizedQuery = query == null ? null : query.trim().toLowerCase(Locale.ROOT);
+
+        return uniqueUsers.values().stream()
+                .filter(u -> {
+                    if (normalizedQuery == null || normalizedQuery.isBlank()) {
+                        return true;
+                    }
+                    String email = u.getEmail() == null ? "" : u.getEmail().toLowerCase(Locale.ROOT);
+                    String fullName = u.getFullName() == null ? "" : u.getFullName().toLowerCase(Locale.ROOT);
+                    return email.contains(normalizedQuery) || fullName.contains(normalizedQuery);
+                })
+                .sorted((u1, u2) -> {
+                    String n1 = u1.getFullName() == null ? "" : u1.getFullName();
+                    String n2 = u2.getFullName() == null ? "" : u2.getFullName();
+                    return n1.compareToIgnoreCase(n2);
+                })
+                .map(u -> TicketAssigneeOptionResponse.builder()
+                        .id(u.getId())
+                        .email(u.getEmail())
+                        .fullName(u.getFullName())
+                        .roles(u.getRoles().stream()
+                                .map(r -> r.getName().name())
+                                .collect(Collectors.toSet()))
+                        .build())
+                .toList();
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────────────────────────────────
@@ -243,7 +292,8 @@ public class TicketServiceImpl implements TicketService {
     }
 
     private void publishTicketAssignedNotification(Ticket ticket, User assignedUser, AuthPrincipal principal) {
-        if (assignedUser == null) return;
+        if (assignedUser == null)
+            return;
         NotificationEvent event = new NotificationEvent(
                 assignedUser.getId(),
                 "ticket.assigned",
@@ -253,14 +303,15 @@ public class TicketServiceImpl implements TicketService {
                 ResourceType.TICKET,
                 ticket.getId(),
                 Map.of("module", ticket.getModule().name(), "status", ticket.getStatus().name()),
-                "ticket-assigned-" + ticket.getId()
-        );
+                "ticket-assigned-" + ticket.getId());
         notificationPublisher.publish(event);
-        log.info("Published ticket.assigned notification for ticket={} to user={}", ticket.getId(), assignedUser.getId());
+        log.info("Published ticket.assigned notification for ticket={} to user={}", ticket.getId(),
+                assignedUser.getId());
     }
 
     private void publishTicketClosedNotification(Ticket ticket, User assignedUser, AuthPrincipal principal) {
-        if (assignedUser == null) return;
+        if (assignedUser == null)
+            return;
         NotificationEvent event = new NotificationEvent(
                 assignedUser.getId(),
                 "ticket.closed",
@@ -270,8 +321,7 @@ public class TicketServiceImpl implements TicketService {
                 ResourceType.TICKET,
                 ticket.getId(),
                 Map.of("module", ticket.getModule().name(), "status", ticket.getStatus().name()),
-                "ticket-closed-" + ticket.getId()
-        );
+                "ticket-closed-" + ticket.getId());
         notificationPublisher.publish(event);
         log.info("Published ticket.closed notification for ticket={} to user={}", ticket.getId(), assignedUser.getId());
     }

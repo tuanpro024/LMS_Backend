@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -112,6 +113,7 @@ public class AiPracticeItemServiceImpl implements AiPracticeItemService {
 
         AiPracticeItem item = mapper.toEntity(request);
         item.setStudySet(studySet);
+        normalizeSpeakingPartLevel(item);
 
         // Auto-assign contentIndex
         if (request.getContentIndex() == null) {
@@ -139,6 +141,7 @@ public class AiPracticeItemServiceImpl implements AiPracticeItemService {
         }
 
         mapper.updateEntity(item, request);
+        normalizeSpeakingPartLevel(item);
         return withMediaUrls(mapper.toResponse(itemRepository.save(item)));
     }
 
@@ -186,5 +189,41 @@ public class AiPracticeItemServiceImpl implements AiPracticeItemService {
             response.setQuestionImageUrl(multimediaFileClient.buildFileAccessUrl(response.getQuestionImageFileId()));
         }
         return response;
+    }
+
+    private void normalizeSpeakingPartLevel(AiPracticeItem item) {
+        if (item.getQuestionSubtype() == null) {
+            return;
+        }
+
+        String original = item.getPartLevel();
+        String normalized = switch (item.getQuestionSubtype()) {
+            case SPEAKING_LISTEN_AND_ANSWER -> "elementary";
+            case SPEAKING_PICTURE_DESCRIPTION -> "intermediate";
+            case SPEAKING_READ_ALOUD -> "advanced";
+            case SPEAKING_OPEN_ANSWER -> normalizeOpenAnswerLevel(original);
+            default -> original;
+        };
+
+        if (normalized != null && !normalized.equalsIgnoreCase(String.valueOf(original))) {
+            log.info("Normalize partLevel by subtype: itemId={} subtype={} {} -> {}",
+                    item.getId(), item.getQuestionSubtype(), original, normalized);
+        }
+
+        item.setPartLevel(normalized);
+    }
+
+    private String normalizeOpenAnswerLevel(String rawLevel) {
+        if (rawLevel == null || rawLevel.isBlank()) {
+            return "elementary";
+        }
+
+        String normalized = rawLevel.trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "elementary", "beginner", "basic", "so_cap", "sơ cấp" -> "elementary";
+            case "intermediate", "trung_cap", "trung cấp" -> "intermediate";
+            case "advanced", "cao_cap", "cao cấp" -> "advanced";
+            default -> "elementary";
+        };
     }
 }

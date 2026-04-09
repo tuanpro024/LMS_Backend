@@ -9,9 +9,9 @@ spring:
       properties:
         spring.json.trusted.packages: "*"
   datasource:
-    url: jdbc:mysql://localhost:3306/lms_ai_practice_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: sa
-    password: 123
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/lms_ai_practice_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:123}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:

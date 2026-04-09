@@ -105,6 +105,12 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
     @Override
     public AttemptResponse submitAttempt(String attemptId, String userId) {
         AiPracticeAttempt attempt = getAttemptOwned(attemptId, userId);
+
+        if (!answerRepository.existsByAttemptIdAndDeletedFalse(attemptId)) {
+            throw new ApiException(ErrorCode.E227,
+                    "Cannot submit attempt without answers: " + attemptId);
+        }
+
         attempt.setStatus(AttemptStatus.SUBMITTED);
         attempt.setSubmittedAt(Instant.now());
         AiPracticeAttempt saved = attemptRepository.save(attempt);

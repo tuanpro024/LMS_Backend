@@ -32,7 +32,8 @@ import java.util.Map;
  * 1. Detect provider from questionSubtype
  * 2. Build request payload via type-specific mapper
  * 3. Call the correct AI client
- * 4. For HSK_API async routes: save job with providerJobId -> polling picks it up
+ * 4. For HSK_API async routes: save job with providerJobId -> polling picks it
+ * up
  * 5. For sync routes (e.g. speaking/grade/sync): save result immediately
  */
 @Service
@@ -42,6 +43,7 @@ import java.util.Map;
 public class GradingOrchestrationService {
 
     static final String PROVIDER_HSK_API = "HSK_API";
+    private static final int MAX_TEXT_COLUMN_LENGTH = 60_000;
 
     private final HskApiClient hskApiClient;
     private final WritingRequestMapper writingMapper;
@@ -61,20 +63,48 @@ public class GradingOrchestrationService {
         AiItemSubtype subtype = item.getQuestionSubtype();
         log.info("Dispatching grading: answerId={} subtype={}", answer.getId(), subtype);
 
-        if (subtype == AiItemSubtype.AUDIO_COMPARE) {
-            return dispatchAudioCompare(item, answer);
-        } else if (subtype.name().startsWith("SPEAKING_")) {
-            return dispatchSpeaking(item, answer);
-        } else {
-            return dispatchWriting(item, answer);
+        try {
+            if (subtype == null) {
+                throw new IllegalArgumentException("questionSubtype is null for itemId=" + item.getId());
+            }
+
+            if (subtype == AiItemSubtype.AUDIO_COMPARE) {
+                return dispatchAudioCompare(item, answer);
+            } else if (subtype.name().startsWith("SPEAKING_")) {
+                return dispatchSpeaking(item, answer);
+            } else {
+                return dispatchWriting(item, answer);
+            }
+        } catch (Exception ex) {
+            log.error("Dispatch grading failed before job persisted: answerId={} itemId={} subtype={} err={}",
+                    answer.getId(), item.getId(), subtype, ex.getMessage(), ex);
+            return jobRepository.save(buildDispatchFailureJob(item, answer, ex));
         }
+    }
+
+    private AiGradingJob buildDispatchFailureJob(AiPracticeItem item, AiPracticeAnswer answer, Exception ex) {
+        Map<String, Object> debugPayload = new HashMap<>();
+        debugPayload.put("itemId", item.getId());
+        debugPayload.put("questionSubtype",
+                item.getQuestionSubtype() != null ? item.getQuestionSubtype().name() : null);
+        debugPayload.put("answerText", answer.getAnswerText());
+        debugPayload.put("answerAudioPath", answer.getAnswerAudioPath());
+
+        return AiGradingJob.builder()
+                .attemptId(answer.getAttemptId())
+                .answerId(answer.getId())
+                .provider(PROVIDER_HSK_API)
+                .status(GradingJobStatus.FAILED)
+                .requestPayloadJson(toJson(debugPayload))
+                .errorMessage(ex.getMessage())
+                .build();
     }
 
     // -- Writing (HSK_API v2 async, fallback v1 sync) ------------------
 
     private AiGradingJob dispatchWriting(AiPracticeItem item, AiPracticeAnswer answer) {
         Map<String, Object> payload = writingMapper.buildPayload(item, answer);
-        String requestJson = toJson(payload);
+        String requestJson = toCompactRequestJson(payload);
 
         AiGradingJob job = AiGradingJob.builder()
                 .attemptId(answer.getAttemptId())
@@ -130,7 +160,7 @@ public class GradingOrchestrationService {
 
     private AiGradingJob dispatchSpeaking(AiPracticeItem item, AiPracticeAnswer answer) {
         Map<String, Object> payload = speakingMapper.buildPayload(item, answer);
-        String requestJson = toJson(payload);
+        String requestJson = toCompactRequestJson(payload);
 
         AiGradingJob job = AiGradingJob.builder()
                 .attemptId(answer.getAttemptId())
@@ -188,7 +218,7 @@ public class GradingOrchestrationService {
 
     private AiGradingJob dispatchAudioCompare(AiPracticeItem item, AiPracticeAnswer answer) {
         Map<String, Object> payload = buildAudioComparePayload(item, answer);
-        String requestJson = toJson(payload);
+        String requestJson = toCompactRequestJson(payload);
 
         AiGradingJob job = AiGradingJob.builder()
                 .attemptId(answer.getAttemptId())
@@ -220,6 +250,32 @@ public class GradingOrchestrationService {
         } catch (Exception e) {
             return "{}";
         }
+    }
+
+    private String toCompactRequestJson(Map<String, Object> payload) {
+        Map<String, Object> compactPayload = new HashMap<>(payload);
+        compactBase64Field(compactPayload, "student_audio_base64");
+        compactBase64Field(compactPayload, "reference_audio_base64");
+
+        String json = toJson(compactPayload);
+        if (json.length() <= MAX_TEXT_COLUMN_LENGTH) {
+            return json;
+        }
+
+        Map<String, Object> fallback = new HashMap<>();
+        fallback.put("truncated", true);
+        fallback.put("original_length", json.length());
+        fallback.put("preview", json.substring(0, Math.min(2_000, json.length())));
+        return toJson(fallback);
+    }
+
+    private void compactBase64Field(Map<String, Object> payload, String fieldName) {
+        Object raw = payload.get(fieldName);
+        if (!(raw instanceof String base64) || base64.isBlank()) {
+            return;
+        }
+
+        payload.put(fieldName, "[omitted;base64;length=" + base64.length() + "]");
     }
 
     private boolean shouldFallbackWritingToV1(Exception e) {

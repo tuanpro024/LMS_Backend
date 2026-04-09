@@ -1,6 +1,8 @@
 package com.lms.writing.exception;
 
 import com.lms.common.dto.ApiResponse;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice(basePackages = "com.lms.writing")
-@org.springframework.core.annotation.Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class WritingExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

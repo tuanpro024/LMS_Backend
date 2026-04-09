@@ -12,6 +12,8 @@ public interface AiPracticeAnswerRepository extends JpaRepository<AiPracticeAnsw
 
     List<AiPracticeAnswer> findByAttemptIdAndDeletedFalse(String attemptId);
 
+    boolean existsByAttemptIdAndDeletedFalse(String attemptId);
+
     Optional<AiPracticeAnswer> findByAttemptIdAndItemIdAndDeletedFalse(String attemptId, String itemId);
 
     boolean existsByAttemptIdAndItemIdAndDeletedFalse(String attemptId, String itemId);

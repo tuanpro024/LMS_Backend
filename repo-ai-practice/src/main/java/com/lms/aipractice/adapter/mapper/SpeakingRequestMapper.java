@@ -39,9 +39,10 @@ public class SpeakingRequestMapper {
         // Convert enum "SPEAKING_LISTEN_AND_ANSWER" → "listen_and_answer"
         String partType = item.getQuestionSubtype().name()
                 .replace("SPEAKING_", "")
-                .toLowerCase();
+            .toLowerCase(Locale.ROOT);
+        String level = alignLevelWithAiLmsRubric(partType, normalizeLevel(item.getPartLevel()));
         payload.put("part_type", partType);
-        payload.put("level", normalizeLevel(item.getPartLevel()));
+        payload.put("level", level);
         payload.put("question_text", item.getPromptText());
         payload.put("reference_answer", item.getReferenceAnswer());
         payload.put("image_description", item.getImageDescription());
@@ -76,6 +77,20 @@ public class SpeakingRequestMapper {
             case "intermediate", "trung_cap", "trung cấp" -> "intermediate";
             case "advanced", "cao_cap", "cao cấp" -> "advanced";
             default -> normalized;
+        };
+    }
+
+    private String alignLevelWithAiLmsRubric(String partType, String normalizedLevel) {
+        // Keep level-part matrix consistent with HSK_API RUBRIC_CONFIGS.
+        return switch (partType) {
+            case "listen_and_answer" -> "elementary";
+            case "picture_description" -> "intermediate";
+            case "read_aloud" -> "advanced";
+            case "open_answer" -> switch (normalizedLevel) {
+                case "elementary", "intermediate", "advanced" -> normalizedLevel;
+                default -> "elementary";
+            };
+            default -> normalizedLevel;
         };
     }
 }

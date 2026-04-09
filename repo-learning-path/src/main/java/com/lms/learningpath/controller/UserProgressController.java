@@ -37,6 +37,16 @@ public class UserProgressController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
+    @GetMapping("/module/{moduleId}")
+    public ResponseEntity<ApiResponse<ModuleProgressDto>> getModuleProgress(
+            @PathVariable String moduleId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        ModuleProgressDto response = progressService.getModuleProgress(principal.userId(), moduleId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @PostMapping("/module/{moduleId}/update")
     public ResponseEntity<ApiResponse<ModuleProgressDto>> updateProgress(
             @PathVariable String moduleId,

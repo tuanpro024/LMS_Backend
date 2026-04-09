@@ -45,6 +45,15 @@ public interface IProgressTrackingService {
     ModuleProgressDto completeModule(String userId, String moduleId, CompleteModuleRequest request);
 
     /**
+     * Get progress for a specific module.
+     *
+     * @param userId   the user ID
+     * @param moduleId the step module ID
+     * @return module progress DTO
+     */
+    ModuleProgressDto getModuleProgress(String userId, String moduleId);
+
+    /**
      * Get step progress for a user.
      *
      * @param userId the user ID

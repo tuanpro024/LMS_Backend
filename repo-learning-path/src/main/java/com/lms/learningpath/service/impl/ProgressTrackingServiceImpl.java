@@ -110,7 +110,8 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                 log.info("Updating progress for user {} on module {}", userId, moduleId);
 
                 StepModule module = findActiveStepModule(moduleId);
-                assertStepUnlocked(userId, module.getStepId());
+                Step step = findActiveStep(module.getStepId());
+                assertStepUnlocked(userId, step.getId());
 
                 ModuleProgress progress = moduleProgressRepository
                                 .findByUserIdAndStepModuleId(userId, moduleId)
@@ -140,6 +141,9 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                 progress.setLastAttemptAt(Instant.now());
 
                 progress = moduleProgressRepository.save(progress);
+
+                updateStepProgress(userId, step.getId());
+                updateLearningPathProgress(userId, step.getLearningPathId());
 
                 return mapToDto(progress);
         }
@@ -218,9 +222,36 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
         @Override
         public StepProgressResponse getStepProgress(String userId, String stepId) {
-                return stepProgressRepository.findByUserIdAndStepId(userId, stepId)
-                                .map(stepProgressMapper::toResponse)
+                StepProgress stepProgress = stepProgressRepository.findByUserIdAndStepId(userId, stepId)
                                 .orElse(null);
+
+                if (stepProgress == null) {
+                        return null;
+                }
+
+                StepProgressResponse response = stepProgressMapper.toResponse(stepProgress);
+                List<StepModule> allModules = stepModuleRepository.findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(stepId);
+
+                if (allModules.isEmpty()) {
+                        response.setProgressPercentage(0.0);
+                        return response;
+                }
+
+                List<String> moduleIds = allModules.stream()
+                                .map(StepModule::getId)
+                                .collect(Collectors.toList());
+
+                Map<String, ModuleProgress> moduleProgressById = moduleProgressRepository
+                                .findByUserIdAndStepModuleIdIn(userId, moduleIds)
+                                .stream()
+                                .collect(Collectors.toMap(ModuleProgress::getStepModuleId, p -> p, (a, b) -> b));
+
+                double totalPercent = allModules.stream()
+                                .mapToDouble(module -> resolveModulePercent(moduleProgressById.get(module.getId())))
+                                .sum();
+
+                response.setProgressPercentage(totalPercent / allModules.size());
+                return response;
         }
 
         @Override
@@ -885,5 +916,33 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                                 .startedAt(progress.getStartedAt())
                                 .completedAt(progress.getCompletedAt())
                                 .build();
+        }
+
+        private double resolveModulePercent(ModuleProgress progress) {
+                if (progress == null) {
+                        return 0.0;
+                }
+
+                if (progress.getStatus() == ProgressStatus.COMPLETED) {
+                        return 100.0;
+                }
+
+                double percentByItems = clampPercent(progress.getProgressPercentage());
+                if (percentByItems > 0.0) {
+                        return percentByItems;
+                }
+
+                if (progress.getScore() != null) {
+                        return clampPercent(progress.getScore().doubleValue());
+                }
+
+                return 0.0;
+        }
+
+        private double clampPercent(double value) {
+                if (Double.isNaN(value) || Double.isInfinite(value)) {
+                        return 0.0;
+                }
+                return Math.max(0.0, Math.min(100.0, value));
         }
 }

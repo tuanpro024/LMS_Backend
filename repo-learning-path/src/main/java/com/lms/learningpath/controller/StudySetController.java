@@ -8,7 +8,6 @@ import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.request.CreateStudySetRequest;
 import com.lms.content.common.dto.request.UpdateStudySetRequest;
-import org.springframework.security.access.prepost.PreAuthorize;
 import com.lms.content.common.dto.response.StudySetResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +34,7 @@ public class StudySetController {
      * Create a new study set
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<StudySetResponse>> createStudySet(
             @RequestBody @Valid CreateStudySetRequest request,
@@ -98,6 +98,7 @@ public class StudySetController {
      * Update study set
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<StudySetResponse>> updateStudySet(
             @PathVariable String id,
@@ -113,6 +114,7 @@ public class StudySetController {
      * Delete study set
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,

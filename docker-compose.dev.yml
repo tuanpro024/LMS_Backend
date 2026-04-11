@@ -306,8 +306,14 @@ services:
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+      # Email — dùng chung Gmail App Password với repo-identity
+      - EMAIL_USERNAME=REDACTED_EMAIL_ADDRESS
+      - EMAIL_PASSWORD=REDACTED_EMAIL_PASSWORD
+      - EMAIL_FROM=noreply@hocba.com
+      - EMAIL_FROM_NAME=HúLi Chinese
     volumes:
       - ./secrets:/app/secrets
     depends_on:
@@ -316,6 +322,8 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
       eureka-server:
         condition: service_healthy

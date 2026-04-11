@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,6 +38,7 @@ public class PackageController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
             @RequestBody @Valid CreatePackageRequest request,
@@ -64,6 +66,7 @@ public class PackageController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<PackageResponse>> updatePackage(
             @PathVariable String id,
@@ -77,6 +80,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<Void>> deletePackage(
             @PathVariable String id,
@@ -89,6 +93,7 @@ public class PackageController {
     }
 
     @PostMapping("/{packageId}/folders/{folderId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<PackageResponse>> addFolderToPackage(
             @PathVariable String packageId,
@@ -102,6 +107,7 @@ public class PackageController {
     }
 
     @DeleteMapping("/{packageId}/folders/{folderId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<PackageResponse>> removeFolderFromPackage(
             @PathVariable String packageId,

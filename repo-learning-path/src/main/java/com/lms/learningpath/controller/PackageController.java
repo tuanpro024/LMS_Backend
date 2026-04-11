@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
@@ -26,6 +27,7 @@ public class PackageController {
     private final PackageApiDelegate packageDelegate;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<PackageResponse>> createPackage(
             @RequestBody @Valid CreatePackageRequest request,
@@ -60,6 +62,7 @@ public class PackageController {
      * Update learning path
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<PackageResponse>> updatePackage(
             @PathVariable String id,
@@ -74,6 +77,7 @@ public class PackageController {
      * Delete learning path
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> deletePackage(
             @PathVariable String id,
@@ -87,6 +91,7 @@ public class PackageController {
      * Add a Folder to a Package
      */
     @PostMapping("/{packageId}/folders/{folderId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<PackageResponse>> addFolderToPackage(
             @PathVariable String packageId,
@@ -102,6 +107,7 @@ public class PackageController {
      * Remove a Folder from a Package
      */
     @DeleteMapping("/{packageId}/folders/{folderId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<PackageResponse>> removeFolderFromPackage(
             @PathVariable String packageId,

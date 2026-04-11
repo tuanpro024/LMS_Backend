@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,18 +34,21 @@ public class VocabularyController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.DICTIONARY)
     public ApiResponse<VocabularyResponse> createVocabulary(@Valid @RequestBody CreateVocabularyRequest request) {
         return ApiResponse.ok(vocabularyService.createVocabulary(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.DICTIONARY)
     public ApiResponse<VocabularyResponse> updateVocabulary(@PathVariable Long id, @RequestBody @Valid UpdateVocabularyRequest request) {
         return ApiResponse.ok(vocabularyService.updateVocabulary(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.DICTIONARY)
     public ApiResponse<Void> deleteVocabulary(@PathVariable Long id) {
         vocabularyService.deleteVocabulary(id);
@@ -62,6 +66,7 @@ public class VocabularyController {
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.DICTIONARY)
     public ApiResponse<ImportResult> importVocabularies(@RequestParam("file") MultipartFile file) {
         return ApiResponse.ok(vocabularyService.importVocabularies(file));

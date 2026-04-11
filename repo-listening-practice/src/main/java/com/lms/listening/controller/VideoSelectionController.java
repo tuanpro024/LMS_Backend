@@ -33,6 +33,7 @@ public class VideoSelectionController {
          * Add video to study set
          */
         @PostMapping("/{studySetId}/videos")
+        @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
         @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
         public ResponseEntity<ApiResponse<VideoMetadataResponse>> addVideoToStudySet(
                         @PathVariable String studySetId,
@@ -61,6 +62,7 @@ public class VideoSelectionController {
          * Remove video from study set
          */
         @DeleteMapping("/{studySetId}/videos/{videoCode}")
+        @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
         @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
         public ResponseEntity<ApiResponse<Void>> removeVideoFromStudySet(
                         @PathVariable String studySetId,
@@ -78,6 +80,7 @@ public class VideoSelectionController {
          * Update video display order
          */
         @PutMapping("/{studySetId}/videos/{videoCode}/display-order")
+        @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
         @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
         public ResponseEntity<ApiResponse<VideoMetadataResponse>> updateVideoDisplayOrder(
                         @PathVariable String studySetId,
@@ -97,6 +100,7 @@ public class VideoSelectionController {
          * Refresh video metadata
          */
         @PostMapping("/{studySetId}/videos/{videoCode}/refresh")
+        @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
         @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
         public ResponseEntity<ApiResponse<VideoMetadataResponse>> refreshVideoMetadata(
                         @PathVariable String studySetId,

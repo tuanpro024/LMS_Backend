@@ -8,7 +8,6 @@ import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.request.CreateStudySetRequest;
 import com.lms.content.common.dto.request.UpdateStudySetRequest;
-import org.springframework.security.access.prepost.PreAuthorize;
 import com.lms.content.common.dto.response.StudySetResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

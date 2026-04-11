@@ -2,6 +2,8 @@ package com.lms.onllearning.controller;
 
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.onllearning.dto.request.AddModuleToScheduleRequest;
 import com.lms.onllearning.dto.request.ImportModuleToScheduleRequest;
 import com.lms.onllearning.dto.request.ReorderScheduleModulesRequest;
@@ -39,7 +41,7 @@ public class ScheduleModuleController {
      * POST /schedule-modules
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.OTHER)
     public ResponseEntity<ApiResponse<ScheduleModuleResponse>> addModule(
             @RequestBody @Valid AddModuleToScheduleRequest request) {
 
@@ -49,10 +51,10 @@ public class ScheduleModuleController {
 
     /**
      * Import Excel để tạo nội dung mới và gắn module vào buổi học.
-     * POST /schedule-modules/import  (multipart/form-data)
+     * POST /schedule-modules/import (multipart/form-data)
      */
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.OTHER)
     public ResponseEntity<ApiResponse<ScheduleModuleResponse>> importModule(
             @RequestPart("request") @Valid ImportModuleToScheduleRequest request,
             @RequestPart("file") MultipartFile file) {
@@ -83,7 +85,8 @@ public class ScheduleModuleController {
 
     /**
      * Lấy tiến độ ôn luyện theo buổi học của học viên hiện tại.
-     * GET /schedule-modules/by-schedule/{scheduleId}/my-progress?courseId={courseId}
+     * GET
+     * /schedule-modules/by-schedule/{scheduleId}/my-progress?courseId={courseId}
      */
     @GetMapping("/by-schedule/{scheduleId}/my-progress")
     public ResponseEntity<ApiResponse<ScheduleSessionProgressResponse>> getMySessionProgress(
@@ -142,7 +145,7 @@ public class ScheduleModuleController {
      * DELETE /schedule-modules/{id}
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.OTHER)
     public ResponseEntity<ApiResponse<Void>> removeModule(@PathVariable String id) {
         scheduleModuleService.removeModule(id);
         return ResponseEntity.ok(ApiResponse.ok(null));
@@ -153,7 +156,7 @@ public class ScheduleModuleController {
      * PUT /schedule-modules/by-schedule/{scheduleId}/reorder
      */
     @PutMapping("/by-schedule/{scheduleId}/reorder")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    @RequiresTicket(module = TicketModuleEnum.OTHER)
     public ResponseEntity<ApiResponse<Void>> reorderModules(
             @PathVariable String scheduleId,
             @RequestBody @Valid ReorderScheduleModulesRequest request) {

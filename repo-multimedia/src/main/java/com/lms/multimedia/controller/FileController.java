@@ -12,6 +12,7 @@ import com.lms.common.dto.ApiResponse;
 import com.lms.multimedia.dto.FileDownload;
 import com.lms.multimedia.dto.FileResponse;
 import com.lms.multimedia.service.FileService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/media/file")

@@ -1,10 +1,15 @@
 package com.lms.onllearning.service.impl;
 
+import com.lms.common.notification.NotificationEvent;
+import com.lms.common.notification.NotificationPublisher;
+import com.lms.common.notification.ResourceType;
 import com.lms.onllearning.dto.request.LeadRegistrationRequest;
 import com.lms.onllearning.dto.response.LeadRegistrationResponse;
 import com.lms.onllearning.entity.LeadRegistration;
+import com.lms.onllearning.entity.enums.RegistrationStatus;
 import com.lms.onllearning.mapper.LeadMapper;
 import com.lms.onllearning.repository.LeadRegistrationRepository;
+import com.lms.onllearning.service.ILeadEmailService;
 import com.lms.onllearning.service.ILeadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,28 +33,35 @@ public class LeadServiceImpl implements ILeadService {
 
     private final LeadRegistrationRepository repository;
     private final LeadMapper mapper;
+    private final NotificationPublisher notificationPublisher;
+    private final ILeadEmailService leadEmailService;
 
     @Override
     @Transactional
     public LeadRegistrationResponse register(LeadRegistrationRequest request, String userId) {
-        // Idempotency: nếu đã đăng ký cùng syllabus, trả về lead cũ
-        Optional<LeadRegistration> existing =
-                repository.findByUserIdAndSyllabusId(userId, request.syllabusId());
+        // Idempotency: nếu đã đăng ký cùng course code, trả về lead cũ
+        Optional<LeadRegistration> existing = repository.findByUserIdAndCourseCode(userId, request.code());
 
         if (existing.isPresent()) {
-            log.info("Duplicate lead registration skipped for userId={}, syllabusId={}",
-                    userId, request.syllabusId());
+            log.info("Duplicate lead registration skipped for userId={}, courseCode={}",
+                    userId, request.code());
             return mapper.toResponse(existing.get());
         }
 
-        // Tạo lead mới
+        // Tạo lead mới — status mặc định PENDING_SALES (@Builder.Default)
         LeadRegistration lead = mapper.toEntity(request);
         lead.setId(generateId());
         lead.setUserId(userId); // userId từ JWT, không từ client
 
         LeadRegistration saved = repository.save(lead);
-        log.info("Lead registered: id={}, userId={}, syllabusId={}",
-                saved.getId(), userId, request.syllabusId());
+        log.info("Lead registered: id={}, userId={}, courseCode={}, status={}",
+                saved.getId(), userId, request.code(), saved.getStatus());
+
+        // Gửi in-app notification qua Kafka → repo-notification
+        publishRegistrationConfirmation(saved);
+
+        // Gửi email xác nhận bất đồng bộ
+        leadEmailService.sendRegistrationConfirmationEmail(saved);
 
         return mapper.toResponse(saved);
     }
@@ -55,16 +69,115 @@ public class LeadServiceImpl implements ILeadService {
     @Override
     @Transactional(readOnly = true)
     public Page<LeadRegistrationResponse> getLeads(
-            String syllabusId,
+            String courseCode,
             LocalDate from,
             LocalDate to,
             Pageable pageable) {
 
         LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
-        LocalDateTime toDt   = to   != null ? to.atTime(LocalTime.MAX) : null;
+        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
 
-        return repository.findWithFilters(syllabusId, fromDt, toDt, pageable)
+        return repository.findWithFilters(courseCode, fromDt, toDt, pageable)
                 .map(mapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeadRegistrationResponse> getAllLeads(
+            String courseCode,
+            LocalDate from,
+            LocalDate to) {
+
+        LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
+        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
+
+        return repository.findWithFilters(courseCode, fromDt, toDt, Pageable.unpaged())
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
+    /**
+     * Kích hoạt thủ công quyền học cho một lead.
+     * Chỉ kích hoạt được lead ở trạng thái PENDING_SALES hoặc REJECTED.
+     */
+    @Override
+    @Transactional
+    public LeadRegistrationResponse activateLead(String leadId, String adminUserId) {
+        LeadRegistration lead = repository.findById(leadId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lead với id: " + leadId));
+
+        if (lead.getStatus() == RegistrationStatus.APPROVED) {
+            log.info("Lead {} đã APPROVED, bỏ qua kích hoạt lại. adminUserId={}", leadId, adminUserId);
+            return mapper.toResponse(lead);
+        }
+
+        RegistrationStatus prevStatus = lead.getStatus();
+        lead.setStatus(RegistrationStatus.APPROVED);
+        lead.setApprovedAt(LocalDateTime.now());
+        lead.setApprovedBy(adminUserId);
+
+        LeadRegistration saved = repository.save(lead);
+        log.info("Lead activated: id={}, prevStatus={}, adminUserId={}", leadId, prevStatus, adminUserId);
+
+        // Gửi in-app notification cho student
+        publishActivationNotification(saved);
+
+        // Gửi email thông báo đã được kích hoạt
+        leadEmailService.sendActivationEmail(saved);
+
+        return mapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LeadRegistrationResponse getMyRegistration(String userId, String courseCode) {
+        return repository.findByUserIdAndCourseCode(userId, courseCode)
+                .map(mapper::toResponse)
+                .orElse(null);
+    }
+
+    // ─── Private helpers ─────────────────────────────────────────────────────
+
+    private void publishRegistrationConfirmation(LeadRegistration lead) {
+        try {
+            NotificationEvent event = new NotificationEvent(
+                    lead.getUserId(),
+                    "LEAD_REGISTRATION_PENDING",
+                    "Đăng ký nhận tư vấn thành công",
+                    "Chúng tôi đã nhận đăng ký của bạn và đang chờ bộ phận tư vấn xác nhận. " +
+                    "Bạn sẽ được thông báo khi hoàn tất.",
+                    ResourceType.OTHER,
+                    lead.getId(),
+                    Map.of("courseCode", lead.getCourseCode(), "courseName", lead.getCourseName()),
+                    "lead-reg-" + lead.getId()
+            );
+            notificationPublisher.publish(event);
+        } catch (Exception ex) {
+            // Notification failure không block luồng chính
+            log.warn("Failed to publish registration confirmation notification for lead {}: {}",
+                    lead.getId(), ex.getMessage());
+        }
+    }
+
+    private void publishActivationNotification(LeadRegistration lead) {
+        try {
+            NotificationEvent event = new NotificationEvent(
+                    lead.getUserId(),
+                    "LEAD_REGISTRATION_APPROVED",
+                    "Tài khoản học đã được kích hoạt!",
+                    "Chúc mừng! Bộ phận tư vấn đã xác nhận đăng ký của bạn cho khóa học \"" +
+                    lead.getCourseName() + "\". Bạn có thể xem thời khóa biểu ngay bây giờ.",
+                    ResourceType.OTHER,
+                    lead.getId(),
+                    Map.of("courseCode", lead.getCourseCode(), "courseName", lead.getCourseName()),
+                    "lead-approved-" + lead.getId()
+            );
+            notificationPublisher.publish(event);
+        } catch (Exception ex) {
+            log.warn("Failed to publish activation notification for lead {}: {}",
+                    lead.getId(), ex.getMessage());
+        }
     }
 
     /** Tạo ULID-compatible ID (26 chars) dùng UUID đơn giản */

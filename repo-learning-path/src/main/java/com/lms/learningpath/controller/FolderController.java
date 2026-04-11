@@ -6,7 +6,6 @@ import com.lms.common.security.AuthPrincipal;
 import com.lms.common.security.RequiresTicket;
 import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.FolderApiDelegate;
-import org.springframework.security.access.prepost.PreAuthorize;
 import com.lms.content.common.dto.request.CreateFolderRequest;
 import com.lms.content.common.dto.request.UpdateFolderRequest;
 import com.lms.content.common.dto.response.FolderResponse;

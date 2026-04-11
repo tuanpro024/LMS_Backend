@@ -30,39 +30,39 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class LeadController {
 
-    private final ILeadService leadService;
-    private final ExcelExportService excelExportService;
-    private final RateLimitService rateLimitService;
+        private final ILeadService leadService;
+        private final ExcelExportService excelExportService;
+        private final RateLimitService rateLimitService;
 
-    /**
-     * Đăng ký tư vấn khóa học.
-     * - userId lấy từ JWT (authentication.getName()), không nhận từ client.
-     * - Rate-limited: 5 req/phút/user + 10 req/phút/IP.
-     * - Idempotent: cùng user + syllabus → trả về lead cũ, không tạo duplicate.
-     */
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse<LeadRegistrationResponse>> register(
-            @Valid @RequestBody LeadRegistrationRequest request,
-            Authentication authentication,
-            HttpServletRequest httpRequest) {
+        /**
+         * Đăng ký tư vấn khóa học.
+         * - userId lấy từ JWT (authentication.getName()), không nhận từ client.
+         * - Rate-limited: 5 req/phút/user + 10 req/phút/IP.
+         * - Idempotent: cùng user + courseCode → trả về lead cũ, không tạo duplicate.
+         */
+        @PostMapping("/register")
+        public ResponseEntity<ApiResponse<LeadRegistrationResponse>> register(
+                        @Valid @RequestBody LeadRegistrationRequest request,
+                        Authentication authentication,
+                        HttpServletRequest httpRequest) {
 
                 String userId = authentication != null ? authentication.getName() : null;
                 if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
                         userId = principal.userId();
                 }
 
-        // Rate-limit check: cả IP và userId
-        if (!rateLimitService.tryConsume(httpRequest, userId)) {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .header("Retry-After", "60")
-                    .body(ApiResponse.error("RATE_LIMIT_EXCEEDED",
-                            "Quá nhiều yêu cầu, vui lòng thử lại sau 1 phút"));
-        }
+                // Rate-limit check: cả IP và userId
+                if (!rateLimitService.tryConsume(httpRequest, userId)) {
+                        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                                        .header("Retry-After", "60")
+                                        .body(ApiResponse.error("RATE_LIMIT_EXCEEDED",
+                                                        "Quá nhiều yêu cầu, vui lòng thử lại sau 1 phút"));
+                }
 
-        LeadRegistrationResponse response = leadService.register(request, userId);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(response));
-    }
+                LeadRegistrationResponse response = leadService.register(request, userId);
+                return ResponseEntity.status(HttpStatus.CREATED)
+                                .body(ApiResponse.ok(response));
+        }
 
     /**
      * Danh sách leads — chỉ ADMIN và STAFF.
@@ -76,9 +76,9 @@ public class LeadController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @PageableDefault(size = 20, sort = "registeredAt") Pageable pageable) {
 
-        return ResponseEntity.ok(ApiResponse.ok(
-                leadService.getLeads(syllabusId, from, to, pageable)));
-    }
+                return ResponseEntity.ok(ApiResponse.ok(
+                                leadService.getLeads(courseCode, from, to, pageable)));
+        }
 
     /**
      * Export Excel — chỉ ADMIN và STAFF.
@@ -92,14 +92,14 @@ public class LeadController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to)
             throws IOException {
 
-        byte[] excelBytes = excelExportService.exportLeads(syllabusId, from, to);
+                byte[] excelBytes = excelExportService.exportLeads(courseCode, from, to);
 
-        String filename = "leads_" + LocalDate.now() + ".xlsx";
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + filename + "\"")
-                .contentType(MediaType.parseMediaType(
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(excelBytes);
-    }
+                String filename = "leads_" + LocalDate.now() + ".xlsx";
+                return ResponseEntity.ok()
+                                .header(HttpHeaders.CONTENT_DISPOSITION,
+                                                "attachment; filename=\"" + filename + "\"")
+                                .contentType(MediaType.parseMediaType(
+                                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                                .body(excelBytes);
+        }
 }

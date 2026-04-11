@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/internal/**").permitAll() // bảo vệ bởi network/gateway
+                    .requestMatchers("/api/v1/public/teachers/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(commonRequestContextFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(baseJwtFilter, UsernamePasswordAuthenticationFilter.class)
@@ -51,12 +52,12 @@ public class SecurityConfig {
     public BaseJwtFilter baseJwtFilter(RSAPublicKey jwtPublicKey) {
         return new BaseJwtFilter(jwtPublicKey,
                 List.of(), // skip patterns
-                List.of("/auth/**")); // optional auth paths
+            List.of("/auth/**", "/api/v1/public/teachers/**")); // optional auth paths
     }
 
     @Bean
     public EmailVerifiedFilter emailVerifiedFilter() {
-        return new EmailVerifiedFilter(List.of("/auth/**"));
+        return new EmailVerifiedFilter(List.of("/auth/**", "/api/v1/public/teachers/**"));
     }
 
     @Bean

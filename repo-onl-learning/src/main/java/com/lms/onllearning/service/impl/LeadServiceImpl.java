@@ -30,13 +30,12 @@ public class LeadServiceImpl implements ILeadService {
     @Override
     @Transactional
     public LeadRegistrationResponse register(LeadRegistrationRequest request, String userId) {
-        // Idempotency: nếu đã đăng ký cùng syllabus, trả về lead cũ
-        Optional<LeadRegistration> existing =
-                repository.findByUserIdAndSyllabusId(userId, request.syllabusId());
+        // Idempotency: nếu đã đăng ký cùng course code, trả về lead cũ
+        Optional<LeadRegistration> existing = repository.findByUserIdAndCourseCode(userId, request.code());
 
         if (existing.isPresent()) {
-            log.info("Duplicate lead registration skipped for userId={}, syllabusId={}",
-                    userId, request.syllabusId());
+            log.info("Duplicate lead registration skipped for userId={}, courseCode={}",
+                    userId, request.code());
             return mapper.toResponse(existing.get());
         }
 
@@ -46,8 +45,8 @@ public class LeadServiceImpl implements ILeadService {
         lead.setUserId(userId); // userId từ JWT, không từ client
 
         LeadRegistration saved = repository.save(lead);
-        log.info("Lead registered: id={}, userId={}, syllabusId={}",
-                saved.getId(), userId, request.syllabusId());
+        log.info("Lead registered: id={}, userId={}, courseCode={}",
+                saved.getId(), userId, request.code());
 
         return mapper.toResponse(saved);
     }
@@ -55,15 +54,15 @@ public class LeadServiceImpl implements ILeadService {
     @Override
     @Transactional(readOnly = true)
     public Page<LeadRegistrationResponse> getLeads(
-            String syllabusId,
+            String courseCode,
             LocalDate from,
             LocalDate to,
             Pageable pageable) {
 
         LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
-        LocalDateTime toDt   = to   != null ? to.atTime(LocalTime.MAX) : null;
+        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
 
-        return repository.findWithFilters(syllabusId, fromDt, toDt, pageable)
+        return repository.findWithFilters(courseCode, fromDt, toDt, pageable)
                 .map(mapper::toResponse);
     }
 

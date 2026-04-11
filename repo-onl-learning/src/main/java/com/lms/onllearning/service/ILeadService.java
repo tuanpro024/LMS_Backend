@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface ILeadService {
     /** Tạo mới lead hoặc trả về lead cũ (idempotent) */
@@ -17,4 +18,10 @@ public interface ILeadService {
             LocalDate from,
             LocalDate to,
             Pageable pageable);
+
+    /** Danh sách toàn bộ leads (không phân trang) cho tích hợp CMS */
+    List<LeadRegistrationResponse> getAllLeads(
+            String courseCode,
+            LocalDate from,
+            LocalDate to);
 }

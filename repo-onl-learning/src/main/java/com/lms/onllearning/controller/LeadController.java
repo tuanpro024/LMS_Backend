@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/leads")
@@ -78,6 +79,20 @@ public class LeadController {
 
                 return ResponseEntity.ok(ApiResponse.ok(
                                 leadService.getLeads(courseCode, from, to, pageable)));
+        }
+
+        /**
+         * Danh sách toàn bộ leads (không phân trang) cho tích hợp CMS.
+         * Filter: courseCode, from (YYYY-MM-DD), to (YYYY-MM-DD).
+         */
+        @GetMapping("/all")
+        public ResponseEntity<ApiResponse<List<LeadRegistrationResponse>>> getAllLeads(
+                        @RequestParam(required = false) String courseCode,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+
+                return ResponseEntity.ok(ApiResponse.ok(
+                                leadService.getAllLeads(courseCode, from, to)));
         }
 
         /**

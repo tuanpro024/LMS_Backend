@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,6 +65,22 @@ public class LeadServiceImpl implements ILeadService {
 
         return repository.findWithFilters(courseCode, fromDt, toDt, pageable)
                 .map(mapper::toResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LeadRegistrationResponse> getAllLeads(
+            String courseCode,
+            LocalDate from,
+            LocalDate to) {
+
+        LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
+        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
+
+        return repository.findWithFilters(courseCode, fromDt, toDt, Pageable.unpaged())
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     /** Tạo ULID-compatible ID (26 chars) dùng UUID đơn giản */

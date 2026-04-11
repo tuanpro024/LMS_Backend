@@ -43,7 +43,8 @@ public class SecurityConfig {
                 "/api/onl/syllabuses",
                 "/api/onl/syllabuses/**",
                 "/api/onl/courses",
-                "/api/onl/courses/**");
+                "/api/onl/courses/**",
+                "/api/onl/leads/all");
 
         return new BaseJwtFilter(publicKey, skipPatterns, optionalPatterns);
     }
@@ -60,6 +61,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/syllabuses/**").permitAll()
                         // Public: xem danh sách & chi tiết khóa học
                         .requestMatchers(HttpMethod.GET, "/courses/**").permitAll()
+                        // Public: CMS pull toàn bộ lead đăng ký
+                        .requestMatchers(HttpMethod.GET, "/leads/all").permitAll()
                         // Course management: ADMIN + TEACHER_MANAGER có thể tạo/chỉnh sửa
                         .requestMatchers(HttpMethod.POST, "/courses")
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")

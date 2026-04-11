@@ -48,7 +48,7 @@ public class ExcelExportService {
             // Header row
             CellStyle headerStyle = createHeaderStyle(workbook);
             String[] headers = { "STT", "Họ và tên", "Email", "Số điện thoại",
-                    "Khóa học", "Loại khóa học", "Ngày đăng ký", "Ghi chú" };
+                    "Khóa học", "Loại khóa học", "Ngày đăng ký", "Trạng thái", "Ghi chú" };
             Row headerRow = sheet.createRow(0);
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
@@ -70,7 +70,8 @@ public class ExcelExportService {
                         lead.getRegisteredAt() != null
                                 ? lead.getRegisteredAt().format(DATE_FMT)
                                 : "");
-                row.createCell(7).setCellValue(lead.getNote() != null ? lead.getNote() : "");
+                row.createCell(7).setCellValue(lead.getStatus() != null ? lead.getStatus().name() : "");
+                row.createCell(8).setCellValue(lead.getNote() != null ? lead.getNote() : "");
             });
 
             workbook.write(out);

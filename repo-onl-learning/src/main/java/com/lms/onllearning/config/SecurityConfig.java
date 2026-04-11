@@ -70,8 +70,13 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")
                         // Course delete
                         .requestMatchers(HttpMethod.DELETE, "/courses/**").hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        // Student: xem trạng thái đăng ký của chính mình
+                        .requestMatchers(HttpMethod.GET, "/leads/me/**").authenticated()
                         // Admin/Staff: xem leads, export Excel
                         .requestMatchers(HttpMethod.GET, "/leads/**")
+                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
+                        // Admin/Manager: kích hoạt thủ công quyền học
+                        .requestMatchers(HttpMethod.POST, "/leads/*/activate")
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")
                         // Student: cập nhật progress module trong online-course domain
                         .requestMatchers(HttpMethod.POST, "/schedule-modules/*/my-progress")

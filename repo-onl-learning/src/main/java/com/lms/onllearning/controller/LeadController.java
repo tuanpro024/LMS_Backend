@@ -47,10 +47,7 @@ public class LeadController {
                         Authentication authentication,
                         HttpServletRequest httpRequest) {
 
-                String userId = authentication != null ? authentication.getName() : null;
-                if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
-                        userId = principal.userId();
-                }
+                String userId = extractUserId(authentication);
 
                 // Rate-limit check: cả IP và userId
                 if (!rateLimitService.tryConsume(httpRequest, userId)) {
@@ -96,6 +93,41 @@ public class LeadController {
         }
 
         /**
+         * Kích hoạt thủ công quyền học cho một người đăng ký.
+         * Chỉ ADMIN/TEACHER_MANAGER mới được gọi endpoint này.
+         * Chuyển trạng thái lead → APPROVED, ghi nhận adminUserId + thời điểm.
+         */
+        @PostMapping("/{leadId}/activate")
+        @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+        public ResponseEntity<ApiResponse<LeadRegistrationResponse>> activateLead(
+                        @PathVariable String leadId,
+                        Authentication authentication) {
+
+                String adminUserId = extractUserId(authentication);
+                LeadRegistrationResponse response = leadService.activateLead(leadId, adminUserId);
+                return ResponseEntity.ok(ApiResponse.ok(response));
+        }
+
+        /**
+         * Lấy trạng thái đăng ký của chính mình cho một khóa học.
+         * Frontend dùng để kiểm tra status và hiển thị thông báo phù hợp.
+         * Trả về 200 với body null nếu chưa đăng ký.
+         */
+        @GetMapping("/me/{courseCode}")
+        public ResponseEntity<ApiResponse<LeadRegistrationResponse>> getMyRegistration(
+                        @PathVariable String courseCode,
+                        Authentication authentication) {
+
+                String userId = extractUserId(authentication);
+                if (userId == null) {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                        .body(ApiResponse.error("UNAUTHORIZED", "Vui lòng đăng nhập"));
+                }
+                return ResponseEntity.ok(ApiResponse.ok(
+                                leadService.getMyRegistration(userId, courseCode)));
+        }
+
+        /**
          * Export Excel — chỉ ADMIN và STAFF.
          * Sử dụng SXSSFWorkbook streaming, hỗ trợ dataset lớn mà không OOM.
          */
@@ -116,5 +148,15 @@ public class LeadController {
                                 .contentType(MediaType.parseMediaType(
                                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                                 .body(excelBytes);
+        }
+
+        // ─── private helpers ─────────────────────────────────────────────────
+
+        private String extractUserId(Authentication authentication) {
+                if (authentication == null) return null;
+                if (authentication.getPrincipal() instanceof AuthPrincipal principal) {
+                        return principal.userId();
+                }
+                return authentication.getName();
         }
 }

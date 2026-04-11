@@ -77,7 +77,7 @@ public class LeadController {
             @PageableDefault(size = 20, sort = "registeredAt") Pageable pageable) {
 
                 return ResponseEntity.ok(ApiResponse.ok(
-                                leadService.getLeads(courseCode, from, to, pageable)));
+                                leadService.getLeads(syllabusId, from, to, pageable)));
         }
 
     /**
@@ -92,7 +92,7 @@ public class LeadController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to)
             throws IOException {
 
-                byte[] excelBytes = excelExportService.exportLeads(courseCode, from, to);
+                byte[] excelBytes = excelExportService.exportLeads(syllabusId, from, to);
 
                 String filename = "leads_" + LocalDate.now() + ".xlsx";
                 return ResponseEntity.ok()

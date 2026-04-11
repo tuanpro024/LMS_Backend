@@ -64,33 +64,33 @@ public class LeadController {
                                 .body(ApiResponse.ok(response));
         }
 
-        /**
-         * Danh sách leads — chỉ ADMIN và STAFF.
-         * Filter: courseCode, from (YYYY-MM-DD), to (YYYY-MM-DD).
-         */
-        @GetMapping
-        // @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
-        public ResponseEntity<ApiResponse<Page<LeadRegistrationResponse>>> getLeads(
-                        @RequestParam(required = false) String courseCode,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-                        @PageableDefault(size = 20, sort = "registeredAt") Pageable pageable) {
+    /**
+     * Danh sách leads — chỉ ADMIN và STAFF.
+     * Filter: syllabusId, from (YYYY-MM-DD), to (YYYY-MM-DD).
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+    public ResponseEntity<ApiResponse<Page<LeadRegistrationResponse>>> getLeads(
+            @RequestParam(required = false) String syllabusId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @PageableDefault(size = 20, sort = "registeredAt") Pageable pageable) {
 
                 return ResponseEntity.ok(ApiResponse.ok(
                                 leadService.getLeads(courseCode, from, to, pageable)));
         }
 
-        /**
-         * Export Excel — chỉ ADMIN và STAFF.
-         * Sử dụng SXSSFWorkbook streaming, hỗ trợ dataset lớn mà không OOM.
-         */
-        @GetMapping("/export")
-        @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
-        public ResponseEntity<byte[]> exportExcel(
-                        @RequestParam(required = false) String courseCode,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to)
-                        throws IOException {
+    /**
+     * Export Excel — chỉ ADMIN và STAFF.
+     * Sử dụng SXSSFWorkbook streaming, hỗ trợ dataset lớn mà không OOM.
+     */
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+    public ResponseEntity<byte[]> exportExcel(
+            @RequestParam(required = false) String syllabusId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to)
+            throws IOException {
 
                 byte[] excelBytes = excelExportService.exportLeads(courseCode, from, to);
 

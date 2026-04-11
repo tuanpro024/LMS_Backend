@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class FolderController {
     private final FolderApiDelegate delegate;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<FolderResponse>> create(
             @RequestBody @Valid CreateFolderRequest request, Authentication auth) {
@@ -44,6 +46,7 @@ public class FolderController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<FolderResponse>> update(
             @PathVariable String id,
@@ -54,6 +57,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id, Authentication auth) {
         AuthPrincipal p = (AuthPrincipal) auth.getPrincipal();
@@ -62,6 +66,7 @@ public class FolderController {
     }
 
     @PostMapping("/{folderId}/study-sets/{studySetId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<FolderResponse>> addStudySet(
             @PathVariable String folderId, @PathVariable String studySetId, Authentication auth) {
@@ -70,6 +75,7 @@ public class FolderController {
     }
 
     @DeleteMapping("/{folderId}/study-sets/{studySetId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<FolderResponse>> removeStudySet(
             @PathVariable String folderId, @PathVariable String studySetId, Authentication auth) {

@@ -28,6 +28,7 @@ public class AvailableModuleController {
 
     /** Get all available study sets from all repos */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAllAvailableModules(
             @RequestParam(required = false) String q) {
@@ -36,6 +37,7 @@ public class AvailableModuleController {
 
     /** Get available flashcard study sets */
     @GetMapping("/flashcard")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableFlashcardSets(
             @RequestParam(required = false) String q) {
@@ -44,6 +46,7 @@ public class AvailableModuleController {
 
     /** Get available writing study sets */
     @GetMapping("/writing")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableWritingSets(
             @RequestParam(required = false) String q) {
@@ -52,6 +55,7 @@ public class AvailableModuleController {
 
     /** Get available kanji study sets */
     @GetMapping({"/kanji", "/kanji-origin"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableKanjiSets(
             @RequestParam(required = false) String q) {
@@ -60,6 +64,7 @@ public class AvailableModuleController {
 
     /** Get available quiz study sets */
     @GetMapping("/quiz")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableQuizSets(
             @RequestParam(required = false) String q) {
@@ -68,6 +73,7 @@ public class AvailableModuleController {
 
     /** Get available listening practice study sets */
     @GetMapping("/listening")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableListeningSets(
             @RequestParam(required = false) String q) {
@@ -76,6 +82,7 @@ public class AvailableModuleController {
 
     /** Get available pronunciation study sets */
     @GetMapping("/pronunciation")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailablePronunciationSets(
             @RequestParam(required = false) String q) {

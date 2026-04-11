@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,6 +28,7 @@ public class WordController {
     private final WordService wordService;
 
     @PostMapping("/bulk")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<List<WordResponse>>> addWordsToStudySet(
             @RequestBody @Valid AddWordsToStudySetRequest request,
@@ -55,6 +57,7 @@ public class WordController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<WordResponse>> updateWord(
             @PathVariable String id,
@@ -76,6 +79,7 @@ public class WordController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<Void>> deleteWord(
             @PathVariable String id,

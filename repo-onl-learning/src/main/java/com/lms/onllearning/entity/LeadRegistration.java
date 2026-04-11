@@ -1,5 +1,6 @@
 package com.lms.onllearning.entity;
 
+import com.lms.onllearning.entity.enums.RegistrationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -56,4 +57,23 @@ public class LeadRegistration {
     @CreationTimestamp
     @Column(name = "registered_at", nullable = false, updatable = false)
     private LocalDateTime registeredAt;
+
+    /**
+     * Trạng thái đăng ký:
+     * PENDING_SALES – đang chờ tư vấn xác nhận ngoài hệ thống,
+     * APPROVED      – đã được kích hoạt quyền học,
+     * REJECTED      – đã bị từ chối.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20, nullable = false)
+    @Builder.Default
+    private RegistrationStatus status = RegistrationStatus.PENDING_SALES;
+
+    /** Thời điểm kích hoạt quyền học (null nếu chưa APPROVED) */
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    /** userId của Admin/Manager đã kích hoạt (null nếu chưa APPROVED) */
+    @Column(name = "approved_by", length = 26)
+    private String approvedBy;
 }

@@ -1,6 +1,7 @@
 package com.lms.onllearning.repository;
 
 import com.lms.onllearning.entity.LeadRegistration;
+import com.lms.onllearning.entity.enums.RegistrationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,12 @@ public interface LeadRegistrationRepository extends JpaRepository<LeadRegistrati
 
   /** Kiểm tra duplicate trước khi tạo lead mới */
   Optional<LeadRegistration> findByUserIdAndCourseCode(String userId, String courseCode);
+
+  /**
+   * Guard timetable: user có QUY ÍT NHẤT 1 lead APPROVED?
+   * Index idx_user_status (user_id, status) đảm bảo query này rất nhanh.
+   */
+  boolean existsByUserIdAndStatus(String userId, RegistrationStatus status);
 
   /** Tìm kiếm leads với filter — dùng cho Admin/Staff */
   @Query("""

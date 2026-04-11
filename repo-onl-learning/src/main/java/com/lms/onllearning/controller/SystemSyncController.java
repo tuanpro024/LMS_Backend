@@ -21,20 +21,20 @@ public class SystemSyncController {
     private final ISystemSyncService systemSyncService;
 
     @PostMapping("/all")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<SyncAllJobResponse>> startSyncAll() {
         SyncAllJobResponse job = systemSyncService.startSyncAll();
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.ok(job));
     }
 
     @GetMapping("/all/{jobId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<SyncAllJobResponse>> getSyncJob(@PathVariable String jobId) {
         return ResponseEntity.ok(ApiResponse.ok(systemSyncService.getJob(jobId)));
     }
 
     @GetMapping("/all/current")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<SyncAllJobResponse>> getCurrentSyncJob() {
         return ResponseEntity.ok(ApiResponse.ok(systemSyncService.getCurrentJob()));
     }

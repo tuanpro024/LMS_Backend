@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableAsync;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = { "com.lms.onllearning", "com.lms.common" })
 @EnableCaching
 @EnableAsync
 public class OnlLearningApplication {

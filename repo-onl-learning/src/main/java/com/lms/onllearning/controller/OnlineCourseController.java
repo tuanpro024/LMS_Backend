@@ -45,7 +45,7 @@ public class OnlineCourseController {
     // -----------------------------------------------------------------------
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<OnlineCourseResponse>> create(
             @Valid @RequestBody OnlineCourseRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -53,7 +53,7 @@ public class OnlineCourseController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<OnlineCourseResponse>> update(
             @PathVariable String id,
             @Valid @RequestBody OnlineCourseRequest request) {
@@ -61,7 +61,7 @@ public class OnlineCourseController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
         courseService.delete(id);
         return ResponseEntity.ok(ApiResponse.ok(null));

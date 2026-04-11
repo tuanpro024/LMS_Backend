@@ -24,7 +24,6 @@ public class QuizQuestionController {
     private final IQuestionService questionService;
 
     @PostMapping("/{quizId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<ApiResponse<QuestionResponse>> addQuestion(
             @PathVariable String quizId,
@@ -42,7 +41,6 @@ public class QuizQuestionController {
     }
 
     @PutMapping("/{questionId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<ApiResponse<QuestionResponse>> updateQuestion(
             @PathVariable String questionId,
@@ -53,7 +51,6 @@ public class QuizQuestionController {
     }
 
     @DeleteMapping("/{questionId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.QUIZ)
     public ResponseEntity<Void> deleteQuestion(
             @PathVariable String questionId,

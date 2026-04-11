@@ -80,7 +80,6 @@ public class VideoController {
      * @param id Video ID
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<Void>> deleteVideo(@PathVariable String id) {
         log.info("Soft deleting video with id: {}", id);

@@ -33,7 +33,6 @@ public class StepModuleController {
      * Add a module to a step (Admin/Teacher only)
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<StepModuleResponse>> addModuleToStep(
             @RequestBody @Valid AddModuleToStepRequest request,
@@ -68,7 +67,6 @@ public class StepModuleController {
      * Remove a module from a step (Admin/Teacher only)
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> removeModuleFromStep(
             @PathVariable String id,
@@ -83,7 +81,6 @@ public class StepModuleController {
      * Reorder modules within a step (Admin/Teacher only)
      */
     @PutMapping("/step/{stepId}/reorder")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> reorderModules(
             @PathVariable String stepId,

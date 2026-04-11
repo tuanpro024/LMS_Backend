@@ -28,7 +28,6 @@ public class WordController {
     private final WordService wordService;
 
     @PostMapping("/bulk")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<List<WordResponse>>> addWordsToStudySet(
             @RequestBody @Valid AddWordsToStudySetRequest request,
@@ -57,7 +56,6 @@ public class WordController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<WordResponse>> updateWord(
             @PathVariable String id,
@@ -79,7 +77,6 @@ public class WordController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<Void>> deleteWord(
             @PathVariable String id,

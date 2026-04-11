@@ -22,7 +22,6 @@ public class FileController {
     private final FileService fileService;
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     public ApiResponse<FileResponse> upload(@RequestParam("file") MultipartFile file) {
         return ApiResponse.ok(fileService.upload(file));
     }

@@ -39,7 +39,6 @@ public class LearningPathController {
      * Create a new learning path (Admin/Teacher only)
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<LearningPathResponse>> createLearningPath(
             @RequestBody @Valid CreateLearningPathRequest request,
@@ -89,7 +88,6 @@ public class LearningPathController {
      * Update a learning path (Admin/Teacher only)
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<LearningPathResponse>> updateLearningPath(
             @PathVariable String id,
@@ -105,7 +103,6 @@ public class LearningPathController {
      * Delete a learning path (Admin/Teacher only)
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> deleteLearningPath(
             @PathVariable String id,
@@ -121,7 +118,6 @@ public class LearningPathController {
      * Supports hybrid 2-phase import: external content creation + local hierarchy.
      */
     @PostMapping("/import-excel")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<LearningPathImportResult>> importFromExcel(
             @RequestParam("file") MultipartFile file,

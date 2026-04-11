@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,7 +25,6 @@ public class AiPracticeItemController {
     private final AiPracticeItemService itemService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<AiPracticeItemResponse>> create(
             @Valid @RequestBody CreateAiPracticeItemRequest request) {
@@ -35,7 +33,6 @@ public class AiPracticeItemController {
     }
 
     @PostMapping(value = "/with-audio", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<AiPracticeItemResponse>> createWithAudio(
             @Valid @RequestPart("data") CreateAiPracticeItemRequest request,
@@ -45,7 +42,6 @@ public class AiPracticeItemController {
     }
 
     @PostMapping(value = "/with-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<AiPracticeItemResponse>> createWithImage(
             @Valid @RequestPart("data") CreateAiPracticeItemRequest request,
@@ -55,7 +51,6 @@ public class AiPracticeItemController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<AiPracticeItemResponse>> update(
             @PathVariable String id,
@@ -64,7 +59,6 @@ public class AiPracticeItemController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
         itemService.delete(id);

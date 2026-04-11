@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class CardController {
     private final CardService cardService;
 
     @PostMapping("/bulk")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<List<CardResponse>>> addCardsToStudySet(
             @RequestBody @Valid AddCardsToStudySetRequest request,
@@ -54,6 +56,7 @@ public class CardController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<CardResponse>> updateCard(
             @PathVariable String id,
@@ -76,6 +79,7 @@ public class CardController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<Void>> deleteCard(
             @PathVariable String id,

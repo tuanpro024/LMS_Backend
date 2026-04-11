@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,7 +28,6 @@ public class FolderController {
     private final FolderApiDelegate delegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @RequestBody @Valid CreateFolderRequest request,
@@ -55,7 +53,6 @@ public class FolderController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
     public ResponseEntity<ApiResponse<FolderResponse>> updateFolder(
             @PathVariable String id,
@@ -69,7 +66,6 @@ public class FolderController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
     public ResponseEntity<ApiResponse<Void>> deleteFolder(
             @PathVariable String id,
@@ -82,7 +78,6 @@ public class FolderController {
     }
 
     @PostMapping("/{folderId}/study-sets/{studySetId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
     public ResponseEntity<ApiResponse<FolderResponse>> addStudySetToFolder(
             @PathVariable String folderId,
@@ -96,7 +91,6 @@ public class FolderController {
     }
 
     @DeleteMapping("/{folderId}/study-sets/{studySetId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LISTENING_PRACTICE)
     public ResponseEntity<ApiResponse<FolderResponse>> removeStudySetFromFolder(
             @PathVariable String folderId,

@@ -31,7 +31,6 @@ public class StudySetController {
     private final StudySetApiDelegate studySetDelegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<StudySetResponse>> createStudySet(
             @RequestBody @Valid CreateStudySetRequest request,
@@ -62,7 +61,6 @@ public class StudySetController {
     }
 
     @GetMapping("/my-sets")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     public ResponseEntity<ApiResponse<List<StudySetResponse>>> getMyStudySets(
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
@@ -70,7 +68,6 @@ public class StudySetController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<StudySetResponse>> updateStudySet(
             @PathVariable String id,
@@ -82,7 +79,6 @@ public class StudySetController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,

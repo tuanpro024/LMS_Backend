@@ -45,7 +45,6 @@ public class SubtitleController {
      * @return List of subtitles
      */
     @GetMapping("/video/{videoId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<List<SubtitleResponse>> getSubtitlesByVideo(@PathVariable String videoId) {
         log.info("Get subtitles for video: {}", videoId);
@@ -74,7 +73,6 @@ public class SubtitleController {
      * @return Updated subtitle
      */
     @PutMapping("/{subtitleId}/activate")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<SubtitleResponse> setActiveSubtitle(@PathVariable String subtitleId) {
         log.info("Set active subtitle: {}", subtitleId);
@@ -89,7 +87,6 @@ public class SubtitleController {
      * @return No content
      */
     @DeleteMapping("/{subtitleId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<Void> deleteSubtitle(@PathVariable String subtitleId) {
         log.info("Delete subtitle: {}", subtitleId);

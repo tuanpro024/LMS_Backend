@@ -34,7 +34,6 @@ public class StudySetController {
      * Create a new study set
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<StudySetResponse>> createStudySet(
             @RequestBody @Valid CreateStudySetRequest request,
@@ -98,7 +97,6 @@ public class StudySetController {
      * Update study set
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<StudySetResponse>> updateStudySet(
             @PathVariable String id,
@@ -114,7 +112,6 @@ public class StudySetController {
      * Delete study set
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.LEARNING_PATH)
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,

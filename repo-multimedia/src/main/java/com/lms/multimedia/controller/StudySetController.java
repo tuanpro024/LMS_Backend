@@ -29,7 +29,6 @@ public class StudySetController {
     private final StudySetApiDelegate delegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<StudySetResponse>> createStudySet(
             @RequestBody @Valid CreateStudySetRequest request,
@@ -63,7 +62,6 @@ public class StudySetController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<StudySetResponse>> updateStudySet(
             @PathVariable String id,
@@ -77,7 +75,6 @@ public class StudySetController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.MULTIMEDIA)
     public ResponseEntity<ApiResponse<Void>> deleteStudySet(
             @PathVariable String id,

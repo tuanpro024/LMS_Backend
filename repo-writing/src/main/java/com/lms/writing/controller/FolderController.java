@@ -26,7 +26,6 @@ public class FolderController {
     private final FolderApiDelegate delegate;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<FolderResponse>> createFolder(
             @RequestBody @Valid CreateFolderRequest request,
@@ -61,7 +60,6 @@ public class FolderController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<FolderResponse>> updateFolder(
             @PathVariable String id,
@@ -73,7 +71,6 @@ public class FolderController {
     }
 
     @PatchMapping("/{id}/privacy")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<Void>> updateFolderPrivacy(
             @PathVariable String id,
@@ -85,7 +82,6 @@ public class FolderController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<Void>> deleteFolder(
             @PathVariable String id,
@@ -96,7 +92,6 @@ public class FolderController {
     }
 
     @PostMapping("/{folderId}/study-sets/{studySetId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<FolderResponse>> addStudySetToFolder(
             @PathVariable String folderId,
@@ -108,7 +103,6 @@ public class FolderController {
     }
 
     @DeleteMapping("/{folderId}/study-sets/{studySetId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.WRITING)
     public ResponseEntity<ApiResponse<FolderResponse>> removeStudySetFromFolder(
             @PathVariable String folderId,

@@ -30,7 +30,6 @@ public class AvailableVideoController {
      * Optional query param for title search.
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<List<AvailableVideoResponse>>> getAllAvailableVideos(
             @RequestParam(required = false) String q) {
@@ -42,7 +41,6 @@ public class AvailableVideoController {
      * Use this to preview a specific video before embedding it into a VideoModule.
      */
     @GetMapping("/{videoCode}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<AvailableVideoResponse>> getVideoByCode(
             @PathVariable String videoCode) {

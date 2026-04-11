@@ -18,7 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/schedule-available-modules")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER', 'TEACHER', 'COLLABORATOR')")
+@PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
 public class AvailableScheduleModuleController {
 
     private final IAvailableScheduleModuleService availableModuleService;

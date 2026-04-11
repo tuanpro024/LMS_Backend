@@ -13,9 +13,8 @@ public interface ILeadService {
 
     /** Danh sách leads cho Admin/Staff với filter */
     Page<LeadRegistrationResponse> getLeads(
-            String syllabusId,
+            String courseCode,
             LocalDate from,
             LocalDate to,
-            Pageable pageable
-    );
+            Pageable pageable);
 }

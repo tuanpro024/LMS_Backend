@@ -15,35 +15,33 @@ import java.util.stream.Stream;
 @Repository
 public interface LeadRegistrationRepository extends JpaRepository<LeadRegistration, String> {
 
-    /** Kiểm tra duplicate trước khi tạo lead mới */
-    Optional<LeadRegistration> findByUserIdAndSyllabusId(String userId, String syllabusId);
+  /** Kiểm tra duplicate trước khi tạo lead mới */
+  Optional<LeadRegistration> findByUserIdAndCourseCode(String userId, String courseCode);
 
-    /** Tìm kiếm leads với filter — dùng cho Admin/Staff */
-    @Query("""
-        SELECT l FROM LeadRegistration l
-        WHERE (:syllabusId IS NULL OR l.syllabusId = :syllabusId)
-          AND (:from IS NULL OR l.registeredAt >= :from)
-          AND (:to IS NULL OR l.registeredAt <= :to)
-        ORDER BY l.registeredAt DESC
-        """)
-    Page<LeadRegistration> findWithFilters(
-            @Param("syllabusId") String syllabusId,
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to,
-            Pageable pageable
-    );
+  /** Tìm kiếm leads với filter — dùng cho Admin/Staff */
+  @Query("""
+          SELECT l FROM LeadRegistration l
+      WHERE (:courseCode IS NULL OR l.courseCode = :courseCode)
+            AND (:from IS NULL OR l.registeredAt >= :from)
+            AND (:to IS NULL OR l.registeredAt <= :to)
+          ORDER BY l.registeredAt DESC
+          """)
+  Page<LeadRegistration> findWithFilters(
+      @Param("courseCode") String courseCode,
+      @Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to,
+      Pageable pageable);
 
-    /** Streaming query cho Excel export — tránh load toàn bộ vào memory */
-    @Query("""
-        SELECT l FROM LeadRegistration l
-        WHERE (:syllabusId IS NULL OR l.syllabusId = :syllabusId)
-          AND (:from IS NULL OR l.registeredAt >= :from)
-          AND (:to IS NULL OR l.registeredAt <= :to)
-        ORDER BY l.registeredAt ASC
-        """)
-    Stream<LeadRegistration> streamForExport(
-            @Param("syllabusId") String syllabusId,
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to
-    );
+  /** Streaming query cho Excel export — tránh load toàn bộ vào memory */
+  @Query("""
+      SELECT l FROM LeadRegistration l
+      WHERE (:courseCode IS NULL OR l.courseCode = :courseCode)
+        AND (:from IS NULL OR l.registeredAt >= :from)
+        AND (:to IS NULL OR l.registeredAt <= :to)
+      ORDER BY l.registeredAt ASC
+      """)
+  Stream<LeadRegistration> streamForExport(
+      @Param("courseCode") String courseCode,
+      @Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to);
 }

@@ -22,7 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,7 +55,7 @@ public class StepModuleServiceImpl implements IStepModuleService {
         request.setModuleType(normalizedModuleType);
 
         // Check if module order already exists
-        if (stepModuleRepository.existsByStepIdAndModuleOrder(
+        if (stepModuleRepository.existsByStepIdAndModuleOrderAndIsActiveTrue(
                 request.getStepId(), request.getModuleOrder())) {
             throw new ResourceAlreadyExistsException(
                     "Module with order " + request.getModuleOrder() + " already exists in this step");
@@ -105,14 +109,47 @@ public class StepModuleServiceImpl implements IStepModuleService {
     public void reorderModules(String stepId, ReorderItemsRequest request) {
         log.info("Reordering modules for step: {}", stepId);
 
+        if (!stepRepository.existsByIdAndIsActiveTrue(stepId)) {
+            throw new ResourceNotFoundException("Step not found with id: " + stepId);
+        }
+
+        List<StepModule> activeModules = stepModuleRepository
+                .findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(stepId);
+        Map<String, StepModule> activeModuleById = activeModules.stream()
+                .collect(Collectors.toMap(StepModule::getId, module -> module));
+
+        Set<Integer> requestedOrders = new HashSet<>();
+        Map<String, Integer> overrides = new HashMap<>();
+        List<StepModule> modulesToUpdate = new java.util.ArrayList<>();
+
         for (ReorderItemsRequest.ReorderItem item : request.getItems()) {
-            StepModule stepModule = findStepModuleById(item.getId());
-            if (!stepId.equals(stepModule.getStepId())) {
+            StepModule stepModule = activeModuleById.get(item.getId());
+            if (stepModule == null) {
                 throw new ResourceNotFoundException(
-                        "Step module " + stepModule.getId() + " does not belong to step: " + stepId);
+                        "Step module " + item.getId() + " does not belong to step: " + stepId);
             }
+
+            if (!requestedOrders.add(item.getNewOrder())) {
+                throw new ResourceAlreadyExistsException(
+                        "Duplicate module order " + item.getNewOrder() + " in reorder request");
+            }
+
             stepModule.setModuleOrder(item.getNewOrder());
-            stepModuleRepository.save(stepModule);
+            overrides.put(stepModule.getId(), item.getNewOrder());
+            modulesToUpdate.add(stepModule);
+        }
+
+        Set<Integer> finalOrders = new HashSet<>();
+        for (StepModule module : activeModules) {
+            int finalOrder = overrides.getOrDefault(module.getId(), module.getModuleOrder());
+            if (!finalOrders.add(finalOrder)) {
+                throw new ResourceAlreadyExistsException(
+                        "Module order conflict detected after reorder in step: " + stepId);
+            }
+        }
+
+        if (!modulesToUpdate.isEmpty()) {
+            stepModuleRepository.saveAll(modulesToUpdate);
         }
 
         log.info("Successfully reordered {} modules", request.getItems().size());

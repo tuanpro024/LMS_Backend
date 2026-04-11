@@ -58,7 +58,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
         LearningPathResponse response = learningPathMapper.toResponse(learningPath);
 
         // Add step count
-        long totalSteps = stepRepository.countByLearningPathId(id);
+        long totalSteps = stepRepository.countByLearningPathIdAndIsActiveTrue(id);
         response.setTotalSteps((int) totalSteps);
 
         return response;
@@ -71,7 +71,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
         LearningPathResponse response = learningPathMapper.toResponse(learningPath);
 
         // Add step count
-        long totalSteps = stepRepository.countByLearningPathId(id);
+        long totalSteps = stepRepository.countByLearningPathIdAndIsActiveTrue(id);
         response.setTotalSteps((int) totalSteps);
 
         // Add user progress
@@ -93,7 +93,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
         return learningPaths.stream()
                 .map(lp -> {
                     LearningPathResponse response = learningPathMapper.toResponse(lp);
-                    long totalSteps = stepRepository.countByLearningPathId(lp.getId());
+                    long totalSteps = stepRepository.countByLearningPathIdAndIsActiveTrue(lp.getId());
                     response.setTotalSteps((int) totalSteps);
                     return response;
                 })
@@ -109,7 +109,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
         return learningPaths.stream()
                 .map(lp -> {
                     LearningPathResponse response = learningPathMapper.toResponse(lp);
-                    long totalSteps = stepRepository.countByLearningPathId(lp.getId());
+                    long totalSteps = stepRepository.countByLearningPathIdAndIsActiveTrue(lp.getId());
                     response.setTotalSteps((int) totalSteps);
 
                     // Add user progress

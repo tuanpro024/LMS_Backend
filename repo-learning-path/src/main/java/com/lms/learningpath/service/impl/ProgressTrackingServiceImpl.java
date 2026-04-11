@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         private final LearningPathProgressRepository learningPathProgressRepository;
         private final StepRepository stepRepository;
         private final LearningPathRepository learningPathRepository;
+        private final StepUnlockRuleRepository stepUnlockRuleRepository;
         private final ConsumedFlashcardProgressEventRepository consumedFlashcardProgressEventRepository;
         private final ConsumedKanjiProgressEventRepository consumedKanjiProgressEventRepository;
         private final ConsumedQuizProgressEventRepository consumedQuizProgressEventRepository;
@@ -56,8 +58,10 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         public ModuleProgressDto startModule(String userId, String moduleId) {
                 log.info("User {} starting module {}", userId, moduleId);
 
-                StepModule module = stepModuleRepository.findById(moduleId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Step module not found: " + moduleId));
+                StepModule module = findActiveStepModule(moduleId);
+                Step step = findActiveStep(module.getStepId());
+                assertStepUnlocked(userId, step.getId());
+                Instant now = Instant.now();
 
                 ModuleProgress progress = moduleProgressRepository
                                 .findByUserIdAndStepModuleId(userId, moduleId)
@@ -66,23 +70,36 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                                                         .userId(userId)
                                                         .stepModuleId(moduleId)
                                                         .stepId(module.getStepId())
-                                                        .status(ProgressStatus.IN_PROGRESS)
+                                                        .status(ProgressStatus.NOT_STARTED)
                                                         .totalItems(1)
                                                         .score(0)
                                                         .totalAttempts(0)
-                                                        .firstStartedAt(Instant.now())
-                                                        .startedAt(Instant.now())
+                                                        .firstStartedAt(now)
+                                                        .startedAt(now)
                                                         .build();
                                         return moduleProgressRepository.save(newProgress);
                                 });
 
-                if (progress.getTotalItems() == null || progress.getTotalItems() <= 0) {
-                        progress.setTotalItems(1);
-                        progress = moduleProgressRepository.save(progress);
+                if (progress.getStatus() == ProgressStatus.NOT_STARTED) {
+                        progress.setStatus(ProgressStatus.IN_PROGRESS);
                 }
 
+                if (progress.getFirstStartedAt() == null) {
+                        progress.setFirstStartedAt(now);
+                }
+
+                if (progress.getStartedAt() == null) {
+                        progress.setStartedAt(now);
+                }
+
+                if (progress.getTotalItems() == null || progress.getTotalItems() <= 0) {
+                        progress.setTotalItems(1);
+                }
+
+                progress = moduleProgressRepository.save(progress);
+
                 // Update step progress
-                updateStepProgress(userId, module.getStepId());
+                updateStepProgress(userId, step.getId());
 
                 return mapToDto(progress);
         }
@@ -91,6 +108,10 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         @Transactional
         public ModuleProgressDto updateProgress(String userId, String moduleId, UpdateProgressRequest request) {
                 log.info("Updating progress for user {} on module {}", userId, moduleId);
+
+                StepModule module = findActiveStepModule(moduleId);
+                Step step = findActiveStep(module.getStepId());
+                assertStepUnlocked(userId, step.getId());
 
                 ModuleProgress progress = moduleProgressRepository
                                 .findByUserIdAndStepModuleId(userId, moduleId)
@@ -121,6 +142,9 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 progress = moduleProgressRepository.save(progress);
 
+                updateStepProgress(userId, step.getId());
+                updateLearningPathProgress(userId, step.getLearningPathId());
+
                 return mapToDto(progress);
         }
 
@@ -129,8 +153,9 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         public ModuleProgressDto completeModule(String userId, String moduleId, CompleteModuleRequest request) {
                 log.info("User {} completing module {}", userId, moduleId);
 
-                StepModule module = stepModuleRepository.findById(moduleId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Step module not found: " + moduleId));
+                StepModule module = findActiveStepModule(moduleId);
+                Step step = findActiveStep(module.getStepId());
+                assertStepUnlocked(userId, step.getId());
 
                 ModuleProgress progress = moduleProgressRepository
                                 .findByUserIdAndStepModuleId(userId, moduleId)
@@ -170,20 +195,63 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                 progress = moduleProgressRepository.save(progress);
 
                 // Update step progress
-                updateStepProgress(userId, module.getStepId());
+                updateStepProgress(userId, step.getId());
 
                 // Update learning path progress
-                Step step = stepRepository.findById(module.getStepId()).orElseThrow();
                 updateLearningPathProgress(userId, step.getLearningPathId());
 
                 return mapToDto(progress);
         }
 
         @Override
+        public ModuleProgressDto getModuleProgress(String userId, String moduleId) {
+                StepModule module = findActiveStepModule(moduleId);
+                return moduleProgressRepository.findByUserIdAndStepModuleId(userId, moduleId)
+                                .map(this::mapToDto)
+                                .orElse(ModuleProgressDto.builder()
+                                                .stepModuleId(moduleId)
+                                                .stepId(module.getStepId())
+                                                .status(ProgressStatus.NOT_STARTED)
+                                                .completedItems(0)
+                                                .totalItems(0)
+                                                .score(0)
+                                                .totalAttempts(0)
+                                                .progressPercentage(0.0)
+                                                .build());
+        }
+
+        @Override
         public StepProgressResponse getStepProgress(String userId, String stepId) {
-                return stepProgressRepository.findByUserIdAndStepId(userId, stepId)
-                                .map(stepProgressMapper::toResponse)
+                StepProgress stepProgress = stepProgressRepository.findByUserIdAndStepId(userId, stepId)
                                 .orElse(null);
+
+                if (stepProgress == null) {
+                        return null;
+                }
+
+                StepProgressResponse response = stepProgressMapper.toResponse(stepProgress);
+                List<StepModule> allModules = stepModuleRepository.findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(stepId);
+
+                if (allModules.isEmpty()) {
+                        response.setProgressPercentage(0.0);
+                        return response;
+                }
+
+                List<String> moduleIds = allModules.stream()
+                                .map(StepModule::getId)
+                                .collect(Collectors.toList());
+
+                Map<String, ModuleProgress> moduleProgressById = moduleProgressRepository
+                                .findByUserIdAndStepModuleIdIn(userId, moduleIds)
+                                .stream()
+                                .collect(Collectors.toMap(ModuleProgress::getStepModuleId, p -> p, (a, b) -> b));
+
+                double totalPercent = allModules.stream()
+                                .mapToDouble(module -> resolveModulePercent(moduleProgressById.get(module.getId())))
+                                .sum();
+
+                response.setProgressPercentage(totalPercent / allModules.size());
+                return response;
         }
 
         @Override
@@ -291,7 +359,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 for (String stepId : touchedStepIds) {
                         updateStepProgress(event.userId(), stepId);
-                        Step step = stepRepository.findById(stepId).orElse(null);
+                        Step step = stepRepository.findByIdAndIsActiveTrue(stepId).orElse(null);
                         if (step != null) {
                                 updateLearningPathProgress(event.userId(), step.getLearningPathId());
                         }
@@ -391,7 +459,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 for (String stepId : touchedStepIds) {
                         updateStepProgress(event.userId(), stepId);
-                        Step step = stepRepository.findById(stepId).orElse(null);
+                        Step step = stepRepository.findByIdAndIsActiveTrue(stepId).orElse(null);
                         if (step != null) {
                                 updateLearningPathProgress(event.userId(), step.getLearningPathId());
                         }
@@ -490,7 +558,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 for (String stepId : touchedStepIds) {
                         updateStepProgress(event.userId(), stepId);
-                        Step step = stepRepository.findById(stepId).orElse(null);
+                        Step step = stepRepository.findByIdAndIsActiveTrue(stepId).orElse(null);
                         if (step != null) {
                                 updateLearningPathProgress(event.userId(), step.getLearningPathId());
                         }
@@ -588,7 +656,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 for (String stepId : touchedStepIds) {
                         updateStepProgress(event.userId(), stepId);
-                        Step step = stepRepository.findById(stepId).orElse(null);
+                        Step step = stepRepository.findByIdAndIsActiveTrue(stepId).orElse(null);
                         if (step != null) {
                                 updateLearningPathProgress(event.userId(), step.getLearningPathId());
                         }
@@ -648,13 +716,42 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
         // ============ Private Helper Methods ============
 
-        private void updateStepProgress(String userId, String stepId) {
-                Step step = stepRepository.findById(stepId)
+        private StepModule findActiveStepModule(String moduleId) {
+                return stepModuleRepository.findByIdAndIsActiveTrue(moduleId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Step module not found: " + moduleId));
+        }
+
+        private Step findActiveStep(String stepId) {
+                return stepRepository.findByIdAndIsActiveTrue(stepId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Step not found: " + stepId));
+        }
+
+        private void assertStepUnlocked(String userId, String stepId) {
+                if (!isStepUnlocked(userId, stepId)) {
+                        throw new IllegalArgumentException("Step is locked. Complete previous required step first.");
+                }
+        }
+
+        private boolean isStepUnlocked(String userId, String stepId) {
+                StepUnlockRule rule = stepUnlockRuleRepository.findByStepIdAndIsActiveTrue(stepId).orElse(null);
+                if (rule == null || rule.getRequiredStepId() == null || rule.getRequiredStepId().isBlank()) {
+                        return true;
+                }
+
+                return stepProgressRepository.findByUserIdAndStepId(userId, rule.getRequiredStepId())
+                                .map(StepProgress::canUnlockNext)
+                                .orElse(false);
+        }
+
+        private void updateStepProgress(String userId, String stepId) {
+                Step step = findActiveStep(stepId);
 
                 // Get all modules for this step
                 List<StepModule> allModules = stepModuleRepository
                                 .findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(stepId);
+
+                Map<String, StepModule> moduleById = allModules.stream()
+                                .collect(Collectors.toMap(StepModule::getId, module -> module));
 
                 int totalModules = allModules.size();
                 long totalRequired = allModules.stream().filter(StepModule::getIsRequired).count();
@@ -664,17 +761,17 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                                 .map(StepModule::getId)
                                 .collect(Collectors.toList());
 
-                List<ModuleProgress> completedModules = moduleProgressRepository
-                                .findByUserIdAndStepModuleIdIn(userId, moduleIds).stream()
+                List<ModuleProgress> completedModules = (moduleIds.isEmpty()
+                                ? List.<ModuleProgress>of()
+                                : moduleProgressRepository.findByUserIdAndStepModuleIdIn(userId, moduleIds)).stream()
                                 .filter(p -> p.getStatus() == ProgressStatus.COMPLETED)
                                 .collect(Collectors.toList());
 
                 int completedCount = completedModules.size();
                 long completedRequiredCount = completedModules.stream()
                                 .filter(mp -> {
-                                        StepModule sm = stepModuleRepository.findById(mp.getStepModuleId())
-                                                        .orElse(null);
-                                        return sm != null && sm.getIsRequired();
+                                        StepModule sm = moduleById.get(mp.getStepModuleId());
+                                        return sm != null && Boolean.TRUE.equals(sm.getIsRequired());
                                 })
                                 .count();
 
@@ -718,11 +815,15 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                         progress.setCompletedAt(Instant.now());
                 }
 
+                if (status != ProgressStatus.COMPLETED) {
+                        progress.setCompletedAt(null);
+                }
+
                 stepProgressRepository.save(progress);
         }
 
         private void updateLearningPathProgress(String userId, String learningPathId) {
-                LearningPath learningPath = learningPathRepository.findById(learningPathId)
+                LearningPath learningPath = learningPathRepository.findByIdAndIsActiveTrue(learningPathId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Learning path not found: " + learningPathId));
 
@@ -737,7 +838,9 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                                 .map(Step::getId)
                                 .collect(Collectors.toList());
 
-                long completedSteps = stepProgressRepository.findByUserIdAndStepIdIn(userId, stepIds).stream()
+                long completedSteps = (stepIds.isEmpty()
+                                ? List.<StepProgress>of()
+                                : stepProgressRepository.findByUserIdAndStepIdIn(userId, stepIds)).stream()
                                 .filter(p -> p.getStatus() == ProgressStatus.COMPLETED)
                                 .count();
 
@@ -789,6 +892,10 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                         progress.setCompletedAt(Instant.now());
                 }
 
+                if (status != ProgressStatus.COMPLETED) {
+                        progress.setCompletedAt(null);
+                }
+
                 learningPathProgressRepository.save(progress);
         }
 
@@ -809,5 +916,33 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                                 .startedAt(progress.getStartedAt())
                                 .completedAt(progress.getCompletedAt())
                                 .build();
+        }
+
+        private double resolveModulePercent(ModuleProgress progress) {
+                if (progress == null) {
+                        return 0.0;
+                }
+
+                if (progress.getStatus() == ProgressStatus.COMPLETED) {
+                        return 100.0;
+                }
+
+                double percentByItems = clampPercent(progress.getProgressPercentage());
+                if (percentByItems > 0.0) {
+                        return percentByItems;
+                }
+
+                if (progress.getScore() != null) {
+                        return clampPercent(progress.getScore().doubleValue());
+                }
+
+                return 0.0;
+        }
+
+        private double clampPercent(double value) {
+                if (Double.isNaN(value) || Double.isInfinite(value)) {
+                        return 0.0;
+                }
+                return Math.max(0.0, Math.min(100.0, value));
         }
 }

@@ -14,11 +14,19 @@ public interface StepRepository extends JpaRepository<Step, String> {
 
     Optional<Step> findByIdAndIsActiveTrue(String id);
 
+    boolean existsByIdAndIsActiveTrue(String id);
+
     List<Step> findByLearningPathIdAndIsActiveTrueOrderByStepOrderAsc(String learningPathId);
 
     boolean existsByLearningPathIdAndStepOrder(String learningPathId, Integer stepOrder);
 
+    boolean existsByLearningPathIdAndStepOrderAndIsActiveTrue(String learningPathId, Integer stepOrder);
+
     Optional<Step> findByLearningPathIdAndStepOrder(String learningPathId, Integer stepOrder);
 
+    Optional<Step> findByLearningPathIdAndStepOrderAndIsActiveTrue(String learningPathId, Integer stepOrder);
+
     long countByLearningPathId(String learningPathId);
+
+    long countByLearningPathIdAndIsActiveTrue(String learningPathId);
 }

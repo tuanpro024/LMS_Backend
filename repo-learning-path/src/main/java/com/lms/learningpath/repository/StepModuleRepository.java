@@ -19,9 +19,13 @@ public interface StepModuleRepository extends JpaRepository<StepModule, String> 
 
     boolean existsByStepIdAndModuleOrder(String stepId, Integer moduleOrder);
 
+    boolean existsByStepIdAndModuleOrderAndIsActiveTrue(String stepId, Integer moduleOrder);
+
     boolean existsByStepIdAndContentSetIdAndIsActiveTrue(String stepId, String contentSetId);
 
     long countByStepId(String stepId);
+
+    long countByStepIdAndIsActiveTrue(String stepId);
 
     long countByStepIdAndIsRequiredTrue(String stepId);
 

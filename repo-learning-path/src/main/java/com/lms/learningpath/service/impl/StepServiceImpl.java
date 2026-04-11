@@ -44,7 +44,7 @@ public class StepServiceImpl implements IStepService {
         }
 
         // Check if step order already exists
-        if (stepRepository.existsByLearningPathIdAndStepOrder(
+        if (stepRepository.existsByLearningPathIdAndStepOrderAndIsActiveTrue(
                 request.getLearningPathId(), request.getStepOrder())) {
             throw new ResourceAlreadyExistsException(
                     "Step with order " + request.getStepOrder() + " already exists");
@@ -66,7 +66,7 @@ public class StepServiceImpl implements IStepService {
         StepResponse response = stepMapper.toResponse(step);
 
         // Add module count
-        long totalModules = stepModuleRepository.countByStepId(id);
+        long totalModules = stepModuleRepository.countByStepIdAndIsActiveTrue(id);
         response.setTotalModules((int) totalModules);
 
         return response;
@@ -78,7 +78,7 @@ public class StepServiceImpl implements IStepService {
         StepResponse response = stepMapper.toResponse(step);
 
         // Add module count
-        long totalModules = stepModuleRepository.countByStepId(id);
+        long totalModules = stepModuleRepository.countByStepIdAndIsActiveTrue(id);
         response.setTotalModules((int) totalModules);
 
         // Add user progress
@@ -103,7 +103,7 @@ public class StepServiceImpl implements IStepService {
         return steps.stream()
                 .map(step -> {
                     StepResponse response = stepMapper.toResponse(step);
-                    long totalModules = stepModuleRepository.countByStepId(step.getId());
+                    long totalModules = stepModuleRepository.countByStepIdAndIsActiveTrue(step.getId());
                     response.setTotalModules((int) totalModules);
                     return response;
                 })
@@ -118,7 +118,7 @@ public class StepServiceImpl implements IStepService {
         return steps.stream()
                 .map(step -> {
                     StepResponse response = stepMapper.toResponse(step);
-                    long totalModules = stepModuleRepository.countByStepId(step.getId());
+                    long totalModules = stepModuleRepository.countByStepIdAndIsActiveTrue(step.getId());
                     response.setTotalModules((int) totalModules);
 
                     // Add user progress
@@ -142,8 +142,21 @@ public class StepServiceImpl implements IStepService {
         log.info("Updating step: {}", id);
 
         Step step = findStepById(id);
+
+        Integer requestedOrder = request.getStepOrder();
+        if (requestedOrder != null
+                && !requestedOrder.equals(step.getStepOrder())
+                && stepRepository.existsByLearningPathIdAndStepOrderAndIsActiveTrue(step.getLearningPathId(), requestedOrder)) {
+            throw new ResourceAlreadyExistsException("Step with order " + requestedOrder + " already exists");
+        }
+
+        Integer previousOrder = step.getStepOrder();
         stepMapper.updateEntity(step, request);
         step = stepRepository.save(step);
+
+        if (requestedOrder != null && !requestedOrder.equals(previousOrder)) {
+            rebuildUnlockRules(step.getLearningPathId());
+        }
 
         log.info("Successfully updated step: {}", id);
         return stepMapper.toResponse(step);
@@ -158,6 +171,12 @@ public class StepServiceImpl implements IStepService {
         step.setIsActive(false);
         stepRepository.save(step);
 
+        stepUnlockRuleRepository.findByStepId(step.getId()).ifPresent(rule -> {
+            rule.setIsActive(false);
+            stepUnlockRuleRepository.save(rule);
+        });
+        rebuildUnlockRules(step.getLearningPathId());
+
         log.info("Successfully soft-deleted step: {}", id);
     }
 
@@ -166,6 +185,7 @@ public class StepServiceImpl implements IStepService {
     public void reorderSteps(String learningPathId, ReorderItemsRequest request) {
         log.info("Reordering steps for learning path: {}", learningPathId);
 
+        List<Step> updatedSteps = new java.util.ArrayList<>();
         for (ReorderItemsRequest.ReorderItem item : request.getItems()) {
             Step step = findStepById(item.getId());
             if (!learningPathId.equals(step.getLearningPathId())) {
@@ -173,11 +193,13 @@ public class StepServiceImpl implements IStepService {
                         "Step " + step.getId() + " does not belong to learning path: " + learningPathId);
             }
             step.setStepOrder(item.getNewOrder());
-            stepRepository.save(step);
-
-            // Update unlock rules when reordering
-            updateUnlockRuleForStep(step);
+            updatedSteps.add(step);
         }
+
+        if (!updatedSteps.isEmpty()) {
+            stepRepository.saveAll(updatedSteps);
+        }
+        rebuildUnlockRules(learningPathId);
 
         log.info("Successfully reordered {} steps", request.getItems().size());
     }
@@ -185,7 +207,7 @@ public class StepServiceImpl implements IStepService {
     private void createUnlockRuleForStep(Step step) {
         // Find previous step (stepOrder - 1)
         Optional<Step> previousStepOpt = stepRepository
-                .findByLearningPathIdAndStepOrder(step.getLearningPathId(), step.getStepOrder() - 1);
+            .findByLearningPathIdAndStepOrderAndIsActiveTrue(step.getLearningPathId(), step.getStepOrder() - 1);
 
         StepUnlockRule unlockRule = StepUnlockRule.builder()
                 .stepId(step.getId())
@@ -199,17 +221,26 @@ public class StepServiceImpl implements IStepService {
                 step.getId(), unlockRule.getRequiredStepId());
     }
 
-    private void updateUnlockRuleForStep(Step step) {
-        // Find and update existing unlock rule
-        stepUnlockRuleRepository.findByStepId(step.getId())
-                .ifPresent(unlockRule -> {
-                    Optional<Step> previousStepOpt = stepRepository
-                            .findByLearningPathIdAndStepOrder(step.getLearningPathId(), step.getStepOrder() - 1);
+        private void rebuildUnlockRules(String learningPathId) {
+        List<Step> activeSteps = stepRepository.findByLearningPathIdAndIsActiveTrueOrderByStepOrderAsc(learningPathId);
+        Step previous = null;
 
-                    unlockRule.setRequiredStepId(previousStepOpt.map(Step::getId).orElse(null));
-                    stepUnlockRuleRepository.save(unlockRule);
-                });
-    }
+        for (Step step : activeSteps) {
+            StepUnlockRule rule = stepUnlockRuleRepository.findByStepId(step.getId())
+                .orElseGet(() -> StepUnlockRule.builder()
+                    .stepId(step.getId())
+                    .requireAllModules(true)
+                    .isActive(true)
+                    .build());
+
+            rule.setRequiredStepId(previous != null ? previous.getId() : null);
+            rule.setRequireAllModules(true);
+            rule.setIsActive(true);
+            stepUnlockRuleRepository.save(rule);
+
+            previous = step;
+        }
+        }
 
     private boolean isStepUnlocked(String userId, String stepId) {
         // Get unlock rule

@@ -83,6 +83,12 @@ timetable:
   sync:
     batch-size: 500
 
+system-sync:
+  auto-sync:
+    enabled: true
+    cron: "0 0 1 * * *"
+    zone: "Asia/Ho_Chi_Minh"
+
 # Rate limiting
 rate-limit:
   register:
@@ -103,7 +109,7 @@ notification:
 management:
   health:
     mail:
-      enabled: false   # tránh health-check fail khi SMTP chưa kết nối được
+      enabled: false # tránh health-check fail khi SMTP chưa kết nối được
   endpoints:
     web:
       exposure:

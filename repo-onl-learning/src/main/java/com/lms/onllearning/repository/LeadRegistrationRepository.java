@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -38,6 +39,20 @@ public interface LeadRegistrationRepository extends JpaRepository<LeadRegistrati
       @Param("from") LocalDateTime from,
       @Param("to") LocalDateTime to,
       Pageable pageable);
+
+  /** Danh sách leads PENDING_SALES cho tích hợp CMS (không phân trang) */
+  @Query("""
+      SELECT l FROM LeadRegistration l
+      WHERE l.status = com.lms.onllearning.entity.enums.RegistrationStatus.PENDING_SALES
+        AND (:courseCode IS NULL OR l.courseCode = :courseCode)
+        AND (:from IS NULL OR l.registeredAt >= :from)
+        AND (:to IS NULL OR l.registeredAt <= :to)
+      ORDER BY l.registeredAt DESC
+      """)
+  List<LeadRegistration> findPendingSalesWithFilters(
+      @Param("courseCode") String courseCode,
+      @Param("from") LocalDateTime from,
+      @Param("to") LocalDateTime to);
 
   /** Streaming query cho Excel export — tránh load toàn bộ vào memory */
   @Query("""

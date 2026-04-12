@@ -91,7 +91,7 @@ public class LeadServiceImpl implements ILeadService {
         LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
         LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
 
-        return repository.findWithFilters(courseCode, fromDt, toDt, Pageable.unpaged())
+        return repository.findPendingSalesWithFilters(courseCode, fromDt, toDt)
                 .stream()
                 .map(mapper::toResponse)
                 .toList();
@@ -146,12 +146,11 @@ public class LeadServiceImpl implements ILeadService {
                     "LEAD_REGISTRATION_PENDING",
                     "Đăng ký nhận tư vấn thành công",
                     "Chúng tôi đã nhận đăng ký của bạn và đang chờ bộ phận tư vấn xác nhận. " +
-                    "Bạn sẽ được thông báo khi hoàn tất.",
+                            "Bạn sẽ được thông báo khi hoàn tất.",
                     ResourceType.OTHER,
                     lead.getId(),
                     Map.of("courseCode", lead.getCourseCode(), "courseName", lead.getCourseName()),
-                    "lead-reg-" + lead.getId()
-            );
+                    "lead-reg-" + lead.getId());
             notificationPublisher.publish(event);
         } catch (Exception ex) {
             // Notification failure không block luồng chính
@@ -167,12 +166,11 @@ public class LeadServiceImpl implements ILeadService {
                     "LEAD_REGISTRATION_APPROVED",
                     "Tài khoản học đã được kích hoạt!",
                     "Chúc mừng! Bộ phận tư vấn đã xác nhận đăng ký của bạn cho khóa học \"" +
-                    lead.getCourseName() + "\". Bạn có thể xem thời khóa biểu ngay bây giờ.",
+                            lead.getCourseName() + "\". Bạn có thể xem thời khóa biểu ngay bây giờ.",
                     ResourceType.OTHER,
                     lead.getId(),
                     Map.of("courseCode", lead.getCourseCode(), "courseName", lead.getCourseName()),
-                    "lead-approved-" + lead.getId()
-            );
+                    "lead-approved-" + lead.getId());
             notificationPublisher.publish(event);
         } catch (Exception ex) {
             log.warn("Failed to publish activation notification for lead {}: {}",

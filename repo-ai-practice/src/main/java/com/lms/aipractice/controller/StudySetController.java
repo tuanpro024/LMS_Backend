@@ -41,7 +41,9 @@ public class StudySetController {
     @GetMapping
     public ResponseEntity<ApiResponse<List<StudySetResponse>>> getAll(
             @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String parentId,
             @RequestParam(required = false) String q) {
+        if (parentId != null) return ResponseEntity.ok(ApiResponse.ok(delegate.getStudySetsByFolderId(parentId)));
         if (userId != null) return ResponseEntity.ok(ApiResponse.ok(delegate.getStudySetsByUserId(userId)));
         if (q != null) return ResponseEntity.ok(ApiResponse.ok(delegate.searchStudySets(q)));
         return ResponseEntity.ok(ApiResponse.ok(delegate.getAllStudySets()));

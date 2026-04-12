@@ -79,7 +79,8 @@ public class LeadController {
         }
 
         /**
-         * Danh sách toàn bộ leads (không phân trang) cho tích hợp CMS.
+         * Danh sách leads có status = PENDING_SALES (không phân trang) cho tích hợp
+         * CMS.
          * Filter: courseCode, from (YYYY-MM-DD), to (YYYY-MM-DD).
          */
         @GetMapping("/all")
@@ -153,7 +154,8 @@ public class LeadController {
         // ─── private helpers ─────────────────────────────────────────────────
 
         private String extractUserId(Authentication authentication) {
-                if (authentication == null) return null;
+                if (authentication == null)
+                        return null;
                 if (authentication.getPrincipal() instanceof AuthPrincipal principal) {
                         return principal.userId();
                 }

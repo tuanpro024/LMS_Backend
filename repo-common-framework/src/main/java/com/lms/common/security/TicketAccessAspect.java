@@ -49,8 +49,9 @@ public class TicketAccessAspect {
                 .collect(java.util.stream.Collectors.toSet());
 
         // ADMIN và TEACHER_MANAGER được bypass
-        if (userRoles.stream().anyMatch(PRIVILEGED_ROLES::contains)) {
-            log.debug("TicketAccessAspect: privileged role bypass for module={}", requiresTicket.module());
+        log.info("TicketAccessAspect: userRoles found: {}", userRoles);
+        if (userRoles.stream().anyMatch(role -> PRIVILEGED_ROLES.contains(role.toUpperCase()))) {
+            log.info("TicketAccessAspect: privileged role bypass triggered for module={}", requiresTicket.module());
             return;
         }
 

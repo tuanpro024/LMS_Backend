@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/packages/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/folders/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/study-sets/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/syllabus/**").permitAll()
 
                         // Admin/Teacher only endpoints
                         .requestMatchers("/admin/**").authenticated()

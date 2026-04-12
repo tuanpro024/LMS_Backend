@@ -21,14 +21,14 @@ public interface MultimediaClient {
      * Get video metadata by code from repo-multimedia.
      * Used to auto-populate VideoModule fields: videoUrl, thumbnailUrl, duration.
      */
-    @GetMapping("/api/videos/code/{code}")
+    @GetMapping("/api/media/{code}")
     MultimediaVideoResponse getVideoByCode(@PathVariable("code") String code);
 
     /**
      * List all videos from repo-multimedia, optionally filtered by title query.
      * Used by AvailableVideoService.
      */
-    @GetMapping("/api/videos")
+    @GetMapping("/api/media")
     ApiResponse<List<MultimediaVideoResponse>> getAllVideos(
             @RequestParam(value = "q", required = false) String query);
 }

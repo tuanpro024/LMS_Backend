@@ -98,6 +98,8 @@ public class JwtTokenServiceImpl implements JwtTokenService {
                 .phoneNumber(user.getPhoneNumber())
                 .avatarUrl(user.getAvatarUrl())
                 .address(user.getAddress())
+                .gender(user.getGender())
+                .dob(user.getDob())
                 .roles(extractRoleNames(user))
                 .status(user.getStatus())
                 .build();

@@ -87,6 +87,8 @@ public class AdminServiceImpl implements AdminService {
                 .phoneNumber(request.getPhoneNumber())
                 .avatarUrl(request.getAvatarUrl())
                 .address(request.getAddress())
+                .gender(request.getGender())
+                .dob(request.getDob())
                 .status(status)
                 .emailVerified(true)
                 .roles(roles)
@@ -120,6 +122,12 @@ public class AdminServiceImpl implements AdminService {
         }
         if (request.getAddress() != null) {
             user.setAddress(request.getAddress());
+        }
+        if (request.getGender() != null) {
+            user.setGender(request.getGender());
+        }
+        if (request.getDob() != null) {
+            user.setDob(request.getDob());
         }
 
         User saved = userRepository.save(user);

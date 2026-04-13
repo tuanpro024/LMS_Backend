@@ -3,12 +3,12 @@ spring:
     name: repo-video-course
   kafka:
 #    prod
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
+#    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
 
 #    local
-    # bootstrap-servers: localhost:9092
+     bootstrap-servers: localhost:9092
 
-    consumer:
+     consumer:
       group-id: video-course-flashcard-progress-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer

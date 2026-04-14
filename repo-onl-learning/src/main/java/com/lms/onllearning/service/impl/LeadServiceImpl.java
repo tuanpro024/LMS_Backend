@@ -6,7 +6,6 @@ import com.lms.common.notification.ResourceType;
 import com.lms.onllearning.dto.request.LeadRegistrationRequest;
 import com.lms.onllearning.dto.response.LeadRegistrationResponse;
 import com.lms.onllearning.entity.LeadRegistration;
-import com.lms.onllearning.entity.enums.RegistrationStatus;
 import com.lms.onllearning.mapper.LeadMapper;
 import com.lms.onllearning.repository.LeadRegistrationRepository;
 import com.lms.onllearning.service.ILeadEmailService;
@@ -97,38 +96,6 @@ public class LeadServiceImpl implements ILeadService {
                 .toList();
     }
 
-    /**
-     * Kích hoạt thủ công quyền học cho một lead.
-     * Chỉ kích hoạt được lead ở trạng thái PENDING_SALES hoặc REJECTED.
-     */
-    @Override
-    @Transactional
-    public LeadRegistrationResponse activateLead(String leadId, String adminUserId) {
-        LeadRegistration lead = repository.findById(leadId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy lead với id: " + leadId));
-
-        if (lead.getStatus() == RegistrationStatus.APPROVED) {
-            log.info("Lead {} đã APPROVED, bỏ qua kích hoạt lại. adminUserId={}", leadId, adminUserId);
-            return mapper.toResponse(lead);
-        }
-
-        RegistrationStatus prevStatus = lead.getStatus();
-        lead.setStatus(RegistrationStatus.APPROVED);
-        lead.setApprovedAt(LocalDateTime.now());
-        lead.setApprovedBy(adminUserId);
-
-        LeadRegistration saved = repository.save(lead);
-        log.info("Lead activated: id={}, prevStatus={}, adminUserId={}", leadId, prevStatus, adminUserId);
-
-        // Gửi in-app notification cho student
-        publishActivationNotification(saved);
-
-        // Gửi email thông báo đã được kích hoạt
-        leadEmailService.sendActivationEmail(saved);
-
-        return mapper.toResponse(saved);
-    }
-
     @Override
     @Transactional(readOnly = true)
     public LeadRegistrationResponse getMyRegistration(String userId, String courseCode) {
@@ -145,8 +112,7 @@ public class LeadServiceImpl implements ILeadService {
                     lead.getUserId(),
                     "LEAD_REGISTRATION_PENDING",
                     "Đăng ký nhận tư vấn thành công",
-                    "Chúng tôi đã nhận đăng ký của bạn và đang chờ bộ phận tư vấn xác nhận. " +
-                            "Bạn sẽ được thông báo khi hoàn tất.",
+                    "Chúng tôi đã nhận đăng ký của bạn và chuyển thông tin sang hệ thống quản lý.",
                     ResourceType.OTHER,
                     lead.getId(),
                     Map.of("courseCode", lead.getCourseCode(), "courseName", lead.getCourseName()),
@@ -155,25 +121,6 @@ public class LeadServiceImpl implements ILeadService {
         } catch (Exception ex) {
             // Notification failure không block luồng chính
             log.warn("Failed to publish registration confirmation notification for lead {}: {}",
-                    lead.getId(), ex.getMessage());
-        }
-    }
-
-    private void publishActivationNotification(LeadRegistration lead) {
-        try {
-            NotificationEvent event = new NotificationEvent(
-                    lead.getUserId(),
-                    "LEAD_REGISTRATION_APPROVED",
-                    "Tài khoản học đã được kích hoạt!",
-                    "Chúc mừng! Bộ phận tư vấn đã xác nhận đăng ký của bạn cho khóa học \"" +
-                            lead.getCourseName() + "\". Bạn có thể xem thời khóa biểu ngay bây giờ.",
-                    ResourceType.OTHER,
-                    lead.getId(),
-                    Map.of("courseCode", lead.getCourseCode(), "courseName", lead.getCourseName()),
-                    "lead-approved-" + lead.getId());
-            notificationPublisher.publish(event);
-        } catch (Exception ex) {
-            log.warn("Failed to publish activation notification for lead {}: {}",
                     lead.getId(), ex.getMessage());
         }
     }

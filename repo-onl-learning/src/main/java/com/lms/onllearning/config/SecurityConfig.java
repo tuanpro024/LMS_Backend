@@ -77,9 +77,6 @@ public class SecurityConfig {
                         // Admin/Staff: xem leads, export Excel
                         .requestMatchers(HttpMethod.GET, "/leads/**")
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")
-                        // Admin/Manager: kích hoạt thủ công quyền học
-                        .requestMatchers(HttpMethod.POST, "/leads/*/activate")
-                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
                         // Student: cập nhật progress module trong online-course domain
                         .requestMatchers(HttpMethod.POST, "/schedule-modules/*/my-progress")
                         .authenticated()

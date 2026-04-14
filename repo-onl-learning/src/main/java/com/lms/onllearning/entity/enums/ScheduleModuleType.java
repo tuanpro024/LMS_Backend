@@ -8,5 +8,11 @@ public enum ScheduleModuleType {
     WRITING,
     KANJI,
     PRONUNCIATION,
-    QUIZ
+    QUIZ,
+    LISTENING,
+    AI_PRACTICE,
+    AI_WRITING,
+    AI_SPEAKING,
+    AI_LISTENING,
+    AI_READING
 }

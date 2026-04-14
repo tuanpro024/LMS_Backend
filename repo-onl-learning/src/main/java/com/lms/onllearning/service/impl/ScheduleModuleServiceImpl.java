@@ -74,6 +74,10 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
     private String pronunciationUrl;
     @Value("${practice.service.quiz-url:http://repo-quiz}")
     private String quizUrl;
+    @Value("${practice.service.listening-url:http://repo-listening-practice/api/listening-practice}")
+    private String listeningUrl;
+    @Value("${practice.service.ai-practice-url:http://repo-ai-practice}")
+    private String aiPracticeUrl;
 
     // -----------------------------------------------------------------------
     // Add module (chọn study set có sẵn)
@@ -85,6 +89,8 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
         log.info("[ScheduleModule] addModule scheduleId={} order={} type={}",
                 req.getScheduleId(), req.getModuleOrder(), req.getModuleType());
 
+        ScheduleModuleType normalizedType = normalizeModuleType(req.getModuleType());
+
         // First-check (trong cùng transaction, có thể thua race → DB unique sẽ bắt)
         if (moduleRepo.existsByScheduleIdAndModuleOrderAndDeletedFalse(
                 req.getScheduleId(), req.getModuleOrder())) {
@@ -93,14 +99,14 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                     HttpStatus.CONFLICT);
         }
 
-        validateContentSetMapping(req.getModuleType(), req.getContentSetId());
+        validateContentSetMapping(normalizedType, req.getContentSetId());
 
         ScheduleModule entity = moduleRepo
                 .findByScheduleIdAndModuleOrderAndDeletedTrue(req.getScheduleId(), req.getModuleOrder())
                 .orElseGet(ScheduleModule::new);
 
         entity.setScheduleId(req.getScheduleId());
-        entity.setModuleType(req.getModuleType());
+        entity.setModuleType(normalizedType);
         entity.setModuleOrder(req.getModuleOrder());
         entity.setTitle(req.getTitle());
         entity.setDescription(req.getDescription());
@@ -134,6 +140,8 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
         log.info("[ScheduleModule] importModule scheduleId={} order={} type={}",
                 req.getScheduleId(), req.getModuleOrder(), req.getModuleType());
 
+        ScheduleModuleType normalizedType = normalizeModuleType(req.getModuleType());
+
         // First-check duplicate order
         if (moduleRepo.existsByScheduleIdAndModuleOrderAndDeletedFalse(
                 req.getScheduleId(), req.getModuleOrder())) {
@@ -143,7 +151,7 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
         }
 
         // Gọi repo ngoài để import Excel
-        String serviceUrl = resolveServiceUrl(req.getModuleType());
+        String serviceUrl = resolveServiceUrl(normalizedType);
         HierarchicalImportResult result;
         try {
             result = practiceWebClient.importExcel(serviceUrl, file, TypeName.LEARNING);
@@ -176,7 +184,7 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                 .orElseGet(ScheduleModule::new);
 
         entity.setScheduleId(req.getScheduleId());
-        entity.setModuleType(req.getModuleType());
+        entity.setModuleType(normalizedType);
         entity.setModuleOrder(req.getModuleOrder());
         entity.setTitle(req.getTitle());
         entity.setDescription(req.getDescription());
@@ -530,6 +538,19 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                         "Không tìm thấy module với id: " + id, HttpStatus.NOT_FOUND));
     }
 
+    private ScheduleModuleType normalizeModuleType(ScheduleModuleType type) {
+        if (type == null) {
+            return null;
+        }
+        return switch (type) {
+            case AI_WRITING,
+                 AI_SPEAKING,
+                 AI_LISTENING,
+                 AI_READING -> ScheduleModuleType.AI_PRACTICE;
+            default -> type;
+        };
+    }
+
     private String resolveServiceUrl(ScheduleModuleType type) {
         return switch (type) {
             case FLASHCARD -> flashcardUrl;
@@ -537,6 +558,12 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
             case KANJI -> kanjiUrl;
             case PRONUNCIATION -> pronunciationUrl;
             case QUIZ -> quizUrl;
+            case LISTENING -> listeningUrl;
+            case AI_PRACTICE,
+                 AI_WRITING,
+                 AI_SPEAKING,
+                 AI_LISTENING,
+                 AI_READING -> aiPracticeUrl;
         };
     }
 
@@ -611,6 +638,13 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
             case PRONUNCIATION -> practiceWebClient.getPronunciationProgressPercentage(pronunciationUrl,
                     module.getContentSetId());
             case QUIZ -> practiceWebClient.getQuizStudySetProgressPercentage(quizUrl, module.getContentSetId());
+            case LISTENING -> practiceWebClient.getListeningProgressPercentage(listeningUrl, module.getContentSetId());
+            case AI_PRACTICE,
+                 AI_WRITING,
+                 AI_SPEAKING,
+                 AI_LISTENING,
+                 AI_READING -> practiceWebClient.getAiPracticeProgressPercentage(aiPracticeUrl,
+                    module.getContentSetId());
         };
 
         if (progress == null && localProgress == null) {

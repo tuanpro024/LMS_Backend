@@ -35,7 +35,7 @@ public class AvailableScheduleModuleController {
     }
 
     /**
-     * Lọc theo loại module (FLASHCARD, WRITING, KANJI, PRONUNCIATION, QUIZ).
+        * Lọc theo loại module (FLASHCARD, WRITING, KANJI, PRONUNCIATION, QUIZ, LISTENING, AI_*).
      * GET /admin/schedule-available-modules/{type}?q=
      */
     @GetMapping("/{type}")

@@ -28,7 +28,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * WebClient wrapper để gọi các repo ôn luyện (flashcard, writing, kanji, pronunciation, quiz).
+ * WebClient wrapper để gọi các repo ôn luyện
+ * (flashcard, writing, kanji, pronunciation, quiz, listening, ai-practice).
  * <p>
  * - GET /study-sets  → lấy danh sách study set có sẵn (dùng InternalApiClient ở service)
  * - POST /packages/import-excel (multipart) → import Excel tạo nội dung mới
@@ -301,6 +302,58 @@ public class PracticeModuleWebClient {
             return (completed * 100.0) / total;
         } catch (Exception ex) {
             log.warn("Failed to fetch quiz progress for studySetId={}: {}", studySetId, ex.getMessage());
+            return null;
+        }
+    }
+
+    public Double getListeningProgressPercentage(String serviceBaseUrl, String studySetId) {
+        try {
+            String raw = getRaw(serviceBaseUrl + "/progress/study-sets/" + studySetId);
+            if (raw == null || raw.isBlank()) {
+                return null;
+            }
+            ObjectMapper om = new ObjectMapper();
+            JsonNode root = om.readTree(raw);
+            JsonNode data = root.path("data");
+            Double progress = extractDouble(data, "progressPercentage");
+            if (progress == null) {
+                progress = extractDouble(root, "progressPercentage");
+            }
+            return normalizeToPercentage(progress);
+        } catch (Exception ex) {
+            log.warn("Failed to fetch listening progress for studySetId={}: {}", studySetId, ex.getMessage());
+            return null;
+        }
+    }
+
+    public Double getAiPracticeProgressPercentage(String serviceBaseUrl, String studySetId) {
+        try {
+            String raw = getRaw(serviceBaseUrl + "/attempts/latest?studySetIds=" + studySetId);
+            if (raw == null || raw.isBlank()) {
+                return null;
+            }
+
+            ObjectMapper om = new ObjectMapper();
+            JsonNode root = om.readTree(raw);
+            JsonNode attempts = root.path("data");
+            if (!attempts.isArray() || attempts.isEmpty()) {
+                return 0.0;
+            }
+
+            JsonNode latestAttempt = attempts.get(0);
+            Double progress = extractDouble(latestAttempt, "progressPercent");
+            if (progress != null) {
+                return normalizeToPercentage(progress);
+            }
+
+            String status = extractString(latestAttempt, "status");
+            if ("SUBMITTED".equalsIgnoreCase(status) || "GRADED".equalsIgnoreCase(status)) {
+                return 100.0;
+            }
+
+            return 0.0;
+        } catch (Exception ex) {
+            log.warn("Failed to fetch ai-practice progress for studySetId={}: {}", studySetId, ex.getMessage());
             return null;
         }
     }

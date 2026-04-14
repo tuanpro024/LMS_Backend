@@ -38,7 +38,6 @@ public class TeacherServiceImpl implements TeacherService {
                 .toList();
     }
 
-
     @Override
     @Transactional
     public AdminUserResponse createTeacher(AdminCreateUserRequest request) {
@@ -56,6 +55,8 @@ public class TeacherServiceImpl implements TeacherService {
                 .phoneNumber(request.getPhoneNumber())
                 .avatarUrl(request.getAvatarUrl())
                 .address(request.getAddress())
+                .gender(request.getGender())
+                .dob(request.getDob())
                 .status(UserStatus.ACTIVE)
                 .emailVerified(true)
                 .roles(Set.of(teacherRole))
@@ -78,11 +79,20 @@ public class TeacherServiceImpl implements TeacherService {
             throw new ApiException(ErrorCode.BAD_REQUEST, "User is not a teacher");
         }
 
-        if (request.getFullName() != null) user.setFullName(request.getFullName());
-        if (request.getPhoneNumber() != null) user.setPhoneNumber(request.getPhoneNumber());
-        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
-        if (request.getAddress() != null) user.setAddress(request.getAddress());
-        if (request.getStatus() != null) user.setStatus(request.getStatus());
+        if (request.getFullName() != null)
+            user.setFullName(request.getFullName());
+        if (request.getPhoneNumber() != null)
+            user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getAvatarUrl() != null)
+            user.setAvatarUrl(request.getAvatarUrl());
+        if (request.getAddress() != null)
+            user.setAddress(request.getAddress());
+        if (request.getGender() != null)
+            user.setGender(request.getGender());
+        if (request.getDob() != null)
+            user.setDob(request.getDob());
+        if (request.getStatus() != null)
+            user.setStatus(request.getStatus());
 
         User saved = userRepository.save(user);
         return userMapper.toAdmin(saved);

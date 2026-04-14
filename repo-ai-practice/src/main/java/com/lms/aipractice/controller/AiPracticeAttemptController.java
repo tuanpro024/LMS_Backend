@@ -8,6 +8,8 @@ import com.lms.aipractice.dto.response.GradingResultResponse;
 import com.lms.aipractice.service.AiPracticeAttemptService;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,7 +36,6 @@ public class AiPracticeAttemptController {
     // ── Attempt lifecycle ─────────────────────────────────────────────
 
     @PostMapping("/attempts")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<AttemptResponse>> createAttempt(
             @Valid @RequestBody CreateAttemptRequest request,
             Authentication auth) {
@@ -51,7 +52,6 @@ public class AiPracticeAttemptController {
     }
 
     @GetMapping("/attempts/latest")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<List<AttemptResponse>>> getLatestAttemptsByStudySetIds(
             @RequestParam("studySetIds") List<String> studySetIds,
             Authentication auth) {
@@ -60,7 +60,6 @@ public class AiPracticeAttemptController {
     }
 
     @PostMapping("/attempts/{attemptId}/submit")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<AttemptResponse>> submitAttempt(
             @PathVariable String attemptId, Authentication auth) {
         String userId = ((AuthPrincipal) auth.getPrincipal()).userId();
@@ -70,7 +69,6 @@ public class AiPracticeAttemptController {
     // ── Answer submission — text ──────────────────────────────────────
 
     @PostMapping("/attempts/{attemptId}/answers")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<AttemptResponse>> submitTextAnswer(
             @PathVariable String attemptId,
             @Valid @RequestBody SubmitAnswerRequest request,
@@ -82,7 +80,6 @@ public class AiPracticeAttemptController {
     // ── Answer submission — audio (multipart for speaking/audio_compare) ──
 
     @PostMapping("/attempts/{attemptId}/answers/audio")
-    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<AttemptResponse>> submitAudioAnswer(
             @PathVariable String attemptId,
             @RequestParam("itemId") String itemId,
@@ -117,7 +114,7 @@ public class AiPracticeAttemptController {
     // ── Admin: job monitoring ─────────────────────────────────────────
 
     @GetMapping("/grading-jobs/{jobId}")
-    @PreAuthorize("hasAnyRole('TEACHER_MANAGER', 'ADMIN')")
+    @RequiresTicket(module = TicketModuleEnum.AI)
     public ResponseEntity<ApiResponse<GradingJobResponse>> getJob(@PathVariable String jobId) {
         return ResponseEntity.ok(ApiResponse.ok(attemptService.getJob(jobId)));
     }

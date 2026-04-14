@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.lms.common.jpa.BaseEntity;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -44,6 +45,11 @@ public class User extends BaseEntity {
     private String avatarUrl;
 
     private String address;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    private LocalDate dob;
 
     @Enumerated(EnumType.STRING)
     private UserStatus status;

@@ -11,12 +11,12 @@ import java.util.List;
 
 public interface SupportTicketService {
     SupportTicketResponse createTicket(AuthPrincipal principal, SupportTicketCreateRequest request);
-    Page<SupportTicketResponse> listMyTickets(AuthPrincipal principal, int page, int size);
+    Page<SupportTicketResponse> listMyTickets(AuthPrincipal principal, String status, String category, String priority, String sortBy, String sortDirection, int page, int size);
     SupportTicketResponse getTicket(AuthPrincipal principal, String id);
     SupportTicketResponse cancelTicket(AuthPrincipal principal, String id);
     
     // Management
-    Page<SupportTicketResponse> listManagementTickets(AuthPrincipal principal, String search, String status, int page, int size);
+    Page<SupportTicketResponse> listManagementTickets(AuthPrincipal principal, String search, String status, String category, String priority, int page, int size);
     SupportTicketCommentResponse replyTicket(AuthPrincipal principal, String id, SupportTicketCommentRequest request);
     
     // Comments

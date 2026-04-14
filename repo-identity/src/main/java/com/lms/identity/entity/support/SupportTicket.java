@@ -27,6 +27,20 @@ public class SupportTicket extends BaseEntity {
     @Builder.Default
     private SupportTicketStatus status = SupportTicketStatus.OPEN;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 50)
+    private SupportTicketCategory category;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private SupportTicketPriority priority;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "support_ticket_files", joinColumns = @JoinColumn(name = "ticket_id"))
+    @Column(name = "file_url")
+    @Builder.Default
+    private java.util.List<String> files = new java.util.ArrayList<>();
+
     @Column(name = "created_by", nullable = false, length = 26)
     private String createdBy;
 

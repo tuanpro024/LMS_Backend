@@ -31,10 +31,15 @@ public class SupportTicketController {
 
     @GetMapping
     public ApiResponse<PageResponse<SupportTicketResponse>> list(Authentication authentication,
+                                                                 @RequestParam(required = false) String status,
+                                                                 @RequestParam(required = false) String category,
+                                                                 @RequestParam(required = false) String priority,
+                                                                 @RequestParam(required = false) String sortBy,
+                                                                 @RequestParam(required = false) String sortDirection,
                                                                  @RequestParam(defaultValue = "0") int page,
                                                                  @RequestParam(defaultValue = "20") int size) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        Page<SupportTicketResponse> result = supportTicketService.listMyTickets(principal, page, size);
+        Page<SupportTicketResponse> result = supportTicketService.listMyTickets(principal, status, category, priority, sortBy, sortDirection, page, size);
         return ApiResponse.ok(PageResponse.<SupportTicketResponse>builder()
                 .items(result.getContent())
                 .totalElements(result.getTotalElements())

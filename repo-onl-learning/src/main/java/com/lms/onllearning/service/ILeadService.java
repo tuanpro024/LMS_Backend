@@ -24,17 +24,8 @@ public interface ILeadService {
                         Pageable pageable);
 
         /**
-         * Admin/Manager kích hoạt thủ công quyền học cho người đăng ký.
-         * Chuyển status từ PENDING_SALES → APPROVED, ghi nhận adminUserId và thời điểm.
-         *
-         * @param leadId      ID của lead registration cần kích hoạt
-         * @param adminUserId userId của admin/manager thực hiện hành động (lấy từ JWT)
-         */
-        LeadRegistrationResponse activateLead(String leadId, String adminUserId);
-
-        /**
          * Lấy thông tin đăng ký của user hiện tại cho một khóa học cụ thể.
-         * Frontend dùng để kiểm tra trạng thái trước khi hiển thị timetable.
+         * Frontend dùng để hiển thị trạng thái đăng ký và thông tin liên quan.
          *
          * @param userId     userId từ JWT
          * @param courseCode mã khóa học

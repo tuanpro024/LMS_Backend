@@ -57,6 +57,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Actuator & health
                         .requestMatchers("/health", "/actuator/**").permitAll()
+                        // Student wishlist: bắt buộc đăng nhập
+                        .requestMatchers("/courses/wishlist/**").authenticated()
                         // Public: xem syllabus (catalog quảng cáo)
                         .requestMatchers(HttpMethod.GET, "/syllabuses/**").permitAll()
                         // Public: xem danh sách & chi tiết khóa học
@@ -74,9 +76,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/leads/me/**").authenticated()
                         // Admin/Staff: xem leads, export Excel
                         .requestMatchers(HttpMethod.GET, "/leads/**")
-                        .hasAnyRole("ADMIN", "TEACHER_MANAGER")
-                        // Admin/Manager: kích hoạt thủ công quyền học
-                        .requestMatchers(HttpMethod.POST, "/leads/*/activate")
                         .hasAnyRole("ADMIN", "TEACHER_MANAGER")
                         // Student: cập nhật progress module trong online-course domain
                         .requestMatchers(HttpMethod.POST, "/schedule-modules/*/my-progress")

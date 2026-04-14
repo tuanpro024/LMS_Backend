@@ -1,12 +1,17 @@
 package com.lms.videocourse.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
+import org.springframework.security.core.Authentication;
 import com.lms.videocourse.dto.SyllabusTreeDTO;
 import com.lms.videocourse.dto.response.SyllabusCourseListDTO;
 import com.lms.videocourse.dto.response.SyncRunDTO;
 import com.lms.videocourse.entity.SyllabusSyncRun;
 import com.lms.videocourse.entity.enums.SyncTriggerType;
 import com.lms.videocourse.repository.SyllabusSyncRunRepository;
+import com.lms.videocourse.service.ActivityMappingService;
 import com.lms.videocourse.service.SyllabusService;
 import com.lms.videocourse.service.SyllabusSyncService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +30,7 @@ public class SyllabusController {
 
     private final SyllabusService syllabusService;
     private final SyllabusSyncService syllabusSyncService;
+    private final ActivityMappingService mappingService;
     private final SyllabusSyncRunRepository syncRunRepository;
 
     /**
@@ -82,6 +88,19 @@ public class SyllabusController {
                 .map(this::toSyncRunDTO)
                 .toList();
         return ResponseEntity.ok(ApiResponse.ok(data));
+    }
+
+    /**
+     * Generate actual course content from syllabus and mappings.
+     */
+    @PostMapping("/generate/{cmsCourseId}")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
+    public ResponseEntity<ApiResponse<String>> generateCourse(
+            @PathVariable String cmsCourseId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        String packageId = mappingService.generateCourse(cmsCourseId, principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(packageId));
     }
 
     private SyncRunDTO toSyncRunDTO(SyllabusSyncRun run) {

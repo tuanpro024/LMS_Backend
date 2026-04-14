@@ -1,13 +1,19 @@
 package com.lms.videocourse.service;
 
+import com.lms.content.common.delegate.api.*;
+import com.lms.content.common.dto.request.*;
+import com.lms.content.common.dto.response.*;
+import com.lms.content.common.entity.TypeName;
 import com.lms.videocourse.dto.request.ActivityMappingRequest;
 import com.lms.videocourse.dto.response.ActivityMappingDTO;
 import com.lms.videocourse.dto.response.GenerationStatusDTO;
 import com.lms.videocourse.entity.*;
+import com.lms.videocourse.entity.enums.ModuleType;
 import com.lms.videocourse.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,6 +30,12 @@ public class ActivityMappingService {
     private final SyllabusFolderRepository folderRepository;
     private final SyllabusPackageRepository packageRepository;
     private final CmsVideoCourseRepository cmsCourseRepository;
+    private final VideoStepRepository videoStepRepository;
+    private final VideoModuleRepository videoModuleRepository;
+    
+    private final PackageApiDelegate packageDelegate;
+    private final FolderApiDelegate folderDelegate;
+    private final StudySetApiDelegate studySetDelegate;
 
     /**
      * Get mapping for a specific activity.
@@ -178,6 +190,140 @@ public class ActivityMappingService {
                 .canGenerate(total > 0 && mapped == total)
                 .unmappedList(unmappedList)
                 .build();
+    }
+
+    @Transactional
+    public String generateCourse(String cmsCourseId, String userId) {
+        log.info(">>> START course generation for CMS course: {} by user: {}", cmsCourseId, userId);
+        
+        GenerationStatusDTO status = getGenerationStatus(cmsCourseId);
+        log.info("Current generation status: mapped={}/total={}, canGenerate={}", 
+                status.getMappedActivities(), status.getTotalActivities(), status.isCanGenerate());
+        
+        if (!status.isCanGenerate()) {
+            log.error("Course not ready! Unmapped indices: {}", status.getUnmappedActivities());
+            throw new RuntimeException("Course is not ready for generation. Unmapped activities: " + status.getUnmappedActivities());
+        }
+
+        CmsVideoCourse cmsCourse = cmsCourseRepository.findByCmsCourseId(cmsCourseId)
+                .orElseThrow(() -> new RuntimeException("CMS Course not found: " + cmsCourseId));
+
+        SyllabusPackage syllabusPkg = packageRepository.findByCmsSyllabusIdAndCmsCourseId(cmsCourse.getSyllabusId(), cmsCourseId)
+                .orElseThrow(() -> new RuntimeException("Syllabus Package not found for syllabus: " + cmsCourse.getSyllabusId()));
+
+        log.info("Step 1: Creating internal Package...");
+        // 1. Create/Update internal Package
+        CreatePackageRequest pkgReq = CreatePackageRequest.builder()
+                .name(cmsCourse.getName())
+                .description(syllabusPkg.getDescription())
+                .type(TypeName.VIDEO_COURSE)
+                .category(mapCategory(syllabusPkg.getCategory()))
+                .price(cmsCourse.getPrice() != null ? cmsCourse.getPrice() : java.math.BigDecimal.ZERO)
+                .build();
+        
+        PackageResponse pkgResp = packageDelegate.createPackage(pkgReq, userId);
+        String packageId = pkgResp.getId();
+        log.info("Internal Package created with ID: {}", packageId);
+
+        // 2. Iterate Folders
+        List<SyllabusFolder> syllabusFolders = folderRepository.findAllBySyllabusPackageIdAndDeletedFalse(syllabusPkg.getId());
+        log.info("Processing {} syllabus folders...", syllabusFolders.size());
+        
+        for (SyllabusFolder sFolder : syllabusFolders) {
+            log.info("  > Creating folder: {}", sFolder.getName());
+            CreateFolderRequest folderReq = CreateFolderRequest.builder()
+                    .packageId(packageId)
+                    .name(sFolder.getName())
+                    .description(sFolder.getDescription())
+                    .isPrivate(false)
+                    .build();
+            FolderResponse folderResp = folderDelegate.createFolder(folderReq, userId);
+            String folderId = folderResp.getId();
+
+            // 3. Iterate StudySets
+            List<SyllabusStudySet> syllabusStudySets = studySetRepository.findAllBySyllabusFolderIdAndDeletedFalse(sFolder.getId());
+            log.info("    >> Processing {} study sets...", syllabusStudySets.size());
+
+            for (SyllabusStudySet sSet : syllabusStudySets) {
+                log.info("      >>> Creating study set: {}", sSet.getName());
+                CreateStudySetRequest ssReq = CreateStudySetRequest.builder()
+                        .folderId(folderId)
+                        .title(sSet.getName())
+                        .description(sSet.getDescription())
+                        .isPrivate(false)
+                        .build();
+                StudySetResponse ssResp = studySetDelegate.createStudySet(ssReq, userId);
+                String internalStudySetId = ssResp.getId();
+
+                // 4. Iterate Steps
+                List<SyllabusStep> syllabusSteps = stepRepository.findAllByDeletedFalse().stream()
+                        .filter(st -> sSet.getId().equals(st.getSyllabusStudySetId()))
+                        .sorted(Comparator.comparing(SyllabusStep::getDisplayOrder, Comparator.nullsLast(Comparator.naturalOrder())))
+                        .toList();
+
+                for (SyllabusStep sStep : syllabusSteps) {
+                    log.info("        >>>> Creating video step: {}", sStep.getName());
+                    VideoStep vStep = VideoStep.builder()
+                            .studySetId(internalStudySetId)
+                            .title(sStep.getName())
+                            .description(sStep.getDescription())
+                            .stepOrder(sStep.getDisplayOrder())
+                            .isRequired(true)
+                            .isActive(true)
+                            .build();
+                    vStep = videoStepRepository.save(vStep);
+
+                    // 5. Iterate Activities -> VideoModules
+                    List<SyllabusActivity> syllabusActivities = activityRepository.findAllBySyllabusStepIdAndDeletedFalse(sStep.getId());
+                    
+                    for (SyllabusActivity sActivity : syllabusActivities) {
+                        try {
+                            SyllabusActivityModuleMapping mapping = mappingRepository.findBySyllabusActivityIdAndDeletedFalse(sActivity.getId())
+                                    .orElseThrow(() -> new RuntimeException("Mapping missing for activity: " + sActivity.getName()));
+
+                            log.info("          >>>>> Adding module: {} type: {}", sActivity.getName(), mapping.getTargetModuleType());
+                            
+                            VideoModule vModule = VideoModule.builder()
+                                    .stepId(vStep.getId())
+                                    .title(sActivity.getName())
+                                    .description(sActivity.getDescription())
+                                    .moduleOrder(sActivity.getDisplayOrder())
+                                    .moduleType(com.lms.videocourse.entity.enums.ModuleType.valueOf(mapping.getTargetModuleType().toUpperCase()))
+                                    .contentSetId(mapping.getTargetContentSetId())
+                                    .videoCode(mapping.getTargetModuleType().equalsIgnoreCase("VIDEO") ? mapping.getTargetContentSetId() : null)
+                                    .isRequired(mapping.isRequired())
+                                    .isActive(true)
+                                    .build();
+                            
+                            videoModuleRepository.save(vModule);
+                        } catch (Exception ex) {
+                            log.error("Error creating module for activity {}: {}", sActivity.getName(), ex.getMessage());
+                            throw ex; 
+                        }
+                    }
+                }
+            }
+        }
+
+        log.info("<<< Course generation COMPLETED successfully for: {}. Package ID: {}", cmsCourseId, packageId);
+        return packageId;
+    }
+
+    private com.lms.content.common.entity.CategoryType mapCategory(String syllabusCategory) { 
+        if (syllabusCategory == null) return com.lms.content.common.entity.CategoryType.HSK;
+        log.info("Mapping category string: {}", syllabusCategory);
+        try {
+            // Basic mapping logic
+            String cat = syllabusCategory.toUpperCase();
+            if (cat.contains("HSK")) return com.lms.content.common.entity.CategoryType.HSK;
+            if (cat.contains("BUSINESS")) return com.lms.content.common.entity.CategoryType.BUSINESS_CHINESE;
+            if (cat.contains("FREE")) return com.lms.content.common.entity.CategoryType.FREE_LEARNING;
+            
+            return com.lms.content.common.entity.CategoryType.valueOf(cat);
+        } catch (Exception e) {
+            log.warn("Unknown category: {}, defaulting to HSK", syllabusCategory);
+            return com.lms.content.common.entity.CategoryType.HSK;
+        }
     }
 
     private ActivityMappingDTO toDTO(SyllabusActivityModuleMapping entity) {

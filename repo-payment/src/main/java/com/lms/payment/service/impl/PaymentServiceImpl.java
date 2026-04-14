@@ -39,8 +39,12 @@ public class PaymentServiceImpl implements PaymentService {
     private final PayOsService payOsService;
     private final PayOS payOS;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+    private final org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final com.lms.payment.repository.MembershipPlanRepository planRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<CartItemResponse> getCart(String userId) {
         return cartRepository.findByUserId(userId).stream()
                 .map(this::mapToCartResponse)
@@ -60,12 +64,24 @@ public class PaymentServiceImpl implements PaymentService {
             throw new ApiException(ErrorCode.E240, "Package already owned");
         }
 
+        java.math.BigDecimal price = request.getPrice();
+        Integer duration = null;
+
+        if (request.getItemType() == com.lms.payment.entity.enums.ItemType.MEMBERSHIP) {
+            com.lms.payment.entity.MembershipPlan plan = planRepository.findById(request.getPackageId())
+                    .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Membership plan not found"));
+            price = plan.getPrice();
+            duration = plan.getDurationInDays();
+        }
+
         CartItem item = CartItem.builder()
                 .userId(userId)
                 .packageId(request.getPackageId())
                 .packageName(request.getPackageName())
-                .price(request.getPrice())
+                .price(price)
                 .thumbnail(request.getThumbnail())
+                .itemType(request.getItemType())
+                .durationInDays(duration) // Cần thêm field này vào CartItem
                 .build();
         
         return mapToCartResponse(cartRepository.save(item));
@@ -106,6 +122,8 @@ public class PaymentServiceImpl implements PaymentService {
                     .packageName(ci.getPackageName())
                     .price(ci.getPrice())
                     .thumbnail(ci.getThumbnail())
+                    .itemType(ci.getItemType())
+                    .durationInDays(ci.getDurationInDays()) // Cần thêm field vào OrderItem
                     .build());
         }
 
@@ -174,7 +192,23 @@ public class PaymentServiceImpl implements PaymentService {
 
                 // Cấp quyền truy cập cho từng package
                 for (OrderItem item : order.getItems()) {
-                    grantAccess(order.getUserId(), item.getPackageId(), item.getPackageName());
+                    if (item.getItemType() == com.lms.payment.entity.enums.ItemType.MEMBERSHIP) {
+                        // Phát sự kiện mua premium (Identity và Notification sẽ lắng nghe)
+                        com.lms.common.event.MembershipPurchasedEvent event = com.lms.common.event.MembershipPurchasedEvent.builder()
+                                .userId(order.getUserId())
+                                .orderId(order.getId())
+                                .packageName(item.getPackageName())
+                                .durationInDays(item.getDurationInDays() != null ? item.getDurationInDays() : 30)
+                                .build();
+                        try {
+                            String json = objectMapper.writeValueAsString(event);
+                            kafkaTemplate.send("membership.purchased", json);
+                        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                            log.error("Failed to serialize MembershipPurchasedEvent for order {}", order.getId(), e);
+                        }
+                    } else {
+                        grantAccess(order.getUserId(), item.getPackageId(), item.getPackageName());
+                    }
                 }
 
                 orderRepository.save(order);
@@ -192,6 +226,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public OrderResponse getOrderStatus(String orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Order not found"));
@@ -199,6 +234,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AccessCheckResponse checkAccess(String userId, String packageId) {
         boolean hasAccess = accessRepository.findByUserIdAndPackageIdAndStatus(userId, packageId, AccessStatus.ACTIVE).isPresent();
         return AccessCheckResponse.builder()
@@ -222,6 +258,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderResponse> getMyOrders(String userId) {
         return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(this::mapToOrderResponse)
@@ -229,6 +266,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<String> getMyOwnedPackageIds(String userId) {
         return accessRepository.findByUserIdAndStatus(userId, AccessStatus.ACTIVE).stream()
                 .map(UserPackageAccess::getPackageId)
@@ -258,11 +296,17 @@ public class PaymentServiceImpl implements PaymentService {
                 .packageName(item.getPackageName())
                 .price(item.getPrice())
                 .thumbnail(item.getThumbnail())
+                .itemType(item.getItemType() != null ? item.getItemType().name() : null)
+                .durationInDays(item.getDurationInDays())
                 .createdAt(item.getCreatedAt())
                 .build();
     }
 
     private OrderResponse mapToOrderResponse(Order order) {
+        boolean hasMembership = order.getItems().stream()
+                .anyMatch(item -> item.getItemType() == com.lms.payment.entity.enums.ItemType.MEMBERSHIP);
+        String label = hasMembership ? "Gói thành viên" : "Khóa học";
+
         return OrderResponse.builder()
                 .id(order.getId())
                 .userId(order.getUserId())
@@ -272,6 +316,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentLinkId(order.getPaymentLinkId())
                 .createdAt(order.getCreatedAt())
                 .paidAt(order.getPaidAt())
+                .label(label)
                 .items(order.getItems().stream().map(item -> 
                     OrderItemResponse.builder()
                         .id(item.getId())
@@ -279,6 +324,8 @@ public class PaymentServiceImpl implements PaymentService {
                         .packageName(item.getPackageName())
                         .price(item.getPrice())
                         .thumbnail(item.getThumbnail())
+                        .itemType(item.getItemType() != null ? item.getItemType().name() : null)
+                        .durationInDays(item.getDurationInDays())
                         .build()
                 ).collect(Collectors.toList()))
                 .build();

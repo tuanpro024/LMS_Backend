@@ -31,5 +31,8 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     @Query("SELECT COUNT(i) FROM Order o JOIN o.items i WHERE o.status = :status")
     long countTotalItemsByStatus(@Param("status") OrderStatus status);
 
+    @Query("SELECT COUNT(i) FROM Order o JOIN o.items i WHERE o.status = :status AND i.itemType = :itemType")
+    long countTotalItemsByStatusAndItemType(@Param("status") OrderStatus status, @Param("itemType") com.lms.payment.entity.enums.ItemType itemType);
+
     Page<Order> findAll(Pageable pageable);
 }

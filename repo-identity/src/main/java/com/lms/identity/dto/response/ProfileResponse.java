@@ -1,5 +1,6 @@
 package com.lms.identity.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.lms.identity.entity.UserStatus;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,5 +17,8 @@ public class ProfileResponse {
     private final String avatarUrl;
     private final String address;
     private final Set<String> roles;
-    private final UserStatus status;
+    @JsonProperty("isPremium")
+    private final boolean isPremium;
+    @JsonProperty("premiumExpiryDate")
+    private final java.time.Instant premiumExpiryDate;
 }

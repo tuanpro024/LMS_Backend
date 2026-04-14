@@ -54,4 +54,20 @@ public class User extends BaseEntity {
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     @Builder.Default
     private Set<Role> roles = new HashSet<>();
+
+    @Column(name = "is_premium")
+    @Builder.Default
+    private Boolean premium = false;
+
+    public boolean isPremium() {
+        return premium != null && premium && 
+               (premiumExpiryDate == null || premiumExpiryDate.isAfter(java.time.Instant.now()));
+    }
+
+    public void setPremium(boolean premium) {
+        this.premium = premium;
+    }
+
+    @Column(name = "premium_expiry_date")
+    private java.time.Instant premiumExpiryDate;
 }

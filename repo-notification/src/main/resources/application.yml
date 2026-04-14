@@ -30,6 +30,28 @@ spring:
     consumer:
       group-id: notification-service
       auto-offset-reset: latest
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME:REDACTED_EMAIL_ADDRESS}
+    password: ${EMAIL_PASSWORD:REDACTED_EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+app:
+  email:
+    from: ${EMAIL_FROM:noreply@hocba.com}
+    from-name: ${EMAIL_FROM_NAME:Hệ Thống Học Bá}
+  frontend:
+    url: ${FRONTEND_URL:https://lms.dangch.tech}
 
 server:
   port: ${SERVER_PORT:8083}

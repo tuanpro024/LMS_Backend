@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public interface UserMapper {
 
     @Mapping(target = "roles", expression = "java(toRoleNames(user.getRoles()))")
+    @Mapping(target = "isPremium", expression = "java(user.isPremium())")
     ProfileResponse toProfile(User user);
 
     @Mapping(target = "roles", expression = "java(toRoleNames(user.getRoles()))")

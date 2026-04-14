@@ -81,4 +81,12 @@ public class AvailableModuleController {
             @RequestParam(required = false) String q) {
         return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailablePronunciationSets(q)));
     }
+
+    /** Get available videos from repo-multimedia */
+    @GetMapping("/video")
+    @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
+    public ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> getAvailableVideoSets(
+            @RequestParam(required = false) String q) {
+        return ResponseEntity.ok(ApiResponse.ok(availableModuleService.getAvailableVideoSets(q)));
+    }
 }

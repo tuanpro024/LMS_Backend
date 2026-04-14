@@ -31,4 +31,7 @@ public interface IAvailableModuleService {
     /** Get available pronunciation study sets */
     List<AvailableModuleResponse> getAvailablePronunciationSets(String query);
 
+    /** Get available videos from repo-multimedia */
+    List<AvailableModuleResponse> getAvailableVideoSets(String query);
+
 }

@@ -61,12 +61,12 @@ public class VideoModule extends BaseEntity {
     @Column(length = 50)
     private com.lms.videocourse.entity.enums.ModuleType moduleType; // FLASHCARD, QUIZ, WRITING, KANJI_ORIGIN, etc.
 
-    @Column(length = 26)
+    @Column(length = 100)
     private String contentSetId; // target study set / content ID in other services
 
     // ===== Optional link to repo-multimedia =====
 
-    @Column(length = 50)
+    @Column(length = 100)
     private String videoCode; // Optional: Video.code from repo-multimedia (for sync)
 
     // ===== Module settings =====

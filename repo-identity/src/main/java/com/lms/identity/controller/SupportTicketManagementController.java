@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/management/support-tickets")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_TEACHER_MANAGER')")
 public class SupportTicketManagementController {
 
     private final SupportTicketService supportTicketService;
@@ -26,10 +26,12 @@ public class SupportTicketManagementController {
     public ApiResponse<PageResponse<SupportTicketResponse>> list(Authentication authentication,
                                                                  @RequestParam(required = false) String search,
                                                                  @RequestParam(required = false) String status,
+                                                                 @RequestParam(required = false) String category,
+                                                                 @RequestParam(required = false) String priority,
                                                                  @RequestParam(defaultValue = "0") int page,
                                                                  @RequestParam(defaultValue = "20") int size) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        Page<SupportTicketResponse> result = supportTicketService.listManagementTickets(principal, search, status, page, size);
+        Page<SupportTicketResponse> result = supportTicketService.listManagementTickets(principal, search, status, category, priority, page, size);
         return ApiResponse.ok(PageResponse.<SupportTicketResponse>builder()
                 .items(result.getContent())
                 .totalElements(result.getTotalElements())

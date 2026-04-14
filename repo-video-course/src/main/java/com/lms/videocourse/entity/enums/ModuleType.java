@@ -11,5 +11,6 @@ public enum ModuleType {
     QUIZ,
     LISTENING,
     PRONUNCIATION,
-    LEARNING_PATH
+    LEARNING_PATH,
+    VIDEO
 }

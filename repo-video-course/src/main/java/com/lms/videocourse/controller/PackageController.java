@@ -10,15 +10,17 @@ import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
 import com.lms.content.common.entity.TypeName;
 import com.lms.content.common.entity.CategoryType;
+import com.lms.videocourse.dto.response.SyllabusCategoryResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Controller for managing Packages in the Video Course context.
@@ -82,14 +84,13 @@ public class PackageController {
     }
 
     @GetMapping("/categories")
-    public ResponseEntity<ApiResponse<List<com.lms.videocourse.dto.response.CategoryResponse>>> getCategories() {
-        List<com.lms.videocourse.dto.response.CategoryResponse> categories = java.util.Arrays
-                .stream(com.lms.content.common.entity.CategoryType.values())
-                .map(cat -> com.lms.videocourse.dto.response.CategoryResponse.builder()
+    public ResponseEntity<ApiResponse<List<SyllabusCategoryResponse>>> getCategories() {
+        List<SyllabusCategoryResponse> categories = Arrays.stream(CategoryType.values())
+                .map(cat -> SyllabusCategoryResponse.builder()
                         .code(cat.name())
                         .name(cat.getDisplayName())
                         .build())
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.ok(categories));
     }
 

@@ -1,5 +1,7 @@
 package com.lms.identity.service.impl;
 
+import com.lms.identity.entity.support.SupportTicketCategory;
+import com.lms.identity.entity.support.SupportTicketPriority;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.common.notification.NotificationEvent;
@@ -48,6 +50,9 @@ public class SupportTicketServiceImpl implements SupportTicketService {
         SupportTicket ticket = SupportTicket.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
+                .category(request.getCategory())
+                .priority(request.getPriority())
+                .files(request.getFiles())
                 .status(SupportTicketStatus.OPEN)
                 .createdBy(principal.userId())
                 .build();
@@ -58,9 +63,48 @@ public class SupportTicketServiceImpl implements SupportTicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<SupportTicketResponse> listMyTickets(AuthPrincipal principal, int page, int size) {
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<SupportTicket> result = supportTicketRepository.findByCreatedBy(principal.userId(), pageable);
+    public Page<SupportTicketResponse> listMyTickets(AuthPrincipal principal, String status, String category, String priority, String sortBy, String sortDirection, int page, int size) {
+        String sortField = (sortBy != null && !sortBy.isBlank()) ? sortBy : "createdAt";
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+        
+        Specification<SupportTicket> spec = (root, query, cb) -> {
+            var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
+            
+            // Fixed filter: only tickets created by this user
+            predicates.add(cb.equal(root.get("createdBy"), principal.userId()));
+            
+            // Optional filter: status
+            if (status != null && !status.isBlank()) {
+                try {
+                    predicates.add(cb.equal(root.get("status"), SupportTicketStatus.valueOf(status)));
+                } catch (IllegalArgumentException e) {
+                    // Ignore invalid status
+                }
+            }
+            
+            // Optional filter: category
+            if (category != null && !category.isBlank()) {
+                try {
+                    predicates.add(cb.equal(root.get("category"), SupportTicketCategory.valueOf(category)));
+                } catch (IllegalArgumentException e) {
+                    // Ignore invalid category
+                }
+            }
+            
+            // Optional filter: priority
+            if (priority != null && !priority.isBlank()) {
+                try {
+                    predicates.add(cb.equal(root.get("priority"), SupportTicketPriority.valueOf(priority)));
+                } catch (IllegalArgumentException e) {
+                    // Ignore invalid priority
+                }
+            }
+            
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        Page<SupportTicket> result = supportTicketRepository.findAll(spec, pageable);
         return result.map(this::toResponse);
     }
 
@@ -100,7 +144,7 @@ public class SupportTicketServiceImpl implements SupportTicketService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<SupportTicketResponse> listManagementTickets(AuthPrincipal principal, String search, String status, int page, int size) {
+    public Page<SupportTicketResponse> listManagementTickets(AuthPrincipal principal, String search, String status, String category, String priority, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         
         Specification<SupportTicket> spec = (root, query, cb) -> {
@@ -113,6 +157,20 @@ public class SupportTicketServiceImpl implements SupportTicketService {
                     predicates.add(cb.equal(root.get("status"), SupportTicketStatus.valueOf(status)));
                 } catch (IllegalArgumentException e) {
                     // Ignore invalid status
+                }
+            }
+            if (category != null && !category.isBlank()) {
+                try {
+                    predicates.add(cb.equal(root.get("category"), SupportTicketCategory.valueOf(category)));
+                } catch (IllegalArgumentException e) {
+                    // Ignore
+                }
+            }
+            if (priority != null && !priority.isBlank()) {
+                try {
+                    predicates.add(cb.equal(root.get("priority"), SupportTicketPriority.valueOf(priority)));
+                } catch (IllegalArgumentException e) {
+                    // Ignore
                 }
             }
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
@@ -185,6 +243,9 @@ public class SupportTicketServiceImpl implements SupportTicketService {
                 .title(ticket.getTitle())
                 .description(ticket.getDescription())
                 .status(ticket.getStatus())
+                .category(ticket.getCategory())
+                .priority(ticket.getPriority())
+                .files(ticket.getFiles())
                 .createdBy(ticket.getCreatedBy())
                 .creatorName(creator != null ? creator.getFullName() : "Người dùng")
                 .creatorAvatarUrl(creator != null ? creator.getAvatarUrl() : null)

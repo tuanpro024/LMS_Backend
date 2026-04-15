@@ -30,7 +30,7 @@ public class CmsApiClient {
 
     public CmsApiClient(
             RestTemplateBuilder builder,
-            @Value("${app.cms.base-url}") String baseUrl,
+            @Value("${app.cms.base-url:https://cms.dangch.tech/api/erp}") String baseUrl,
             @Value("${app.cms.connect-timeout:5000}") int connectTimeout,
             @Value("${app.cms.read-timeout:10000}") int readTimeout) {
         this.baseUrl = baseUrl;

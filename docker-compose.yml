@@ -527,4 +527,5 @@ networks:
 
 volumes:
   mysql_data:
+  minio_data:
 

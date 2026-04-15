@@ -11,7 +11,7 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class AvailableModuleResponse {
+public class AvailableModuleResponse { // Diagnostic touch 1
 
     private String id;
     private String title;

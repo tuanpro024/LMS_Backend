@@ -62,34 +62,4 @@ public class LeadEmailServiceImpl implements ILeadEmailService {
             log.error("Unexpected error sending registration confirmation email to {}: {}", lead.getEmail(), e.getMessage());
         }
     }
-
-    @Async
-    @Override
-    public void sendActivationEmail(LeadRegistration lead) {
-        try {
-            log.info("Sending activation email to: {}", lead.getEmail());
-
-            Context context = new Context();
-            context.setVariable("fullName", lead.getFullName());
-            context.setVariable("courseName", lead.getCourseName());
-            context.setVariable("courseCode", lead.getCourseCode());
-            context.setVariable("approvedAt", lead.getApprovedAt());
-
-            String htmlContent = templateEngine.process("lead-activation-notification", context);
-
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(emailFrom, emailFromName);
-            helper.setTo(lead.getEmail());
-            helper.setSubject("🎉 Quyền học đã được kích hoạt – HúLi Chinese");
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-            log.info("Activation email sent to: {}", lead.getEmail());
-        } catch (MessagingException | java.io.UnsupportedEncodingException e) {
-            log.error("Failed to send activation email to {}: {}", lead.getEmail(), e.getMessage());
-        } catch (Exception e) {
-            log.error("Unexpected error sending activation email to {}: {}", lead.getEmail(), e.getMessage());
-        }
-    }
 }

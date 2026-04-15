@@ -94,24 +94,8 @@ public class LeadController {
         }
 
         /**
-         * Kích hoạt thủ công quyền học cho một người đăng ký.
-         * Chỉ ADMIN/TEACHER_MANAGER mới được gọi endpoint này.
-         * Chuyển trạng thái lead → APPROVED, ghi nhận adminUserId + thời điểm.
-         */
-        @PostMapping("/{leadId}/activate")
-        @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
-        public ResponseEntity<ApiResponse<LeadRegistrationResponse>> activateLead(
-                        @PathVariable String leadId,
-                        Authentication authentication) {
-
-                String adminUserId = extractUserId(authentication);
-                LeadRegistrationResponse response = leadService.activateLead(leadId, adminUserId);
-                return ResponseEntity.ok(ApiResponse.ok(response));
-        }
-
-        /**
          * Lấy trạng thái đăng ký của chính mình cho một khóa học.
-         * Frontend dùng để kiểm tra status và hiển thị thông báo phù hợp.
+         * Frontend dùng để hiển thị trạng thái và thông báo phù hợp.
          * Trả về 200 với body null nếu chưa đăng ký.
          */
         @GetMapping("/me/{courseCode}")

@@ -5,10 +5,8 @@ import com.lms.videocourse.dto.request.UpdateVideoStepRequest;
 import com.lms.videocourse.dto.response.VideoStepProgressResponse;
 import com.lms.videocourse.dto.response.VideoStepResponse;
 import com.lms.videocourse.entity.VideoStep;
-import com.lms.videocourse.entity.VideoStepUnlockRule;
 import com.lms.videocourse.exception.ResourceNotFoundException;
 import com.lms.videocourse.repository.VideoStepRepository;
-import com.lms.videocourse.repository.VideoStepUnlockRuleRepository;
 import com.lms.videocourse.repository.VideoModuleRepository;
 import com.lms.videocourse.service.IVideoStepService;
 import com.lms.videocourse.service.IVideoUnlockService;
@@ -27,7 +25,6 @@ import java.util.stream.Collectors;
 public class VideoStepServiceImpl implements IVideoStepService {
 
     private final VideoStepRepository videoStepRepository;
-    private final VideoStepUnlockRuleRepository unlockRuleRepository;
     private final VideoModuleRepository videoModuleRepository;
     private final IVideoUnlockService unlockService;
     private final IVideoProgressService progressService;
@@ -55,27 +52,6 @@ public class VideoStepServiceImpl implements IVideoStepService {
                 .build();
 
         step = videoStepRepository.save(step);
-
-        // Auto-create sequential unlock rule (requires previous step)
-        if (request.getStepOrder() > 1) {
-            List<VideoStep> steps = videoStepRepository
-                    .findByStudySetIdAndIsActiveTrueOrderByStepOrderAsc(request.getStudySetId());
-            VideoStep previousStep = steps.stream()
-                    .filter(s -> s.getStepOrder() == request.getStepOrder() - 1)
-                    .findFirst()
-                    .orElse(null);
-
-            if (previousStep != null) {
-                VideoStepUnlockRule rule = VideoStepUnlockRule.builder()
-                        .stepId(step.getId())
-                        .requiredStepId(previousStep.getId())
-                        .requireAllModules(true)
-                        .minimumWatchPercent(80)
-                        .isActive(true)
-                        .build();
-                unlockRuleRepository.save(rule);
-            }
-        }
 
         int moduleCount = (int) videoModuleRepository.countByStepIdAndIsActiveTrue(step.getId());
         return toResponse(step, null, null, null, moduleCount);

@@ -10,6 +10,8 @@ import java.util.Optional;
 @Repository
 public interface LearningPathRepository extends JpaRepository<LearningPath, String> {
 
+    List<LearningPath> findByStudySetId(String studySetId);
+
     List<LearningPath> findByStudySetIdOrderByCreatedAtAsc(String studySetId);
 
     Optional<LearningPath> findByIdAndIsActiveTrue(String id);

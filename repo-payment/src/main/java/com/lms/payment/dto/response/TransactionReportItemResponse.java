@@ -55,6 +55,8 @@ public class TransactionReportItemResponse {
         private String packageName;
         private BigDecimal price;
         private String thumbnail;
+        private String itemType;
+        private Integer durationInDays;
 
         public CourseInfo() {}
         public String getPackageId() { return packageId; }
@@ -65,5 +67,9 @@ public class TransactionReportItemResponse {
         public void setPrice(BigDecimal price) { this.price = price; }
         public String getThumbnail() { return thumbnail; }
         public void setThumbnail(String thumbnail) { this.thumbnail = thumbnail; }
+        public String getItemType() { return itemType; }
+        public void setItemType(String itemType) { this.itemType = itemType; }
+        public Integer getDurationInDays() { return durationInDays; }
+        public void setDurationInDays(Integer durationInDays) { this.durationInDays = durationInDays; }
     }
 }

@@ -1,9 +1,8 @@
 package com.lms.payment.entity;
 
 import com.lms.common.jpa.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import com.lms.payment.entity.enums.ItemType;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 @Entity
@@ -24,14 +23,23 @@ public class CartItem extends BaseEntity {
 
     private String thumbnail;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "item_type")
+    private ItemType itemType = ItemType.COURSE;
+
+    @Column(name = "duration_in_days")
+    private Integer durationInDays; // Only for MEMBERSHIP type
+
     public CartItem() {}
 
-    public CartItem(String userId, String packageId, String packageName, BigDecimal price, String thumbnail) {
+    public CartItem(String userId, String packageId, String packageName, BigDecimal price, String thumbnail, ItemType itemType, Integer durationInDays) {
         this.userId = userId;
         this.packageId = packageId;
         this.packageName = packageName;
         this.price = price;
         this.thumbnail = thumbnail;
+        this.itemType = itemType != null ? itemType : ItemType.COURSE;
+        this.durationInDays = durationInDays;
     }
 
     public String getUserId() { return userId; }
@@ -44,6 +52,10 @@ public class CartItem extends BaseEntity {
     public void setPrice(BigDecimal price) { this.price = price; }
     public String getThumbnail() { return thumbnail; }
     public void setThumbnail(String thumbnail) { this.thumbnail = thumbnail; }
+    public ItemType getItemType() { return itemType; }
+    public void setItemType(ItemType itemType) { this.itemType = itemType; }
+    public Integer getDurationInDays() { return durationInDays; }
+    public void setDurationInDays(Integer durationInDays) { this.durationInDays = durationInDays; }
 
     public static Builder builder() { return new Builder(); }
 
@@ -53,14 +65,18 @@ public class CartItem extends BaseEntity {
         private String packageName;
         private BigDecimal price;
         private String thumbnail;
+        private ItemType itemType;
+        private Integer durationInDays;
 
         public Builder userId(String userId) { this.userId = userId; return this; }
         public Builder packageId(String packageId) { this.packageId = packageId; return this; }
         public Builder packageName(String packageName) { this.packageName = packageName; return this; }
         public Builder price(BigDecimal price) { this.price = price; return this; }
         public Builder thumbnail(String thumbnail) { this.thumbnail = thumbnail; return this; }
+        public Builder itemType(ItemType itemType) { this.itemType = itemType; return this; }
+        public Builder durationInDays(Integer durationInDays) { this.durationInDays = durationInDays; return this; }
         public CartItem build() {
-            return new CartItem(userId, packageId, packageName, price, thumbnail);
+            return new CartItem(userId, packageId, packageName, price, thumbnail, itemType, durationInDays);
         }
     }
 }

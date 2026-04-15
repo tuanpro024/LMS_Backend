@@ -31,5 +31,9 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
 
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.name = :roleName AND u.deleted = false")
     List<User> findByRolesName(@Param("roleName") com.lms.identity.entity.RoleName roleName);
+
+    List<User> findAllByPremiumTrueAndPremiumExpiryDateBetween(java.time.Instant start, java.time.Instant end);
+
+    List<User> findAllByPremiumTrueAndPremiumExpiryDateBefore(java.time.Instant now);
 }
 

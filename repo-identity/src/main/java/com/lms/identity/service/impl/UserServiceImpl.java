@@ -104,4 +104,44 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
+
+    @Override
+    @Transactional
+    public void updatePremiumStatus(String userId, boolean isPremium, int durationInDays) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "User not found"));
+        
+        user.setPremium(isPremium);
+        if (isPremium) {
+            java.time.Instant now = java.time.Instant.now();
+            java.time.Instant currentExpiry = user.getPremiumExpiryDate();
+            
+            // Nếu đã là premium và chưa hết hạn thì cộng dồn, ngược lại tính từ bây giờ
+            java.time.Instant baseDate = (currentExpiry != null && currentExpiry.isAfter(now)) ? currentExpiry : now;
+            user.setPremiumExpiryDate(baseDate.plus(durationInDays, java.time.temporal.ChronoUnit.DAYS));
+        } else {
+            user.setPremiumExpiryDate(null);
+        }
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isPremium(String userId) {
+        return userRepository.findById(userId)
+                .map(user -> user.isPremium() && 
+                    (user.getPremiumExpiryDate() == null || user.getPremiumExpiryDate().isAfter(java.time.Instant.now())))
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<ProfileResponse> getProfilesByIds(java.util.List<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return userRepository.findAllById(userIds).stream()
+                .map(userMapper::toProfile)
+                .collect(java.util.stream.Collectors.toList());
+    }
 }

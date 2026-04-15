@@ -23,6 +23,9 @@ public interface AiPracticeItemRepository extends JpaRepository<AiPracticeItem, 
 
     Optional<AiPracticeItem> findByIdAndDeletedFalse(String id);
 
+
     @Query("SELECT MAX(a.contentIndex) FROM AiPracticeItem a WHERE a.studySet.id = :studySetId AND a.deleted = false")
     Integer findMaxContentIndexByStudySetId(@Param("studySetId") String studySetId);
+
+    void deleteByStudySetId(String studySetId);
 }

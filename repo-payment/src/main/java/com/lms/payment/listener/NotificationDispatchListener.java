@@ -36,17 +36,30 @@ public class NotificationDispatchListener {
         List<OrderItem> items = order.getItems();
         int itemCount = items.size();
 
-        // Build localized title & message
-        String title = "Mua khóa học thành công";
-        String message = itemCount == 1
-                ? "Bạn đã mua thành công khóa học " + items.get(0).getPackageName()
-                : "Bạn đã mua thành công " + itemCount + " khóa học video course";
+        // Check if this is a membership purchase
+        boolean isMembership = items.stream()
+                .anyMatch(i -> i.getItemType() == com.lms.payment.entity.enums.ItemType.MEMBERSHIP);
 
-        // Determine destination URL (deep-linking)
-        // If 1 course, go to learning path. If multiple, go to order history.
-        String targetUrl = itemCount == 1
-                ? "/video-course?packageId=" + items.get(0).getPackageId()
-                : "/profile/orders/" + order.getId();
+        String title;
+        String message;
+        String eventType;
+        String targetUrl;
+
+        if (isMembership) {
+            title = "Nâng cấp Premium thành công";
+            message = "Chào mừng bạn đến với gói thành viên Học Bá. Mọi đặc quyền của bạn đã được kích hoạt!";
+            eventType = "MEMBERSHIP_PURCHASE_SUCCESS";
+            targetUrl = "/membership";
+        } else {
+            title = "Mua khóa học thành công";
+            message = itemCount == 1
+                    ? "Bạn đã mua thành công khóa học " + items.get(0).getPackageName()
+                    : "Bạn đã mua thành công " + itemCount + " khóa học video course";
+            eventType = "VIDEO_COURSE_PURCHASE_SUCCESS";
+            targetUrl = itemCount == 1
+                    ? "/video-course?packageId=" + items.get(0).getPackageId()
+                    : "/profile/orders/" + order.getId();
+        }
 
         // Build Payload
         Map<String, Object> payload = new HashMap<>();
@@ -54,6 +67,7 @@ public class NotificationDispatchListener {
         payload.put("orderCode", order.getOrderCode());
         payload.put("targetUrl", targetUrl);
         payload.put("itemCount", itemCount);
+        payload.put("isMembership", isMembership);
         payload.put("items", items.stream().map(item -> Map.of(
                 "packageId", item.getPackageId(),
                 "packageName", item.getPackageName(),
@@ -66,7 +80,7 @@ public class NotificationDispatchListener {
         // Publish to Kafka
         notificationPublisher.publish(new NotificationEvent(
                 order.getUserId(),
-                "VIDEO_COURSE_PURCHASE_SUCCESS",
+                eventType,
                 title,
                 message,
                 ResourceType.OTHER,

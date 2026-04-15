@@ -29,4 +29,6 @@ public interface StepRepository extends JpaRepository<Step, String> {
     long countByLearningPathId(String learningPathId);
 
     long countByLearningPathIdAndIsActiveTrue(String learningPathId);
+
+    void deleteByLearningPathId(String learningPathId);
 }

@@ -34,6 +34,7 @@ public class PackageServiceImpl implements PackageService {
     private final PackageMapper packageMapper;
     private final TypeRepository typeRepository;
     private final com.lms.content.common.service.FolderService folderService;
+    private final com.lms.content.common.service.StudySetService studySetService;
 
     @Override
     public PackageResponse createPackage(CreatePackageRequest request, String userId) {
@@ -135,12 +136,10 @@ public class PackageServiceImpl implements PackageService {
             packageEntity.setPricingType(request.getPricingType());
         }
 
-        // Hook: before update save
         beforeUpdatePackage(packageEntity, request);
 
         Package updated = packageRepository.save(packageEntity);
 
-        // Hook: after update
         afterUpdatePackage(updated);
 
         return packageMapper.toResponse(updated);
@@ -151,21 +150,28 @@ public class PackageServiceImpl implements PackageService {
         Package packageEntity = packageRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
-        // Hook: before delete
         beforeDeletePackage(packageEntity, userId);
 
-        // Trigger folder cleanup first so StudySets/Videos are handled via listeners.
         List<Folder> folders = folderRepository.findByPackageId(id);
         for (Folder folder : folders) {
+            List<com.lms.content.common.entity.StudySet> studySets = folder.getStudySets();
+            if (studySets != null && !studySets.isEmpty()) {
+                List<com.lms.content.common.entity.StudySet> setsToDelete = List.copyOf(studySets);
+                for (com.lms.content.common.entity.StudySet set : setsToDelete) {
+                    try {
+                        studySetService.deleteStudySet(set.getId(), userId);
+                    } catch (Exception e) {
+                        log.warn("Failed to delete study set {} during package deletion: {}", set.getId(), e.getMessage());
+                    }
+                }
+            }
             folderService.deleteFolder(folder.getId(), userId);
         }
 
-        // Force folder deletes to execute before deleting package.
         folderRepository.flush();
 
         packageRepository.delete(packageEntity);
 
-        // Hook: after delete
         afterDeletePackage(id, userId);
     }
 

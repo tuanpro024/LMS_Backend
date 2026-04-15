@@ -14,10 +14,11 @@ public class OrderResponse {
     private Instant createdAt;
     private Instant paidAt;
     private List<OrderItemResponse> items;
+    private String label; // "Khóa học" hoặc "Gói thành viên"
 
     public OrderResponse() {}
 
-    public OrderResponse(String id, String userId, BigDecimal totalPrice, String status, Long orderCode, String paymentLinkId, Instant createdAt, Instant paidAt, List<OrderItemResponse> items) {
+    public OrderResponse(String id, String userId, BigDecimal totalPrice, String status, Long orderCode, String paymentLinkId, Instant createdAt, Instant paidAt, List<OrderItemResponse> items, String label) {
         this.id = id;
         this.userId = userId;
         this.totalPrice = totalPrice;
@@ -27,6 +28,7 @@ public class OrderResponse {
         this.createdAt = createdAt;
         this.paidAt = paidAt;
         this.items = items;
+        this.label = label;
     }
 
     public String getId() { return id; }
@@ -38,6 +40,7 @@ public class OrderResponse {
     public Instant getCreatedAt() { return createdAt; }
     public Instant getPaidAt() { return paidAt; }
     public List<OrderItemResponse> getItems() { return items; }
+    public String getLabel() { return label; }
 
     public static Builder builder() { return new Builder(); }
 
@@ -51,6 +54,7 @@ public class OrderResponse {
         private Instant createdAt;
         private Instant paidAt;
         private List<OrderItemResponse> items;
+        private String label;
 
         public Builder id(String id) { this.id = id; return this; }
         public Builder userId(String userId) { this.userId = userId; return this; }
@@ -61,8 +65,9 @@ public class OrderResponse {
         public Builder createdAt(Instant createdAt) { this.createdAt = createdAt; return this; }
         public Builder paidAt(Instant paidAt) { this.paidAt = paidAt; return this; }
         public Builder items(List<OrderItemResponse> items) { this.items = items; return this; }
+        public Builder label(String label) { this.label = label; return this; }
         public OrderResponse build() {
-            return new OrderResponse(id, userId, totalPrice, status, orderCode, paymentLinkId, createdAt, paidAt, items);
+            return new OrderResponse(id, userId, totalPrice, status, orderCode, paymentLinkId, createdAt, paidAt, items, label);
         }
     }
 }

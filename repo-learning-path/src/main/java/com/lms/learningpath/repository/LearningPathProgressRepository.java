@@ -18,4 +18,6 @@ public interface LearningPathProgressRepository extends JpaRepository<LearningPa
     List<LearningPathProgress> findByUserIdAndStatus(String userId, ProgressStatus status);
 
     boolean existsByUserIdAndLearningPathId(String userId, String learningPathId);
+
+    void deleteByLearningPathId(String learningPathId);
 }

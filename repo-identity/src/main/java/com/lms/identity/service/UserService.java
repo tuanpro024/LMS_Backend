@@ -10,4 +10,10 @@ public interface UserService {
     ProfileResponse updateProfile(String userId, UpdateProfileRequest request);
 
     void changePassword(String userId, ChangePasswordRequest request);
+
+    void updatePremiumStatus(String userId, boolean isPremium, int durationInDays);
+
+    boolean isPremium(String userId);
+
+    java.util.List<ProfileResponse> getProfilesByIds(java.util.List<String> userIds);
 }

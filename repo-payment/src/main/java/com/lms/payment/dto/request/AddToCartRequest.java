@@ -11,4 +11,5 @@ public class AddToCartRequest {
     private String packageName;
     private java.math.BigDecimal price;
     private String thumbnail;
+    private com.lms.payment.entity.enums.ItemType itemType;
 }

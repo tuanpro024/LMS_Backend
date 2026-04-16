@@ -14,7 +14,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ComponentScan(basePackages = {
         "com.lms.content.common.service",
         "com.lms.content.common.delegate.api",
-        "com.lms.content.common.util"
+    "com.lms.content.common.util",
+    "com.lms.content.common.mapper"
 })
 @EntityScan(basePackages = "com.lms.content.common.entity")
 @EnableJpaRepositories(basePackages = "com.lms.content.common.repository")

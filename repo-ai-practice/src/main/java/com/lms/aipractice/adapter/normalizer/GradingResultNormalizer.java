@@ -35,12 +35,14 @@ public class GradingResultNormalizer {
             JsonNode root = objectMapper.readTree(rawJson);
             JsonNode data = root.has("result") ? root.path("result") : root;
 
-            double score = data.path("score").asDouble(0);
-            double maxScore = data.has("max_score_per_question")
-                    ? data.path("max_score_per_question").asDouble(100)
-                    : data.path("max_score").asDouble(100);
-            String level = data.path("level").asText("");
-            String feedback = data.path("feedback").asText("");
+            Double score = readDouble(data, "score", "final_score", "overall_score");
+            Double maxScore = readDouble(data, "max_score_per_question", "max_score");
+            if (maxScore == null) {
+                maxScore = 100D;
+            }
+
+            String level = readText(data, "level");
+            String feedback = readText(data, "feedback");
             String deductions = toJsonString(data.path("deductions"));
 
             // analytics includes rubric_breakdown, required_words_check, character_count
@@ -68,11 +70,15 @@ public class GradingResultNormalizer {
             JsonNode root = objectMapper.readTree(rawJson);
             JsonNode data = root.has("result") ? root.path("result") : root;
 
-            double score = data.path("final_score").asDouble(0);
-            double maxScore = data.path("max_score").asDouble(20);
-            String level = data.path("level").asText("");
-            String feedback = data.path("feedback").asText("");
-            String transcript = data.path("transcript").asText(null);
+            Double score = readDouble(data, "final_score", "score", "overall_score");
+            Double maxScore = readDouble(data, "max_score", "max_score_per_question");
+            if (maxScore == null) {
+                maxScore = 20D;
+            }
+
+            String level = readText(data, "level");
+            String feedback = readText(data, "feedback");
+            String transcript = readText(data, "transcript");
             String deductions = toJsonString(data.path("deductions"));
 
             String analytics = buildSpeakingAnalytics(data);
@@ -97,14 +103,15 @@ public class GradingResultNormalizer {
         try {
             // HSK_API audio job response: {job_id, status, result:{...}}
             JsonNode root = objectMapper.readTree(rawJson);
+            JsonNode data = root.has("result") ? root.path("result") : root;
 
             // Use overall_score if present, keep full raw payload in analytics for
             // UI/debug.
-            double score = root.path("result").path("overall_score").asDouble(-1);
+            double score = data.path("overall_score").asDouble(-1);
             double maxScore = 100;
-            String transcript = root.path("result").path("student_transcript").asText(
-                    root.path("transcript").asText(""));
-            String feedback = root.path("result").path("feedback").asText("");
+            String transcript = data.path("student_transcript").asText(
+                    data.path("transcript").asText(root.path("transcript").asText("")));
+            String feedback = data.path("feedback").asText(root.path("feedback").asText(""));
 
             String analytics = toJsonString(root);
 
@@ -127,35 +134,82 @@ public class GradingResultNormalizer {
 
     private String buildWritingAnalytics(JsonNode root) throws Exception {
         var analytics = objectMapper.createObjectNode();
+
+        analytics.set("gate_passed", root.path("gate_passed"));
+        analytics.set("gate_reason", root.path("gate_reason"));
+        analytics.set("cap_applied", root.path("cap_applied"));
+        analytics.set("cap_reason", root.path("cap_reason"));
+        analytics.set("hsk_level", root.path("hsk_level"));
+        analytics.set("result", root.path("result"));
+        analytics.set("is_correct", root.path("is_correct"));
+        analytics.set("correct_answer", root.path("correct_answer"));
         analytics.set("rubric_breakdown", root.path("rubric_breakdown"));
         analytics.set("required_words_check", root.path("required_words_check"));
         analytics.set("title_check", root.path("title_check"));
-        analytics.put("character_count", root.path("character_count").asInt(0));
-        analytics.put("character_count_valid", root.path("character_count_valid").asBoolean(true));
-        analytics.put("character_count_note", root.path("character_count_note").asText(""));
+        analytics.set("image_relevance", root.path("image_relevance"));
+        analytics.set("character_count", root.path("character_count"));
+        analytics.set("character_count_valid", root.path("character_count_valid"));
+        analytics.set("character_count_note", root.path("character_count_note"));
         analytics.set("missing_source_points", root.path("missing_source_points"));
-        analytics.put("is_correct", root.path("is_correct").asBoolean(false));
+
+        analytics.set("grammar_rule_id", root.path("grammar_rule_id"));
+        analytics.set("grammar_rule_name", root.path("grammar_rule_name"));
+        analytics.set("grammar_explanation", root.path("grammar_explanation"));
+        analytics.set("corrected_answer", root.path("corrected_answer"));
+        analytics.set("corrected_paragraph", root.path("corrected_paragraph"));
+        analytics.set("corrected_summary", root.path("corrected_summary"));
+        analytics.set("model_answer", root.path("model_answer"));
+        analytics.set("reasoning_content", root.path("reasoning_content"));
+        analytics.set("request_id", root.path("request_id"));
+        analytics.set("processing_time_ms", root.path("processing_time_ms"));
+
         return objectMapper.writeValueAsString(analytics);
     }
 
     private String buildSpeakingAnalytics(JsonNode data) throws Exception {
         var analytics = objectMapper.createObjectNode();
         analytics.set("content_analysis", data.path("content_analysis"));
-        analytics.put("speaking_duration_sec", data.path("speaking_duration_sec").asDouble(0));
-        analytics.put("hesitation_count", data.path("hesitation_count").asInt(0));
-        analytics.put("hesitation_total_sec", data.path("hesitation_total_sec").asDouble(0));
-        analytics.put("pronunciation_score", data.path("pronunciation_score").asDouble(0));
+        analytics.set("raw_transcript", data.path("raw_transcript"));
+        analytics.set("total_deducted", data.path("total_deducted"));
+        analytics.set("speaking_duration_sec", data.path("speaking_duration_sec"));
+        analytics.set("hesitation_count", data.path("hesitation_count"));
+        analytics.set("hesitation_total_sec", data.path("hesitation_total_sec"));
+        analytics.set("pronunciation_score", data.path("pronunciation_score"));
+        analytics.set("relaxed_tone_count", data.path("relaxed_tone_count"));
+        analytics.set("pronunciation_meta", data.path("pronunciation_meta"));
         analytics.set("processing_breakdown_ms", data.path("processing_breakdown_ms"));
-        analytics.put("asr_model", data.path("asr_model").asText(""));
+        analytics.set("asr_model", data.path("asr_model"));
+        analytics.set("audio_metadata", data.path("audio_metadata"));
+        analytics.set("processing_time_ms", data.path("processing_time_ms"));
         return objectMapper.writeValueAsString(analytics);
     }
 
     private String toJsonString(JsonNode node) {
         try {
-            return objectMapper.writeValueAsString(node.isMissingNode() ? objectMapper.createArrayNode() : node);
+            return objectMapper.writeValueAsString(
+                    node == null || node.isMissingNode() || node.isNull() ? objectMapper.createArrayNode() : node);
         } catch (Exception e) {
             return "[]";
         }
+    }
+
+    private Double readDouble(JsonNode node, String... fieldNames) {
+        for (String fieldName : fieldNames) {
+            JsonNode value = node.path(fieldName);
+            if (!value.isMissingNode() && !value.isNull() && value.isNumber()) {
+                return value.asDouble();
+            }
+        }
+        return null;
+    }
+
+    private String readText(JsonNode node, String fieldName) {
+        JsonNode value = node.path(fieldName);
+        if (value.isMissingNode() || value.isNull()) {
+            return null;
+        }
+        String text = value.asText();
+        return text != null && !text.isBlank() ? text : null;
     }
 
     private AiGradingResult errorResult(String gradingJobId, String error) {

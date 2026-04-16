@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.aipractice.entity.AiPracticeAnswer;
 import com.lms.aipractice.entity.AiPracticeItem;
+import com.lms.aipractice.entity.enums.AiItemSubtype;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -37,14 +38,15 @@ public class WritingRequestMapper {
     public Map<String, Object> buildPayload(AiPracticeItem item, AiPracticeAnswer answer) {
         Map<String, Object> payload = new HashMap<>();
         String userInput = answer.getAnswerText() != null ? answer.getAnswerText() : "";
+        String questionType = resolveQuestionType(item.getQuestionSubtype());
 
-        payload.put("question_type", item.getQuestionSubtype().name().toLowerCase());
+        payload.put("question_type", questionType);
         payload.put("hsk_level", item.getHskLevel());
         payload.put("prompt", item.getPromptText());
         payload.put("question", item.getPromptText());
         payload.put("user_input", userInput);
         payload.put("student_answer", userInput);
-        payload.put("model", "deepseek-chat");
+        payload.put("model", "deepseek-reasoner");
         payload.put("reference_answer", item.getReferenceAnswer());
         payload.put("image_description", item.getImageDescription());
         payload.put("original_article_summary", item.getOriginalArticleSummary());
@@ -69,5 +71,20 @@ public class WritingRequestMapper {
         }
 
         return payload;
+    }
+
+    private String resolveQuestionType(AiItemSubtype subtype) {
+        if (subtype == null) {
+            return null;
+        }
+
+        return switch (subtype) {
+            // Aligned with BE_LMS/AI_JSON writing_*_input.json samples.
+            case SENTENCE_ARRANGEMENT -> "sentence_arrangement";
+            case SHORT_PARAGRAPH -> "short_paragraph";
+            case SUMMARY_WRITING -> "summary_writing";
+            // Keep legacy/extended subtypes backward compatible.
+            default -> subtype.name().toLowerCase();
+        };
     }
 }

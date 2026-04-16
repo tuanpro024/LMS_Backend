@@ -3,6 +3,7 @@ package com.lms.flashcard.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.flashcard.dto.request.CreateCardRequest;
@@ -36,6 +37,7 @@ public class CardServiceImpl implements CardService {
     private final UserCardProgressRepository userCardProgressRepository;
     private final CardMapper cardMapper;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ObjectMapper objectMapper;
     private final com.lms.flashcard.service.FlashcardProgressService flashcardProgressService;
 
@@ -43,6 +45,10 @@ public class CardServiceImpl implements CardService {
     public void updateCardStatus(String userId, String cardId, UpdateCardStatusRequest request) {
         Card card = cardRepository.findByIdAndDeletedFalse(cardId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
+
+        if (card.getStudySet() != null) {
+            studySetApiDelegate.assertStudySetLearningAllowed(card.getStudySet().getId());
+        }
 
         UserCardProgress progress = userCardProgressRepository.findByUserIdAndCardId(userId, cardId)
                 .orElse(UserCardProgress.builder()

@@ -21,6 +21,7 @@ import com.lms.aipractice.service.AiPracticeAttemptService;
 import com.lms.aipractice.service.GradingOrchestrationService;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.repository.StudySetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
     private final AiGradingJobRepository jobRepository;
     private final AiGradingResultRepository resultRepository;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final GradingOrchestrationService orchestrationService;
     private final AiPracticeMapper mapper;
     private final HskApiClient hskApiClient;
@@ -61,6 +63,7 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
         if (!studySetRepository.existsById(request.getStudySetId())) {
             throw new ApiException(ErrorCode.E227, "StudySet not found: " + request.getStudySetId());
         }
+        studySetApiDelegate.assertStudySetLearningAllowed(request.getStudySetId());
 
         AiPracticeAttempt attempt = AiPracticeAttempt.builder()
                 .userId(userId)
@@ -75,6 +78,7 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
     @Override
     public AttemptResponse submitAnswer(String attemptId, SubmitAnswerRequest request, String userId) {
         AiPracticeAttempt attempt = getAttemptOwned(attemptId, userId);
+        studySetApiDelegate.assertStudySetLearningAllowed(attempt.getStudySetId());
 
         if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) {
             throw new ApiException(ErrorCode.E227, "Attempt is not in progress: " + attemptId);
@@ -105,6 +109,7 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
     @Override
     public AttemptResponse submitAttempt(String attemptId, String userId) {
         AiPracticeAttempt attempt = getAttemptOwned(attemptId, userId);
+        studySetApiDelegate.assertStudySetLearningAllowed(attempt.getStudySetId());
 
         if (!answerRepository.existsByAttemptIdAndDeletedFalse(attemptId)) {
             throw new ApiException(ErrorCode.E227,

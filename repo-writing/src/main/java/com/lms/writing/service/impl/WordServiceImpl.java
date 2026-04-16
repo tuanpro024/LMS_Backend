@@ -2,6 +2,7 @@ package com.lms.writing.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.writing.dto.request.CreateWordRequest;
@@ -38,6 +39,7 @@ public class WordServiceImpl implements WordService {
     private final UserWordProgressRepository userWordProgressRepository;
     private final WordMapper wordMapper;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -139,6 +141,7 @@ public class WordServiceImpl implements WordService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
         String studySetId = word.getStudySet().getId();
+        studySetApiDelegate.assertStudySetLearningAllowed(studySetId);
         Instant now = Instant.now();
 
         UserWordProgress progress = userWordProgressRepository.findByUserIdAndWordId(userId, wordId)

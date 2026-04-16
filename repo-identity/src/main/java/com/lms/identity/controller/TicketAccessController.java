@@ -40,4 +40,17 @@ public class TicketAccessController {
         boolean hasAccess = ticketService.checkAccess(userId, ticketModule);
         return ApiResponse.ok(hasAccess);
     }
+
+    /**
+     * Kiểm tra xem userId có bất kỳ ticket hợp lệ nào (bất kỳ module) không.
+     * Dùng bởi các content service để xác định ticket-holder được xem DRAFT của mình.
+     *
+     * @param userId ID của user cần kiểm tra
+     * @return true nếu user có ít nhất 1 ticket OPEN/DONE
+     */
+    @GetMapping("/has-any")
+    public ApiResponse<Boolean> hasAnyTicket(@RequestParam("userId") String userId) {
+        boolean result = ticketService.hasAnyTicket(userId);
+        return ApiResponse.ok(result);
+    }
 }

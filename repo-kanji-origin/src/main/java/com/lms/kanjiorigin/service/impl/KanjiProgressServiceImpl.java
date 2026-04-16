@@ -2,6 +2,7 @@ package com.lms.kanjiorigin.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.kanjiorigin.dto.request.UpdateKanjiStatusRequest;
 import com.lms.kanjiorigin.dto.response.KanjiStatusResponse;
@@ -39,6 +40,7 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
     private final KanjiStudySetProgressRepository kanjiStudySetProgressRepository;
     private final KanjiOriginRepository kanjiOriginRepository;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -46,6 +48,10 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
         KanjiOrigin origin = kanjiOriginRepository.findById(kanjiId)
                 .filter(o -> !o.isDeleted())
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiOrigin not found with id: " + kanjiId));
+
+        if (origin.getStudySet() != null) {
+            studySetApiDelegate.assertStudySetLearningAllowed(origin.getStudySet().getId());
+        }
 
         UserKanjiProgress progress = userKanjiProgressRepository.findByUserIdAndKanjiOriginId(userId, kanjiId)
                 .orElseGet(() -> UserKanjiProgress.builder()

@@ -4,20 +4,20 @@ import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
 import com.lms.content.common.dto.response.TypeResponse;
+import com.lms.content.common.entity.CategoryType;
 import com.lms.content.common.entity.TypeName;
 import com.lms.content.common.repository.TypeRepository;
 import com.lms.content.common.service.PackageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * API Delegate for Package operations
- * Returns pure DTOs - NO ResponseEntity
- * Controllers handle HTTP concerns (status codes, headers)
+ * API Delegate cho Package operations.
+ * Trả về pure DTO — Controller xử lý HTTP concerns (status codes, headers).
  */
 @Component
 @RequiredArgsConstructor
@@ -26,11 +26,8 @@ public class PackageApiDelegate {
     private final PackageService packageService;
     private final TypeRepository typeRepository;
 
-    /**
-     * Get all available package types
-     * 
-     * @return List of TypeResponse with IDs and names
-     */
+    // ── TYPES ─────────────────────────────────────────────────────────────────
+
     public List<TypeResponse> getPackageTypes() {
         return typeRepository.findAll().stream()
                 .map(type -> TypeResponse.builder()
@@ -43,111 +40,123 @@ public class PackageApiDelegate {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Create a new package
-     * 
-     * @return PackageResponse DTO (controller decides HTTP 201 vs 200)
-     */
+    // ── CREATE ────────────────────────────────────────────────────────────────
+
     public PackageResponse createPackage(CreatePackageRequest request, String userId) {
         return packageService.createPackage(request, userId);
     }
 
+    // ── CONTEXT-AWARE GET (phân quyền theo role / ticket) ─────────────────────
+
     /**
-     * Get package by ID
-     * 
-     * @return PackageResponse DTO
+     * Lấy package theo id với phân quyền theo role + module ticket.
+     */
+    public PackageResponse getPackageById(String id, String userId, Set<String> roles, String ticketModule) {
+        return packageService.getPackageById(id, userId, roles, ticketModule);
+    }
+
+    /**
+     * Legacy nội bộ: không filter publishStatus.
      */
     public PackageResponse getPackageById(String id) {
         return packageService.getPackageById(id);
     }
 
     /**
-     * Get all packages
-     * 
-     * @return List of PackageResponse DTOs
+     * Lấy tất cả package với phân quyền:
+     * <ul>
+     * <li>ADMIN/MANAGER → tất cả</li>
+     * <li>ticket-holder → PUBLISHED + DRAFT do mình tạo</li>
+     * <li>Anonymous/user thường → chỉ PUBLISHED</li>
+     * </ul>
+     *
+     * @param userId null nếu anonymous
+     * @param roles  empty set nếu anonymous
      */
+    public List<PackageResponse> getAllPackages(String userId, Set<String> roles, String ticketModule) {
+        return packageService.getAllPackages(userId, roles, ticketModule);
+    }
+
+    /** @deprecated Dùng {@link #getAllPackages(String, Set, String)} */
+    @Deprecated
     public List<PackageResponse> getAllPackages() {
         return packageService.getAllPackages();
     }
 
+    public List<PackageResponse> getPackagesByType(TypeName type, String userId, Set<String> roles,
+            String ticketModule) {
+        return packageService.getPackagesByType(type, userId, roles, ticketModule);
+    }
+
     /**
-     * Get packages by type
-     * 
-     * @return List of PackageResponse DTOs
+     * @deprecated Dùng {@link #getPackagesByType(TypeName, String, Set, String)}
      */
+    @Deprecated
     public List<PackageResponse> getPackagesByType(TypeName type) {
         return packageService.getPackagesByType(type);
     }
 
-    /**
-     * Get packages by type and category
-     * 
-     * @return List of PackageResponse DTOs
-     */
-    public List<PackageResponse> getPackagesByTypeAndCategory(TypeName type,
-            com.lms.content.common.entity.CategoryType category) {
-        return packageService.getPackagesByTypeAndCategory(type, category);
+    public List<PackageResponse> getPackagesByTypeAndCategory(TypeName type, CategoryType category,
+            String userId, Set<String> roles, String ticketModule) {
+        return packageService.getPackagesByTypeAndCategory(type, category, userId, roles, ticketModule);
     }
 
     /**
-     * Update package
-     * 
-     * @return Updated PackageResponse DTO
+     * @deprecated Dùng
+     *             {@link #getPackagesByTypeAndCategory(TypeName, CategoryType, String, Set, String)}
      */
+    @Deprecated
+    public List<PackageResponse> getPackagesByTypeAndCategory(TypeName type, CategoryType category) {
+        return packageService.getPackagesByTypeAndCategory(type, category);
+    }
+
+    // ── UPDATE / DELETE ───────────────────────────────────────────────────────
+
     public PackageResponse updatePackage(String id, UpdatePackageRequest request, String userId) {
         return packageService.updatePackage(id, request, userId);
     }
 
-    /**
-     * Delete package
-     * Returns void - controller decides response structure
-     */
     public void deletePackage(String id, String userId) {
         packageService.deletePackage(id, userId);
     }
 
-    /**
-     * Add folder to package
-     * 
-     * @return Updated PackageResponse DTO
-     */
     public PackageResponse addFolderToPackage(String packageId, String folderId, String userId) {
         return packageService.addFolderToPackage(packageId, folderId, userId);
     }
 
-    /**
-     * Remove folder from package
-     * 
-     * @return Updated PackageResponse DTO
-     */
     public PackageResponse removeFolderFromPackage(String packageId, String folderId, String userId) {
         return packageService.removeFolderFromPackage(packageId, folderId, userId);
     }
 
-    /**
-     * Get latest packages
-     * 
-     * @return List of PackageResponse DTOs
-     */
+    // ── PAGED ─────────────────────────────────────────────────────────────────
+
     public List<PackageResponse> getLatestPackages(TypeName type, int limit) {
         return packageService.getLatestPackages(type, limit);
     }
 
-    /**
-     * Get most enrolled packages
-     * 
-     * @return List of PackageResponse DTOs
-     */
     public List<PackageResponse> getMostEnrolledPackages(TypeName type, int limit) {
         return packageService.getMostEnrolledPackages(type, limit);
     }
 
-    /**
-     * Get free packages
-     * 
-     * @return List of PackageResponse DTOs
-     */
     public List<PackageResponse> getFreePackages(TypeName type, int limit) {
         return packageService.getFreePackages(type, limit);
+    }
+
+    // ── PUBLISH WORKFLOW ──────────────────────────────────────────────────────
+
+    /**
+     * Publish package → PUBLISHED (chỉ ADMIN/MANAGER gọi, @PreAuthorize ở
+     * controller).
+     */
+    public PackageResponse publishPackage(String id, String userId) {
+        return packageService.publishPackage(id, userId);
+    }
+
+    /**
+     * Unpublish package → DRAFT (chỉ ADMIN/MANAGER gọi, @PreAuthorize ở
+     * controller).
+     */
+    public PackageResponse unpublishPackage(String id, String userId) {
+        return packageService.unpublishPackage(id, userId);
     }
 }

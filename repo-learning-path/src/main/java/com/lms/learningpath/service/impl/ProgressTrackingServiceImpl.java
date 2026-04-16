@@ -1,5 +1,6 @@
 package com.lms.learningpath.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.learningpath.dto.request.CompleteModuleRequest;
 import com.lms.learningpath.dto.request.UpdateProgressRequest;
 import com.lms.learningpath.dto.response.LearningPathProgressResponse;
@@ -52,6 +53,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         private final ConsumedWritingProgressEventRepository consumedWritingProgressEventRepository;
         private final StepProgressMapper stepProgressMapper;
         private final LearningPathProgressMapper learningPathProgressMapper;
+        private final StudySetApiDelegate studySetApiDelegate;
 
         @Override
         @Transactional
@@ -60,6 +62,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 StepModule module = findActiveStepModule(moduleId);
                 Step step = findActiveStep(module.getStepId());
+                assertStepStudySetLearningAllowed(step);
                 assertStepUnlocked(userId, step.getId());
                 Instant now = Instant.now();
 
@@ -111,6 +114,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 StepModule module = findActiveStepModule(moduleId);
                 Step step = findActiveStep(module.getStepId());
+                assertStepStudySetLearningAllowed(step);
                 assertStepUnlocked(userId, step.getId());
 
                 ModuleProgress progress = moduleProgressRepository
@@ -155,6 +159,7 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 StepModule module = findActiveStepModule(moduleId);
                 Step step = findActiveStep(module.getStepId());
+                assertStepStudySetLearningAllowed(step);
                 assertStepUnlocked(userId, step.getId());
 
                 ModuleProgress progress = moduleProgressRepository
@@ -292,6 +297,16 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                         return;
                 }
 
+                if (!studySetApiDelegate.isStudySetLearningAllowed(event.studySetId())) {
+                        consumedFlashcardProgressEventRepository.save(ConsumedFlashcardProgressEvent.builder()
+                                        .eventId(event.eventId())
+                                        .consumedAt(Instant.now())
+                                        .build());
+                        log.info("Skip flashcard progress event {} because study set {} is not learnable",
+                                        event.eventId(), event.studySetId());
+                        return;
+                }
+
                 List<StepModule> flashcardModules = stepModuleRepository
                                 .findByModuleTypeAndContentSetIdAndIsActiveTrue(ModuleType.FLASHCARD,
                                                 event.studySetId());
@@ -388,6 +403,16 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 if (consumedKanjiProgressEventRepository.existsByEventId(event.eventId())) {
                         log.debug("Skip duplicated kanji progress event {}", event.eventId());
+                        return;
+                }
+
+                if (!studySetApiDelegate.isStudySetLearningAllowed(event.studySetId())) {
+                        consumedKanjiProgressEventRepository.save(ConsumedKanjiProgressEvent.builder()
+                                        .eventId(event.eventId())
+                                        .consumedAt(Instant.now())
+                                        .build());
+                        log.info("Skip kanji progress event {} because study set {} is not learnable",
+                                        event.eventId(), event.studySetId());
                         return;
                 }
 
@@ -491,6 +516,16 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
                         return;
                 }
 
+                if (!studySetApiDelegate.isStudySetLearningAllowed(event.studySetId())) {
+                        consumedQuizProgressEventRepository.save(ConsumedQuizProgressEvent.builder()
+                                        .eventId(event.eventId())
+                                        .consumedAt(Instant.now())
+                                        .build());
+                        log.info("Skip quiz progress event {} because study set {} is not learnable",
+                                        event.eventId(), event.studySetId());
+                        return;
+                }
+
                 List<StepModule> quizModules = stepModuleRepository
                                 .findByModuleTypeAndContentSetIdAndIsActiveTrue(ModuleType.QUIZ, event.studySetId());
 
@@ -587,6 +622,16 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
 
                 if (consumedWritingProgressEventRepository.existsByEventId(event.eventId())) {
                         log.debug("Skip duplicated writing progress event {}", event.eventId());
+                        return;
+                }
+
+                if (!studySetApiDelegate.isStudySetLearningAllowed(event.studySetId())) {
+                        consumedWritingProgressEventRepository.save(ConsumedWritingProgressEvent.builder()
+                                        .eventId(event.eventId())
+                                        .consumedAt(Instant.now())
+                                        .build());
+                        log.info("Skip writing progress event {} because study set {} is not learnable",
+                                        event.eventId(), event.studySetId());
                         return;
                 }
 
@@ -724,6 +769,17 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         private Step findActiveStep(String stepId) {
                 return stepRepository.findByIdAndIsActiveTrue(stepId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Step not found: " + stepId));
+        }
+
+        private void assertStepStudySetLearningAllowed(Step step) {
+                LearningPath learningPath = learningPathRepository
+                                .findByIdAndIsActiveTrue(step.getLearningPathId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Learning path not found: " + step.getLearningPathId()));
+
+                if (learningPath.getStudySet() != null) {
+                        studySetApiDelegate.assertStudySetLearningAllowed(learningPath.getStudySet().getId());
+                }
         }
 
         private void assertStepUnlocked(String userId, String stepId) {

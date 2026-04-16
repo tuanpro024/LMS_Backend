@@ -2,6 +2,7 @@ package com.lms.onllearning.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.content.common.entity.TypeName;
@@ -63,6 +64,7 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
     private final SyllabusScheduleRepository syllabusScheduleRepository;
     private final TimetableSessionRepository timetableSessionRepository;
     private final ScheduleModuleUserProgressRepository userProgressRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
 
     @Value("${practice.service.flashcard-url:http://repo-flashcard}")
     private String flashcardUrl;
@@ -321,6 +323,11 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
     public void updateMyModuleProgress(String moduleId, String userId, String email,
             UpdateMyScheduleModuleProgressRequest request) {
         ScheduleModule module = findById(moduleId);
+
+        if (StringUtils.hasText(module.getContentSetId())) {
+            studySetApiDelegate.assertStudySetLearningAllowed(module.getContentSetId());
+        }
+
         String userKey = resolveUserKey(userId, email);
         if (!StringUtils.hasText(userKey)) {
             throw new ApiException(ErrorCode.BAD_REQUEST,

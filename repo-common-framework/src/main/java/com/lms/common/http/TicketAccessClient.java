@@ -60,4 +60,33 @@ public class TicketAccessClient {
         }
         return false;
     }
+
+    /**
+     * Kiểm tra xem userId có bất kỳ ticket hợp lệ nào (bất kỳ module) không.
+     * Dùng trong GET endpoints để xác định ticket-holder có được xem DRAFT của mình không.
+     *
+     * @param userId ID của user
+     * @return true nếu user có ít nhất 1 ticket hợp lệ
+     */
+    public boolean hasAnyTicket(String userId) {
+        try {
+            ResponseEntity<String> response = internalApiClient.send(
+                    identityServiceName,
+                    "/internal/tickets/has-any",
+                    HttpMethod.GET,
+                    null,
+                    Map.of("userId", userId),
+                    null,
+                    String.class
+            );
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                var tree = objectMapper.readTree(response.getBody());
+                var dataNode = tree.get("data");
+                return dataNode != null && dataNode.asBoolean(false);
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to check any ticket for userId={}: {}", userId, ex.getMessage());
+        }
+        return false;
+    }
 }

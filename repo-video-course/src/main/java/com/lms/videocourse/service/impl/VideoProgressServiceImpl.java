@@ -1,5 +1,6 @@
 package com.lms.videocourse.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.videocourse.dto.request.CompleteWatchRequest;
 import com.lms.videocourse.dto.request.UpdateWatchProgressRequest;
 import com.lms.videocourse.dto.response.VideoCourseProgressResponse;
@@ -39,6 +40,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         private final VideoCourseProgressRepository courseProgressRepository;
         private final VideoStepRepository videoStepRepository;
         private final VideoPracticeModuleProgressRepository practiceProgressRepository;
+        private final StudySetApiDelegate studySetApiDelegate;
 
         // ============ Watch Progress ============
 
@@ -50,6 +52,11 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                 VideoModule module = videoModuleRepository.findById(moduleId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Video module not found: " + moduleId));
+
+                VideoStep step = videoStepRepository.findById(module.getStepId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Video step not found: " + module.getStepId()));
+                studySetApiDelegate.assertStudySetLearningAllowed(step.getStudySetId());
 
                 VideoWatchProgress progress = watchProgressRepository
                                 .findByUserIdAndVideoModuleId(userId, moduleId)
@@ -85,6 +92,11 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                 VideoModule module = videoModuleRepository.findById(moduleId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Video module not found: " + moduleId));
+
+                VideoStep step = videoStepRepository.findById(module.getStepId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Video step not found: " + module.getStepId()));
+                studySetApiDelegate.assertStudySetLearningAllowed(step.getStudySetId());
 
                 VideoWatchProgress progress = watchProgressRepository
                                 .findByUserIdAndVideoModuleId(userId, moduleId)
@@ -140,8 +152,6 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                         updateStepProgress(userId, module.getStepId());
 
                         // Trigger rollup to VideoCourseProgress
-                        VideoStep step = videoStepRepository.findById(module.getStepId())
-                                        .orElseThrow();
                         updateCourseProgress(userId, step.getStudySetId());
                 } else {
                         progress = watchProgressRepository.save(progress);
@@ -158,6 +168,11 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                 VideoModule module = videoModuleRepository.findById(moduleId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Video module not found: " + moduleId));
+
+                VideoStep step = videoStepRepository.findById(module.getStepId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Video step not found: " + module.getStepId()));
+                studySetApiDelegate.assertStudySetLearningAllowed(step.getStudySetId());
 
                 VideoWatchProgress progress = watchProgressRepository
                                 .findByUserIdAndVideoModuleId(userId, moduleId)
@@ -184,7 +199,6 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
 
                         // Rollup
                         updateStepProgress(userId, module.getStepId());
-                        VideoStep step = videoStepRepository.findById(module.getStepId()).orElseThrow();
                         updateCourseProgress(userId, step.getStudySetId());
                 }
 

@@ -47,6 +47,14 @@ public class StudySetApiDelegate {
         return studySetService.findByTitleAndUserIdIgnoreCase(title, userId);
     }
 
+    public boolean isStudySetLearningAllowed(String studySetId) {
+        return studySetService.isStudySetLearningAllowed(studySetId);
+    }
+
+    public void assertStudySetLearningAllowed(String studySetId) {
+        studySetService.assertStudySetLearningAllowed(studySetId);
+    }
+
     public StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId) {
         return studySetService.updateStudySet(id, request, userId);
     }

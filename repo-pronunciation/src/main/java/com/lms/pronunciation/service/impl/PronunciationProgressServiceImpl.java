@@ -2,6 +2,7 @@ package com.lms.pronunciation.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.pronunciation.dto.response.PronunciationItemProgressResponse;
 import com.lms.pronunciation.dto.response.PronunciationStudySetProgressResponse;
 import com.lms.pronunciation.entity.PronunciationItem;
@@ -31,6 +32,7 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
     private final UserPronunciationItemProgressRepository userItemProgressRepo;
     private final PronunciationItemStudySetProgressRepository studySetProgressRepo;
     private final PronunciationItemRepository itemRepo;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -40,6 +42,10 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
 
         if (item.isDeleted()) {
             throw new ApiException(ErrorCode.BAD_REQUEST, "Cannot mark deleted item as listened");
+        }
+
+        if (item.getStudySet() != null) {
+            studySetApiDelegate.assertStudySetLearningAllowed(item.getStudySet().getId());
         }
 
         UserPronunciationItemProgress progress = userItemProgressRepo.findByUserIdAndPronunciationItemId(userId, itemId)

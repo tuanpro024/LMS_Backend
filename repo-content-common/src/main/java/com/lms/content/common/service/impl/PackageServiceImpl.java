@@ -1,7 +1,10 @@
 package com.lms.content.common.service.impl;
 
+import com.lms.common.event.PackageStatusEvent;
+import com.lms.common.event.PackageStatusPublisher;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.common.http.TicketAccessClient;
 import com.lms.content.common.dto.request.CreatePackageRequest;
 import com.lms.content.common.dto.request.UpdatePackageRequest;
 import com.lms.content.common.dto.response.PackageResponse;
@@ -9,6 +12,8 @@ import com.lms.content.common.entity.Folder;
 import com.lms.content.common.entity.Package;
 import com.lms.content.common.entity.Type;
 import com.lms.content.common.entity.TypeName;
+import com.lms.content.common.entity.CategoryType;
+import com.lms.content.common.entity.enums.PublishStatus;
 import com.lms.content.common.mapper.PackageMapper;
 import com.lms.content.common.repository.FolderRepository;
 import com.lms.content.common.repository.PackageRepository;
@@ -22,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -29,40 +35,70 @@ import java.util.List;
 @Transactional
 public class PackageServiceImpl implements PackageService {
 
+    private static final Set<String> PRIVILEGED_ROLES = Set.of("ROLE_ADMIN", "ROLE_TEACHER_MANAGER");
+
     private final PackageRepository packageRepository;
     private final FolderRepository folderRepository;
     private final PackageMapper packageMapper;
     private final TypeRepository typeRepository;
     private final com.lms.content.common.service.FolderService folderService;
     private final com.lms.content.common.service.StudySetService studySetService;
+    private final PackageStatusPublisher packageStatusPublisher;
+    private final TicketAccessClient ticketAccessClient;
+
+    // ── CREATE ────────────────────────────────────────────────────────────────
 
     @Override
     public PackageResponse createPackage(CreatePackageRequest request, String userId) {
         log.info("Creating package for user: {}", userId);
 
-        // Hook: validate before processing
         validateCreatePackage(request, userId);
 
-        // Fetch Type entity from TypeRepository
         Type type = typeRepository.findByName(request.getType())
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Type not found: " + request.getType()));
 
         Package packageEntity = packageMapper.toEntity(request);
         packageEntity.setUserId(userId);
         packageEntity.setType(type);
+        packageEntity.setPublishStatus(PublishStatus.DRAFT); // Luôn DRAFT khi tạo mới
         if (request.getCategory() != null) {
             packageEntity.setCategory(request.getCategory());
         }
 
-        // Hook: customize before save
         beforeSavePackage(packageEntity, request);
 
         Package saved = packageRepository.save(packageEntity);
 
-        // Hook: post-processing
         afterSavePackage(saved);
 
         return packageMapper.toResponse(saved);
+    }
+
+    // ── READ ──────────────────────────────────────────────────────────────────
+
+    @Override
+    @Transactional(readOnly = true)
+    public PackageResponse getPackageById(String id, String userId, Set<String> roles, String ticketModule) {
+        Package packageEntity = packageRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
+
+        if (isPrivileged(roles)) {
+            return packageMapper.toResponse(packageEntity);
+        }
+
+        if (packageEntity.getPublishStatus() == PublishStatus.PUBLISHED) {
+            return packageMapper.toResponse(packageEntity);
+        }
+
+        boolean canReadOwnDraft = userId != null
+                && userId.equals(packageEntity.getUserId())
+                && hasModuleTicket(userId, ticketModule);
+        if (canReadOwnDraft) {
+            return packageMapper.toResponse(packageEntity);
+        }
+
+        // Ẩn sự tồn tại của package DRAFT với user không đủ quyền
+        throw new ApiException(ErrorCode.E227, "Package not found");
     }
 
     @Override
@@ -70,48 +106,91 @@ public class PackageServiceImpl implements PackageService {
     public PackageResponse getPackageById(String id) {
         Package packageEntity = packageRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
-
         return packageMapper.toResponse(packageEntity);
+    }
+
+    /**
+     * GET phân quyền:
+     * - ADMIN/MANAGER → tất cả
+     * - ticket-holder đúng module → PUBLISHED + DRAFT do mình tạo
+     * - Người thường → chỉ PUBLISHED
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<PackageResponse> getAllPackages(String userId, Set<String> roles, String ticketModule) {
+        if (isPrivileged(roles)) {
+            return packageMapper.toResponseList(packageRepository.findAll());
+        }
+        if (hasModuleTicket(userId, ticketModule)) {
+            return packageMapper.toResponseList(
+                    packageRepository.findAllForTicketHolder(userId));
+        }
+        return packageMapper.toResponseList(
+                packageRepository.findAllByPublishStatus(PublishStatus.PUBLISHED));
     }
 
     @Override
     @Transactional(readOnly = true)
+    public List<PackageResponse> getPackagesByType(TypeName type, String userId, Set<String> roles,
+            String ticketModule) {
+        if (isPrivileged(roles)) {
+            return packageMapper.toResponseList(packageRepository.findByTypeName(type));
+        }
+        if (hasModuleTicket(userId, ticketModule)) {
+            return packageMapper.toResponseList(
+                    packageRepository.findByTypeNameForTicketHolder(type, userId));
+        }
+        return packageMapper.toResponseList(
+                packageRepository.findByTypeNameAndPublishStatus(type, PublishStatus.PUBLISHED));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PackageResponse> getPackagesByTypeAndCategory(TypeName typeName, CategoryType category,
+            String userId, Set<String> roles, String ticketModule) {
+        if (isPrivileged(roles)) {
+            return packageMapper.toResponseList(
+                    packageRepository.findByTypeNameAndCategory(typeName, category));
+        }
+        if (hasModuleTicket(userId, ticketModule)) {
+            return packageMapper.toResponseList(
+                    packageRepository.findByTypeNameAndCategoryForTicketHolder(typeName, category, userId));
+        }
+        return packageMapper.toResponseList(
+                packageRepository.findByTypeNameAndCategoryAndPublishStatus(typeName, category,
+                        PublishStatus.PUBLISHED));
+    }
+
+    // ── Legacy methods (không filter — giữ tương thích nội bộ) ───────────────
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PackageResponse> getAllPackages() {
-        List<Package> packages = packageRepository.findAll();
-        return packageMapper.toResponseList(packages);
+        return packageMapper.toResponseList(packageRepository.findAll());
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<PackageResponse> getPackagesByType(TypeName typeName) {
-        List<Package> packages = packageRepository.findByTypeName(typeName);
-        return packageMapper.toResponseList(packages);
+        return packageMapper.toResponseList(packageRepository.findByTypeName(typeName));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PackageResponse> getPackagesByTypeAndCategory(TypeName typeName,
-            com.lms.content.common.entity.CategoryType category) {
-        List<Package> packages = packageRepository.findByTypeNameAndCategory(typeName, category);
-        return packageMapper.toResponseList(packages);
+    public List<PackageResponse> getPackagesByTypeAndCategory(TypeName typeName, CategoryType category) {
+        return packageMapper.toResponseList(
+                packageRepository.findByTypeNameAndCategory(typeName, category));
     }
+
+    // ── UPDATE ────────────────────────────────────────────────────────────────
 
     @Override
     public PackageResponse updatePackage(String id, UpdatePackageRequest request, String userId) {
         Package packageEntity = packageRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
 
-        // Check ownership
-        // Check ownership - DISABLED to allow Admin/Manager access
-        // if (!packageEntity.getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to modify this
-        // package");
-        // }
-
-        // Hook: validate before update
         validateUpdatePackage(packageEntity, request, userId);
 
-        // Update fields if provided
         if (request.getName() != null) {
             packageEntity.setName(request.getName());
         }
@@ -140,10 +219,17 @@ public class PackageServiceImpl implements PackageService {
 
         Package updated = packageRepository.save(packageEntity);
 
-        afterUpdatePackage(updated);
+        // Package đã publish mà bị chỉnh sửa metadata/content ở cấp package
+        // => bắt buộc quay về DRAFT để duyệt lại.
+        revertToDraft(updated.getId(), userId, "CONTENT_UPDATED");
+        Package latest = packageRepository.findById(updated.getId()).orElse(updated);
 
-        return packageMapper.toResponse(updated);
+        afterUpdatePackage(latest);
+
+        return packageMapper.toResponse(latest);
     }
+
+    // ── DELETE ────────────────────────────────────────────────────────────────
 
     @Override
     public void deletePackage(String id, String userId) {
@@ -161,7 +247,8 @@ public class PackageServiceImpl implements PackageService {
                     try {
                         studySetService.deleteStudySet(set.getId(), userId);
                     } catch (Exception e) {
-                        log.warn("Failed to delete study set {} during package deletion: {}", set.getId(), e.getMessage());
+                        log.warn("Failed to delete study set {} during package deletion: {}", set.getId(),
+                                e.getMessage());
                     }
                 }
             }
@@ -169,11 +256,12 @@ public class PackageServiceImpl implements PackageService {
         }
 
         folderRepository.flush();
-
         packageRepository.delete(packageEntity);
 
         afterDeletePackage(id, userId);
     }
+
+    // ── FOLDER MANAGEMENT ─────────────────────────────────────────────────────
 
     @Override
     public PackageResponse addFolderToPackage(String packageId, String folderId, String userId) {
@@ -185,6 +273,9 @@ public class PackageServiceImpl implements PackageService {
 
         packageEntity.addFolder(folder);
         Package updated = packageRepository.save(packageEntity);
+
+        // Thao tác ở tầng dưới package (folder) => quay về DRAFT nếu đang PUBLISHED
+        revertToDraft(updated.getId(), userId, "CONTENT_UPDATED");
 
         return packageMapper.toResponse(updated);
     }
@@ -200,14 +291,20 @@ public class PackageServiceImpl implements PackageService {
         packageEntity.removeFolder(folder);
         Package updated = packageRepository.save(packageEntity);
 
+        // Thao tác ở tầng dưới package (folder) => quay về DRAFT nếu đang PUBLISHED
+        revertToDraft(updated.getId(), userId, "CONTENT_UPDATED");
+
         return packageMapper.toResponse(updated);
     }
+
+    // ── PAGED QUERIES ─────────────────────────────────────────────────────────
 
     @Override
     @Transactional(readOnly = true)
     public List<PackageResponse> getLatestPackages(TypeName type, int limit) {
         PageRequest pageRequest = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<Package> packages = packageRepository.findByTypeName(type, pageRequest);
+        List<Package> packages = packageRepository.findByTypeNameAndPublishStatus(type, PublishStatus.PUBLISHED,
+                pageRequest);
         return packageMapper.toResponseList(packages);
     }
 
@@ -215,7 +312,8 @@ public class PackageServiceImpl implements PackageService {
     @Transactional(readOnly = true)
     public List<PackageResponse> getMostEnrolledPackages(TypeName type, int limit) {
         PageRequest pageRequest = PageRequest.of(0, limit, Sort.by("enrollmentCount").descending());
-        List<Package> packages = packageRepository.findByTypeName(type, pageRequest);
+        List<Package> packages = packageRepository.findByTypeNameAndPublishStatus(type, PublishStatus.PUBLISHED,
+                pageRequest);
         return packageMapper.toResponseList(packages);
     }
 
@@ -223,69 +321,110 @@ public class PackageServiceImpl implements PackageService {
     @Transactional(readOnly = true)
     public List<PackageResponse> getFreePackages(TypeName type, int limit) {
         PageRequest pageRequest = PageRequest.of(0, limit, Sort.by("createdAt").descending());
-        List<Package> packages = packageRepository.findByTypeNameAndPricingType(type, "FREE", pageRequest);
+        List<Package> packages = packageRepository.findByTypeNameAndPricingTypeAndPublishStatus(
+                type, "FREE", PublishStatus.PUBLISHED, pageRequest);
         return packageMapper.toResponseList(packages);
     }
 
-    // ========== EXTENSION HOOKS (protected, non-final) ==========
+    // ── PUBLISH WORKFLOW ──────────────────────────────────────────────────────
+
+    @Override
+    public PackageResponse publishPackage(String packageId, String userId) {
+        Package packageEntity = packageRepository.findById(packageId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
+
+        packageEntity.setPublishStatus(PublishStatus.PUBLISHED);
+        Package saved = packageRepository.save(packageEntity);
+
+        publishStatusEvent(saved, userId, "ADMIN_PUBLISH");
+
+        log.info("Package {} published by userId={}", packageId, userId);
+        return packageMapper.toResponse(saved);
+    }
+
+    @Override
+    public PackageResponse unpublishPackage(String packageId, String userId) {
+        Package packageEntity = packageRepository.findById(packageId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
+
+        packageEntity.setPublishStatus(PublishStatus.DRAFT);
+        Package saved = packageRepository.save(packageEntity);
+
+        publishStatusEvent(saved, userId, "ADMIN_UNPUBLISH");
+
+        log.info("Package {} unpublished (DRAFT) by userId={}", packageId, userId);
+        return packageMapper.toResponse(saved);
+    }
 
     /**
-     * Hook: Validate before creating package
-     * Can be overridden in specific services for custom validation
+     * Revert package về DRAFT khi nội dung bên trong bị CUD.
+     * Idempotent — package đã DRAFT thì không làm gì.
      */
+    @Override
+    public void revertToDraft(String packageId, String triggeredBy, String reason) {
+        packageRepository.findById(packageId).ifPresent(pkg -> {
+            if (pkg.getPublishStatus() == PublishStatus.PUBLISHED) {
+                pkg.setPublishStatus(PublishStatus.DRAFT);
+                Package saved = packageRepository.save(pkg);
+                publishStatusEvent(saved, triggeredBy, reason);
+                log.info("Package {} auto-reverted to DRAFT. Reason={}, triggeredBy={}",
+                        packageId, reason, triggeredBy);
+            }
+        });
+    }
+
+    // ── HELPERS ───────────────────────────────────────────────────────────────
+
+    private boolean isPrivileged(Set<String> roles) {
+        if (roles == null || roles.isEmpty())
+            return false;
+        return roles.stream().anyMatch(r -> PRIVILEGED_ROLES.contains(r.toUpperCase()));
+    }
+
+    private boolean hasModuleTicket(String userId, String ticketModule) {
+        if (userId == null || userId.isBlank() || ticketModule == null || ticketModule.isBlank()) {
+            return false;
+        }
+        return ticketAccessClient.checkAccess(userId, ticketModule);
+    }
+
+    private void publishStatusEvent(Package pkg, String changedBy, String reason) {
+        try {
+            packageStatusPublisher.publish(new PackageStatusEvent(
+                    pkg.getId(),
+                    pkg.getName(),
+                    pkg.getType() != null ? pkg.getType().getName().name() : null,
+                    pkg.getPublishStatus().name(),
+                    changedBy,
+                    reason));
+        } catch (Exception ex) {
+            log.warn("Failed to publish PackageStatusEvent for package={}: {}", pkg.getId(), ex.getMessage());
+        }
+    }
+
+    // ── EXTENSION HOOKS ───────────────────────────────────────────────────────
+
     protected void validateCreatePackage(CreatePackageRequest request, String userId) {
-        // Default implementation - empty
-        // Override in flashcard/writing services if needed
     }
 
-    /**
-     * Hook: Customize package entity before initial save
-     * Can be overridden for custom initialization
-     */
     protected void beforeSavePackage(Package packageEntity, CreatePackageRequest request) {
-        // Default implementation - empty
     }
 
-    /**
-     * Hook: Post-processing after package creation
-     * Can be overridden for notifications, logging, etc.
-     */
     protected void afterSavePackage(Package saved) {
-        // Default implementation - empty
     }
 
-    /**
-     * Hook: Validate before updating package
-     */
     protected void validateUpdatePackage(Package entity, UpdatePackageRequest request, String userId) {
-        // Default implementation - empty
     }
 
-    /**
-     * Hook: Before updating package
-     */
     protected void beforeUpdatePackage(Package entity, UpdatePackageRequest request) {
-        // Default implementation - empty
     }
 
-    /**
-     * Hook: After updating package
-     */
     protected void afterUpdatePackage(Package updated) {
-        // Default implementation - empty
     }
 
-    /**
-     * Hook: Before deleting package
-     */
     protected void beforeDeletePackage(Package entity, String userId) {
-        // Default implementation - empty
     }
 
-    /**
-     * Hook: After deleting package
-     */
     protected void afterDeletePackage(String packageId, String userId) {
-        // Default implementation - empty
     }
 }

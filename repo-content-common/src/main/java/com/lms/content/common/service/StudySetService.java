@@ -35,6 +35,12 @@ public interface StudySetService {
      */
     void assertStudySetLearningAllowed(String studySetId);
 
+    /**
+     * Revert all parent packages of a study set to DRAFT when lower-level content
+     * changes.
+     */
+    void revertParentPackagesToDraft(String studySetId, String triggeredBy);
+
     StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId);
 
     void deleteStudySet(String id, String userId);

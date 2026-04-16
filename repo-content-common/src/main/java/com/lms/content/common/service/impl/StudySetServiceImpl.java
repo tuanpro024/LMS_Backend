@@ -116,8 +116,8 @@ public class StudySetServiceImpl implements StudySetService {
     @Transactional(readOnly = true)
     public List<StudySetResponse> getStudySetsByPackageType(String packageType) {
         try {
-            com.lms.content.common.entity.TypeName typeName =
-                    com.lms.content.common.entity.TypeName.valueOf(packageType);
+            com.lms.content.common.entity.TypeName typeName = com.lms.content.common.entity.TypeName
+                    .valueOf(packageType);
             List<StudySet> studySets = typeName == com.lms.content.common.entity.TypeName.VIDEO_COURSE
                     ? studySetRepository.findByPackageTypeNameStrict(typeName)
                     : studySetRepository.findByPackageTypeName(typeName);
@@ -162,6 +162,19 @@ public class StudySetServiceImpl implements StudySetService {
                     ErrorCode.FORBIDDEN,
                     "Study set is unavailable for learning because its package is DRAFT");
         }
+    }
+
+    @Override
+    public void revertParentPackagesToDraft(String studySetId, String triggeredBy) {
+        if (studySetId == null || studySetId.isBlank()) {
+            return;
+        }
+
+        StudySet studySet = studySetRepository.findById(studySetId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
+
+        String actor = (triggeredBy == null || triggeredBy.isBlank()) ? "system" : triggeredBy;
+        revertParentPackagesOfStudySetToDraft(studySet, actor);
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -250,7 +263,8 @@ public class StudySetServiceImpl implements StudySetService {
      * Revert tất cả package cha của studySet về DRAFT nếu đang PUBLISHED.
      */
     private void revertParentPackagesOfStudySetToDraft(StudySet studySet, String userId) {
-        if (studySet.getFolders() == null || studySet.getFolders().isEmpty()) return;
+        if (studySet.getFolders() == null || studySet.getFolders().isEmpty())
+            return;
 
         studySet.getFolders().stream()
                 .filter(f -> f.getPackageEntity() != null)
@@ -275,8 +289,7 @@ public class StudySetServiceImpl implements StudySetService {
                     pkg.getType() != null ? pkg.getType().getName().name() : null,
                     PublishStatus.DRAFT.name(),
                     triggeredBy,
-                    "CONTENT_UPDATED"
-            ));
+                    "CONTENT_UPDATED"));
 
             log.info("Package {} auto-reverted to DRAFT due to study set CUD by userId={}",
                     pkg.getId(), triggeredBy);

@@ -3,6 +3,7 @@ package com.lms.kanjiorigin.service.impl;
 import com.lms.common.dto.PageResponse;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.kanjiorigin.dto.request.CreateKanjiOriginRequest;
@@ -29,8 +30,11 @@ import java.util.List;
 @Transactional
 public class KanjiOriginServiceImpl implements KanjiOriginService {
 
+    private static final String SYSTEM_TRIGGER = "system";
+
     private final KanjiOriginRepository kanjiOriginRepository;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final KanjiOriginMapper kanjiOriginMapper;
 
     @Override
@@ -38,24 +42,25 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
         log.info("Creating kanji origin with term: {}", request.getTerm());
 
         StudySet studySet = studySetRepository.findById(request.getStudySetId())
-            .orElseThrow(
-                () -> new ApiException(ErrorCode.E227, "StudySet not found with id: " + request.getStudySetId()));
+                .orElseThrow(
+                        () -> new ApiException(ErrorCode.E227,
+                                "StudySet not found with id: " + request.getStudySetId()));
 
         Integer contentIndex = request.getContentIndex();
         if (contentIndex == null) {
             Integer maxContentIndex = kanjiOriginRepository
-                .findMaxContentIndexByStudySetId(request.getStudySetId());
+                    .findMaxContentIndexByStudySetId(request.getStudySetId());
             contentIndex = maxContentIndex == null ? 0 : maxContentIndex + 1;
         }
 
         if (kanjiOriginRepository.existsByStudySetIdAndContentIndexAndDeletedFalse(request.getStudySetId(),
                 contentIndex)) {
             throw new ApiException(ErrorCode.E227,
-                "Content index already exists in this study set: " + contentIndex);
+                    "Content index already exists in this study set: " + contentIndex);
         }
 
         if (kanjiOriginRepository.existsByTermAndStudySetIdAndDeletedFalse(request.getTerm(),
-            request.getStudySetId())) {
+                request.getStudySetId())) {
             throw new ApiException(ErrorCode.E227, "Term already exists in this study set: " + request.getTerm());
         }
 
@@ -64,6 +69,7 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
         origin.setContentIndex(contentIndex);
 
         KanjiOrigin savedOrigin = kanjiOriginRepository.save(origin);
+        studySetApiDelegate.revertParentPackagesToDraft(request.getStudySetId(), SYSTEM_TRIGGER);
         return kanjiOriginMapper.toResponse(savedOrigin);
     }
 
@@ -76,22 +82,23 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiOrigin not found with id: " + id));
 
         if (!origin.getTerm().equals(request.getTerm()) &&
-            kanjiOriginRepository.existsByTermAndStudySetIdAndDeletedFalse(request.getTerm(),
-                origin.getStudySet().getId())) {
+                kanjiOriginRepository.existsByTermAndStudySetIdAndDeletedFalse(request.getTerm(),
+                        origin.getStudySet().getId())) {
             throw new ApiException(ErrorCode.E227, "Term already exists in this study set: " + request.getTerm());
         }
 
         if (request.getContentIndex() != null) {
             if (!request.getContentIndex().equals(origin.getContentIndex()) &&
-                kanjiOriginRepository.existsByStudySetIdAndContentIndexAndIdNotAndDeletedFalse(
-                    origin.getStudySet().getId(), request.getContentIndex(), id)) {
+                    kanjiOriginRepository.existsByStudySetIdAndContentIndexAndIdNotAndDeletedFalse(
+                            origin.getStudySet().getId(), request.getContentIndex(), id)) {
                 throw new ApiException(ErrorCode.E227,
-                "Content index already exists in this study set: " + request.getContentIndex());
+                        "Content index already exists in this study set: " + request.getContentIndex());
             }
         }
 
         kanjiOriginMapper.updateEntity(origin, request);
         KanjiOrigin savedOrigin = kanjiOriginRepository.save(origin);
+        studySetApiDelegate.revertParentPackagesToDraft(origin.getStudySet().getId(), SYSTEM_TRIGGER);
         return kanjiOriginMapper.toResponse(savedOrigin);
     }
 
@@ -111,6 +118,9 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
 
         origin.setDeleted(true);
         kanjiOriginRepository.save(origin);
+        if (origin.getStudySet() != null) {
+            studySetApiDelegate.revertParentPackagesToDraft(origin.getStudySet().getId(), SYSTEM_TRIGGER);
+        }
     }
 
     @Override
@@ -129,7 +139,8 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
     @Transactional(readOnly = true)
     public List<KanjiOriginResponse> getOriginsByStudySet(String studySetId) {
         log.info("Getting kanji origins for study set: {}", studySetId);
-        List<KanjiOrigin> origins = kanjiOriginRepository.findByStudySetIdAndDeletedFalseOrderByContentIndexAsc(studySetId);
+        List<KanjiOrigin> origins = kanjiOriginRepository
+                .findByStudySetIdAndDeletedFalseOrderByContentIndexAsc(studySetId);
         return kanjiOriginMapper.toResponseList(origins);
     }
 

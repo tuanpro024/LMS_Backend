@@ -3,6 +3,7 @@ package com.lms.pronunciation.service.impl;
 import com.lms.common.dto.PageResponse;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.pronunciation.dto.request.CreatePronunciationItemRequest;
@@ -29,8 +30,11 @@ import java.util.List;
 @Transactional
 public class PronunciationItemServiceImpl implements PronunciationItemService {
 
+    private static final String SYSTEM_TRIGGER = "system";
+
     private final PronunciationItemRepository pronunciationItemRepository;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final PronunciationItemMapper pronunciationItemMapper;
 
     @Override
@@ -62,6 +66,7 @@ public class PronunciationItemServiceImpl implements PronunciationItemService {
         }
 
         PronunciationItem savedItem = pronunciationItemRepository.save(item);
+        studySetApiDelegate.revertParentPackagesToDraft(request.getStudySetId(), SYSTEM_TRIGGER);
         return pronunciationItemMapper.toResponse(savedItem);
     }
 
@@ -82,6 +87,7 @@ public class PronunciationItemServiceImpl implements PronunciationItemService {
 
         pronunciationItemMapper.updateEntity(item, request);
         PronunciationItem savedItem = pronunciationItemRepository.save(item);
+        studySetApiDelegate.revertParentPackagesToDraft(item.getStudySet().getId(), SYSTEM_TRIGGER);
         return pronunciationItemMapper.toResponse(savedItem);
     }
 
@@ -101,6 +107,9 @@ public class PronunciationItemServiceImpl implements PronunciationItemService {
 
         item.setDeleted(true);
         pronunciationItemRepository.save(item);
+        if (item.getStudySet() != null) {
+            studySetApiDelegate.revertParentPackagesToDraft(item.getStudySet().getId(), SYSTEM_TRIGGER);
+        }
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.lms.learningpath.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.learningpath.exception.ResourceAlreadyExistsException;
@@ -31,6 +32,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
     private final LearningPathProgressRepository learningPathProgressRepository;
     private final StepRepository stepRepository;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final LearningPathMapper learningPathMapper;
 
     @Override
@@ -46,6 +48,7 @@ public class LearningPathServiceImpl implements ILearningPathService {
         LearningPath learningPath = learningPathMapper.toEntity(request, userId);
         learningPath.setStudySet(studySet);
         learningPath = learningPathRepository.save(learningPath);
+        studySetApiDelegate.revertParentPackagesToDraft(studySet.getId(), userId);
 
         log.info("Successfully created learning path: {}", learningPath.getId());
         return learningPathMapper.toResponse(learningPath);
@@ -132,6 +135,9 @@ public class LearningPathServiceImpl implements ILearningPathService {
         LearningPath learningPath = findLearningPathById(id);
         learningPathMapper.updateEntity(learningPath, request);
         learningPath = learningPathRepository.save(learningPath);
+        if (learningPath.getStudySet() != null) {
+            studySetApiDelegate.revertParentPackagesToDraft(learningPath.getStudySet().getId(), userId);
+        }
 
         log.info("Successfully updated learning path: {}", id);
         return learningPathMapper.toResponse(learningPath);
@@ -143,8 +149,10 @@ public class LearningPathServiceImpl implements ILearningPathService {
         log.info("Deleting learning path: {}", id);
 
         LearningPath learningPath = findLearningPathById(id);
+        String studySetId = learningPath.getStudySet() != null ? learningPath.getStudySet().getId() : null;
         learningPath.setIsActive(false);
         learningPathRepository.save(learningPath);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
 
         log.info("Successfully soft-deleted learning path: {}", id);
     }

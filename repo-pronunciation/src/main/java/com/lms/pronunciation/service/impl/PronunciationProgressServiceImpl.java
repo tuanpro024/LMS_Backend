@@ -84,11 +84,14 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
 
     @Override
     public PronunciationStudySetProgressResponse getStudySetProgress(String userId, String studySetId) {
-        // Trigger update to ensure data integrity
-        updateStudySetProgress(userId, studySetId);
+        // Only recalculate/write when the study set is still learnable.
+        if (studySetApiDelegate.isStudySetLearningAllowed(studySetId)) {
+            updateStudySetProgress(userId, studySetId);
+        }
 
         PronunciationItemStudySetProgress progress = studySetProgressRepo.findByUserIdAndStudySetId(userId, studySetId)
-                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST, "Progress not found for study set: " + studySetId));
+                .orElseThrow(() -> new ApiException(ErrorCode.BAD_REQUEST,
+                        "Progress not found for study set: " + studySetId));
 
         return PronunciationStudySetProgressResponse.builder()
                 .id(progress.getId())
@@ -104,7 +107,8 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
     }
 
     @Override
-    public java.util.List<PronunciationItemProgressResponse> getItemProgressByStudySet(String userId, String studySetId) {
+    public java.util.List<PronunciationItemProgressResponse> getItemProgressByStudySet(String userId,
+            String studySetId) {
         return userItemProgressRepo.findByUserIdAndStudySetId(userId, studySetId).stream()
                 .map(p -> PronunciationItemProgressResponse.builder()
                         .id(p.getId())
@@ -136,7 +140,8 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
         Instant previousCompletedAt = progress.getCompletedAt();
 
         long totalItems = itemRepo.countByStudySetIdAndDeletedFalse(studySetId);
-        long learnedItems = userItemProgressRepo.countByUserIdAndStudySetIdAndStatus(userId, studySetId, PronunciationLearningStatus.LEARNED);
+        long learnedItems = userItemProgressRepo.countByUserIdAndStudySetIdAndStatus(userId, studySetId,
+                PronunciationLearningStatus.LEARNED);
 
         progress.setTotalItems((int) totalItems);
         progress.setLearnedItems((int) learnedItems);
@@ -162,20 +167,21 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
 
         studySetProgressRepo.save(progress);
 
-        boolean progressChanged =
-                !Objects.equals(previousLearnedItems, progress.getLearnedItems())
-                        || !Objects.equals(previousTotalItems, progress.getTotalItems())
-                        || !Objects.equals(previousProgressPercentage, progress.getProgressPercentage())
-                        || previousStatus != progress.getStatus()
-                        || !Objects.equals(previousCompletedAt, progress.getCompletedAt());
+        boolean progressChanged = !Objects.equals(previousLearnedItems, progress.getLearnedItems())
+                || !Objects.equals(previousTotalItems, progress.getTotalItems())
+                || !Objects.equals(previousProgressPercentage, progress.getProgressPercentage())
+                || previousStatus != progress.getStatus()
+                || !Objects.equals(previousCompletedAt, progress.getCompletedAt());
 
         if (!progressChanged) {
-            log.debug("Skip publishing pronunciation progress event because state is unchanged for userId: {}, studySetId: {}",
+            log.debug(
+                    "Skip publishing pronunciation progress event because state is unchanged for userId: {}, studySetId: {}",
                     userId, studySetId);
             return;
         }
 
-        com.lms.pronunciation.event.PronunciationStudySetProgressUpdatedEvent event = com.lms.pronunciation.event.PronunciationStudySetProgressUpdatedEvent.builder()
+        com.lms.pronunciation.event.PronunciationStudySetProgressUpdatedEvent event = com.lms.pronunciation.event.PronunciationStudySetProgressUpdatedEvent
+                .builder()
                 .userId(userId)
                 .studySetId(studySetId)
                 .learnedItems((int) learnedItems)
@@ -185,7 +191,7 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
                 .completedAt(progress.getCompletedAt())
                 .occurredAt(Instant.now())
                 .build();
-                
+
         eventPublisher.publishEvent(event);
     }
 }

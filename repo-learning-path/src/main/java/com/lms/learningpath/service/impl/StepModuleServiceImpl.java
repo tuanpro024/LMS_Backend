@@ -1,5 +1,6 @@
 package com.lms.learningpath.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.learningpath.client.FlashcardClient;
 import com.lms.learningpath.client.KanjiOriginClient;
 import com.lms.learningpath.client.PronunciationClient;
@@ -14,6 +15,7 @@ import com.lms.learningpath.entity.Step;
 import com.lms.learningpath.entity.StepModule;
 import com.lms.learningpath.entity.enums.ModuleType;
 import com.lms.learningpath.mapper.StepModuleMapper;
+import com.lms.learningpath.repository.LearningPathRepository;
 import com.lms.learningpath.repository.StepModuleRepository;
 import com.lms.learningpath.repository.StepRepository;
 import com.lms.learningpath.service.IStepModuleService;
@@ -34,9 +36,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class StepModuleServiceImpl implements IStepModuleService {
 
+    private static final String SYSTEM_TRIGGER = "system";
+
     private final StepModuleRepository stepModuleRepository;
     private final StepRepository stepRepository;
+    private final LearningPathRepository learningPathRepository;
     private final StepModuleMapper stepModuleMapper;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final FlashcardClient flashcardClient;
     private final WritingClient writingClient;
     private final KanjiOriginClient kanjiOriginClient;
@@ -49,7 +55,7 @@ public class StepModuleServiceImpl implements IStepModuleService {
         log.info("Adding module to step: {}", request.getStepId());
 
         Step step = stepRepository.findByIdAndIsActiveTrue(request.getStepId())
-            .orElseThrow(() -> new ResourceNotFoundException("Step not found with id: " + request.getStepId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Step not found with id: " + request.getStepId()));
 
         ModuleType normalizedModuleType = normalizeModuleType(request.getModuleType());
         request.setModuleType(normalizedModuleType);
@@ -62,15 +68,16 @@ public class StepModuleServiceImpl implements IStepModuleService {
         }
 
         if (stepModuleRepository.existsByStepIdAndContentSetIdAndIsActiveTrue(
-            step.getId(), request.getContentSetId())) {
+                step.getId(), request.getContentSetId())) {
             throw new ResourceAlreadyExistsException(
-                "Content set " + request.getContentSetId() + " already exists in this step");
+                    "Content set " + request.getContentSetId() + " already exists in this step");
         }
 
         validateContentSetMapping(normalizedModuleType, request.getContentSetId());
 
         StepModule stepModule = stepModuleMapper.toEntity(request);
         stepModule = stepModuleRepository.save(stepModule);
+        studySetApiDelegate.revertParentPackagesToDraft(resolveStudySetId(step), userId);
 
         log.info("Successfully added module: {} to step: {}", stepModule.getId(), request.getStepId());
         return stepModuleMapper.toResponse(stepModule);
@@ -98,8 +105,11 @@ public class StepModuleServiceImpl implements IStepModuleService {
         log.info("Removing module: {} from step", moduleId);
 
         StepModule stepModule = findStepModuleById(moduleId);
+        Step step = stepRepository.findByIdAndIsActiveTrue(stepModule.getStepId())
+                .orElseThrow(() -> new ResourceNotFoundException("Step not found with id: " + stepModule.getStepId()));
         stepModule.setIsActive(false);
         stepModuleRepository.save(stepModule);
+        studySetApiDelegate.revertParentPackagesToDraft(resolveStudySetId(step), userId);
 
         log.info("Successfully removed module: {}", moduleId);
     }
@@ -151,8 +161,21 @@ public class StepModuleServiceImpl implements IStepModuleService {
         if (!modulesToUpdate.isEmpty()) {
             stepModuleRepository.saveAll(modulesToUpdate);
         }
+        studySetApiDelegate.revertParentPackagesToDraft(resolveStudySetId(stepId), SYSTEM_TRIGGER);
 
         log.info("Successfully reordered {} modules", request.getItems().size());
+    }
+
+    private String resolveStudySetId(Step step) {
+        return learningPathRepository.findByIdAndIsActiveTrue(step.getLearningPathId())
+                .map(lp -> lp.getStudySet() != null ? lp.getStudySet().getId() : null)
+                .orElse(null);
+    }
+
+    private String resolveStudySetId(String stepId) {
+        Step step = stepRepository.findByIdAndIsActiveTrue(stepId)
+                .orElseThrow(() -> new ResourceNotFoundException("Step not found with id: " + stepId));
+        return resolveStudySetId(step);
     }
 
     private StepModule findStepModuleById(String id) {

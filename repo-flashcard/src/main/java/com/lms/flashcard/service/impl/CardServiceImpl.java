@@ -152,6 +152,8 @@ public class CardServiceImpl implements CardService {
 
         log.info("Added {} cards to StudySet {} by user {}", savedCards.size(), studySetId, userId);
 
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
+
         // Update StudySet progress
         flashcardProgressService.updateStudySetProgress(userId, studySetId);
 
@@ -235,6 +237,7 @@ public class CardServiceImpl implements CardService {
         }
 
         Card savedCard = cardRepository.save(card);
+        studySetApiDelegate.revertParentPackagesToDraft(studySet.getId(), userId);
         log.info("Updated card {} by user {}", id, userId);
 
         return cardMapper.toResponse(savedCard);
@@ -257,6 +260,7 @@ public class CardServiceImpl implements CardService {
 
         String studySetId = card.getStudySet().getId();
         cardRepository.delete(card);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
         log.info("Deleted card {} by user {}", id, userId);
 
         // Update StudySet progress

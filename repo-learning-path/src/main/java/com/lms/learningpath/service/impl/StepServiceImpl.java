@@ -1,5 +1,6 @@
 package com.lms.learningpath.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.learningpath.exception.ResourceAlreadyExistsException;
 import com.lms.learningpath.exception.ResourceNotFoundException;
 import com.lms.learningpath.dto.request.CreateStepRequest;
@@ -26,11 +27,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class StepServiceImpl implements IStepService {
 
+    private static final String SYSTEM_TRIGGER = "system";
+
     private final StepRepository stepRepository;
     private final LearningPathRepository learningPathRepository;
     private final StepProgressRepository stepProgressRepository;
     private final StepUnlockRuleRepository stepUnlockRuleRepository;
     private final StepModuleRepository stepModuleRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final StepMapper stepMapper;
 
     @Override
@@ -55,6 +59,7 @@ public class StepServiceImpl implements IStepService {
 
         // Create unlock rule for sequential unlocking
         createUnlockRuleForStep(step);
+        studySetApiDelegate.revertParentPackagesToDraft(resolveStudySetId(step.getLearningPathId()), userId);
 
         log.info("Successfully created step: {}", step.getId());
         return stepMapper.toResponse(step);
@@ -146,7 +151,8 @@ public class StepServiceImpl implements IStepService {
         Integer requestedOrder = request.getStepOrder();
         if (requestedOrder != null
                 && !requestedOrder.equals(step.getStepOrder())
-                && stepRepository.existsByLearningPathIdAndStepOrderAndIsActiveTrue(step.getLearningPathId(), requestedOrder)) {
+                && stepRepository.existsByLearningPathIdAndStepOrderAndIsActiveTrue(step.getLearningPathId(),
+                        requestedOrder)) {
             throw new ResourceAlreadyExistsException("Step with order " + requestedOrder + " already exists");
         }
 
@@ -157,6 +163,8 @@ public class StepServiceImpl implements IStepService {
         if (requestedOrder != null && !requestedOrder.equals(previousOrder)) {
             rebuildUnlockRules(step.getLearningPathId());
         }
+
+        studySetApiDelegate.revertParentPackagesToDraft(resolveStudySetId(step.getLearningPathId()), userId);
 
         log.info("Successfully updated step: {}", id);
         return stepMapper.toResponse(step);
@@ -176,6 +184,7 @@ public class StepServiceImpl implements IStepService {
             stepUnlockRuleRepository.save(rule);
         });
         rebuildUnlockRules(step.getLearningPathId());
+        studySetApiDelegate.revertParentPackagesToDraft(resolveStudySetId(step.getLearningPathId()), userId);
 
         log.info("Successfully soft-deleted step: {}", id);
     }
@@ -200,14 +209,21 @@ public class StepServiceImpl implements IStepService {
             stepRepository.saveAll(updatedSteps);
         }
         rebuildUnlockRules(learningPathId);
+        studySetApiDelegate.revertParentPackagesToDraft(resolveStudySetId(learningPathId), SYSTEM_TRIGGER);
 
         log.info("Successfully reordered {} steps", request.getItems().size());
+    }
+
+    private String resolveStudySetId(String learningPathId) {
+        return learningPathRepository.findByIdAndIsActiveTrue(learningPathId)
+                .map(lp -> lp.getStudySet() != null ? lp.getStudySet().getId() : null)
+                .orElse(null);
     }
 
     private void createUnlockRuleForStep(Step step) {
         // Find previous step (stepOrder - 1)
         Optional<Step> previousStepOpt = stepRepository
-            .findByLearningPathIdAndStepOrderAndIsActiveTrue(step.getLearningPathId(), step.getStepOrder() - 1);
+                .findByLearningPathIdAndStepOrderAndIsActiveTrue(step.getLearningPathId(), step.getStepOrder() - 1);
 
         StepUnlockRule unlockRule = StepUnlockRule.builder()
                 .stepId(step.getId())
@@ -221,17 +237,17 @@ public class StepServiceImpl implements IStepService {
                 step.getId(), unlockRule.getRequiredStepId());
     }
 
-        private void rebuildUnlockRules(String learningPathId) {
+    private void rebuildUnlockRules(String learningPathId) {
         List<Step> activeSteps = stepRepository.findByLearningPathIdAndIsActiveTrueOrderByStepOrderAsc(learningPathId);
         Step previous = null;
 
         for (Step step : activeSteps) {
             StepUnlockRule rule = stepUnlockRuleRepository.findByStepId(step.getId())
-                .orElseGet(() -> StepUnlockRule.builder()
-                    .stepId(step.getId())
-                    .requireAllModules(true)
-                    .isActive(true)
-                    .build());
+                    .orElseGet(() -> StepUnlockRule.builder()
+                            .stepId(step.getId())
+                            .requireAllModules(true)
+                            .isActive(true)
+                            .build());
 
             rule.setRequiredStepId(previous != null ? previous.getId() : null);
             rule.setRequireAllModules(true);
@@ -240,7 +256,7 @@ public class StepServiceImpl implements IStepService {
 
             previous = step;
         }
-        }
+    }
 
     private boolean isStepUnlocked(String userId, String stepId) {
         // Get unlock rule

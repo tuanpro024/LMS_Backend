@@ -71,6 +71,7 @@ public class WordServiceImpl implements WordService {
         wordMapper.updateEntity(word, request);
 
         Word updated = wordRepository.save(word);
+        studySetApiDelegate.revertParentPackagesToDraft(updated.getStudySet().getId(), userId);
         return wordMapper.toResponse(updated);
     }
 
@@ -84,11 +85,14 @@ public class WordServiceImpl implements WordService {
             throw new ApiException(ErrorCode.E240, "No permission to delete this word");
         }
 
+        String studySetId = word.getStudySet().getId();
+
         // Delete associated user progress records first to avoid FK constraint
         // violation
         userWordProgressRepository.deleteByWordId(id);
 
         wordRepository.delete(word);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
     }
 
     @Override
@@ -214,6 +218,7 @@ public class WordServiceImpl implements WordService {
                 .collect(Collectors.toList());
 
         List<Word> savedWords = wordRepository.saveAll(wordEntities);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
 
         log.info("Added {} words to StudySet {} by user {}", savedWords.size(), studySetId, userId);
 

@@ -215,7 +215,10 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         @Override
         @Transactional
         public VideoStepProgressResponse getStepProgress(String userId, String stepId) {
-                if (userId != null) {
+                VideoStep step = videoStepRepository.findById(stepId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Video step not found: " + stepId));
+
+                if (userId != null && studySetApiDelegate.isStudySetLearningAllowed(step.getStudySetId())) {
                         updateStepProgress(userId, stepId);
                 }
                 return stepProgressRepository.findByUserIdAndStepId(userId, stepId)
@@ -226,7 +229,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         @Override
         @Transactional
         public VideoCourseProgressResponse getCourseProgress(String userId, String studySetId) {
-                if (userId != null) {
+                if (userId != null && studySetApiDelegate.isStudySetLearningAllowed(studySetId)) {
                         updateCourseProgress(userId, studySetId);
                 }
                 return courseProgressRepository.findByUserIdAndStudySetId(userId, studySetId)
@@ -256,7 +259,7 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                 .findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(stepId);
 
                 int totalModules = allModules.size();
-                // Rule: All modules must be completed. 
+                // Rule: All modules must be completed.
                 // We map allModules to totalRequired for backward compatibility with UI/API.
                 int totalRequired = totalModules;
 
@@ -272,18 +275,20 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                 int completedCount = 0;
 
                 for (VideoModule module : allModules) {
-                    boolean isCompleted = false;
-                    if (isExternalPracticeModule(module.getModuleType())) {
-                        isCompleted = practiceProgressList.stream()
-                                .anyMatch(p -> p.getVideoModuleId().equals(module.getId()) && p.getStatus() == ProgressStatus.COMPLETED);
-                    } else {
-                        isCompleted = watchProgressList.stream()
-                                .anyMatch(p -> p.getVideoModuleId().equals(module.getId()) && p.getStatus() == ProgressStatus.COMPLETED);
-                    }
+                        boolean isCompleted = false;
+                        if (isExternalPracticeModule(module.getModuleType())) {
+                                isCompleted = practiceProgressList.stream()
+                                                .anyMatch(p -> p.getVideoModuleId().equals(module.getId())
+                                                                && p.getStatus() == ProgressStatus.COMPLETED);
+                        } else {
+                                isCompleted = watchProgressList.stream()
+                                                .anyMatch(p -> p.getVideoModuleId().equals(module.getId())
+                                                                && p.getStatus() == ProgressStatus.COMPLETED);
+                        }
 
-                    if (isCompleted) {
-                        completedCount++;
-                    }
+                        if (isCompleted) {
+                                completedCount++;
+                        }
                 }
 
                 int completedRequiredCount = completedCount;
@@ -463,10 +468,10 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
 
         private boolean isExternalPracticeModule(com.lms.videocourse.entity.enums.ModuleType moduleType) {
                 return moduleType == com.lms.videocourse.entity.enums.ModuleType.FLASHCARD ||
-                       moduleType == com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION ||
-                       moduleType == com.lms.videocourse.entity.enums.ModuleType.WRITING ||
-                       moduleType == com.lms.videocourse.entity.enums.ModuleType.QUIZ ||
-                       moduleType == com.lms.videocourse.entity.enums.ModuleType.LISTENING ||
-                       moduleType == com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
+                                moduleType == com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION ||
+                                moduleType == com.lms.videocourse.entity.enums.ModuleType.WRITING ||
+                                moduleType == com.lms.videocourse.entity.enums.ModuleType.QUIZ ||
+                                moduleType == com.lms.videocourse.entity.enums.ModuleType.LISTENING ||
+                                moduleType == com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
         }
 }

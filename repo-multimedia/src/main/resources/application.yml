@@ -72,7 +72,7 @@ storage:
 #    console-endpoint: ${MINIO_CONSOLE:http://localhost:49001}
 
   #    prod
-    endpoint: ${MINIO_ENDPOINT:http://lms-video-minio:90000}
+    endpoint: ${MINIO_ENDPOINT:http://lms-video-minio:9000}
     console-endpoint: ${MINIO_CONSOLE:http://lms-video-minio:9001}
 
     access-key: ${MINIO_ROOT_USER:lms_minio}

@@ -67,7 +67,7 @@ public class VideoStepController {
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<VideoStepResponse>> updateVideoStep(
             @PathVariable String id,
-            @RequestBody UpdateVideoStepRequest request,
+            @RequestBody @Valid UpdateVideoStepRequest request,
             Authentication authentication) {
 
         VideoStepResponse response = videoStepService.updateVideoStep(id, request);

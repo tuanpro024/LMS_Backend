@@ -1,14 +1,19 @@
 package com.lms.identity.service.impl;
 
 import com.lms.common.exception.ApiException;
+import com.lms.common.dto.PageResponse;
 import com.lms.common.exception.ErrorCode;
 import com.lms.identity.dto.response.ProfileResponse;
 import com.lms.identity.dto.request.UpdateProfileRequest;
 import com.lms.identity.dto.request.ChangePasswordRequest;
 import com.lms.identity.entity.User;
+import com.lms.identity.entity.UserStatus;
 import com.lms.identity.mapper.UserMapper;
 import com.lms.identity.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,12 +115,12 @@ public class UserServiceImpl implements UserService {
     public void updatePremiumStatus(String userId, boolean isPremium, int durationInDays) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "User not found"));
-        
+
         user.setPremium(isPremium);
         if (isPremium) {
             java.time.Instant now = java.time.Instant.now();
             java.time.Instant currentExpiry = user.getPremiumExpiryDate();
-            
+
             // Nếu đã là premium và chưa hết hạn thì cộng dồn, ngược lại tính từ bây giờ
             java.time.Instant baseDate = (currentExpiry != null && currentExpiry.isAfter(now)) ? currentExpiry : now;
             user.setPremiumExpiryDate(baseDate.plus(durationInDays, java.time.temporal.ChronoUnit.DAYS));
@@ -129,8 +134,9 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public boolean isPremium(String userId) {
         return userRepository.findById(userId)
-                .map(user -> user.isPremium() && 
-                    (user.getPremiumExpiryDate() == null || user.getPremiumExpiryDate().isAfter(java.time.Instant.now())))
+                .map(user -> user.isPremium() &&
+                        (user.getPremiumExpiryDate() == null
+                                || user.getPremiumExpiryDate().isAfter(java.time.Instant.now())))
                 .orElse(false);
     }
 
@@ -143,5 +149,24 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAllById(userIds).stream()
                 .map(userMapper::toProfile)
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<String> getActiveUserIds(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 1000);
+
+        Page<String> result = userRepository.findUserIdsByStatus(
+                UserStatus.ACTIVE,
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.ASC, "id")));
+
+        return PageResponse.<String>builder()
+                .items(result.getContent())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .page(result.getNumber())
+                .size(result.getSize())
+                .build();
     }
 }

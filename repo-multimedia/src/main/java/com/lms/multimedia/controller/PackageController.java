@@ -18,7 +18,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Thin controller that delegates to PackageApiDelegate from content-common
@@ -28,6 +31,8 @@ import java.util.List;
 @RequestMapping("/api/packages")
 @RequiredArgsConstructor
 public class PackageController {
+
+    private static final String TICKET_MODULE = TicketModuleEnum.MULTIMEDIA.name();
 
     private final PackageApiDelegate delegate;
 
@@ -50,17 +55,24 @@ public class PackageController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PackageResponse>> getPackageById(@PathVariable String id) {
-        PackageResponse response = delegate.getPackageById(id);
+    public ResponseEntity<ApiResponse<PackageResponse>> getPackageById(
+            @PathVariable String id,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        Set<String> roles = extractRoles(authentication);
+        PackageResponse response = delegate.getPackageById(id, userId, roles, TICKET_MODULE);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getPackages(
-            @RequestParam(required = false) TypeName type) {
+            @RequestParam(required = false) TypeName type,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        Set<String> roles = extractRoles(authentication);
         List<PackageResponse> response = (type != null)
-                ? delegate.getPackagesByType(type)
-                : delegate.getAllPackages();
+                ? delegate.getPackagesByType(type, userId, roles, TICKET_MODULE)
+                : delegate.getAllPackages(userId, roles, TICKET_MODULE);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -108,10 +120,40 @@ public class PackageController {
             @PathVariable String packageId,
             @PathVariable String folderId,
             Authentication authentication) {
-        String userId = (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal)
-                ? ((AuthPrincipal) authentication.getPrincipal()).userId()
-                : null;
+        String userId = extractUserId(authentication);
         PackageResponse response = delegate.removeFolderFromPackage(packageId, folderId, userId);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PostMapping("/{id}/publish")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<ApiResponse<PackageResponse>> publishPackage(
+            @PathVariable String id, Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(delegate.publishPackage(id, principal.userId())));
+    }
+
+    @PostMapping("/{id}/unpublish")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<ApiResponse<PackageResponse>> unpublishPackage(
+            @PathVariable String id, Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(delegate.unpublishPackage(id, principal.userId())));
+    }
+
+    private String extractUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated())
+            return null;
+        if (authentication.getPrincipal() instanceof AuthPrincipal p)
+            return p.userId();
+        return null;
+    }
+
+    private Set<String> extractRoles(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated())
+            return Collections.emptySet();
+        return authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .collect(Collectors.toSet());
     }
 }

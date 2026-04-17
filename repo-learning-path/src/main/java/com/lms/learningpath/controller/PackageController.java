@@ -17,12 +17,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/packages")
 @RequiredArgsConstructor
 public class PackageController {
+
+    private static final String TICKET_MODULE = TicketModuleEnum.LEARNING_PATH.name();
 
     private final PackageApiDelegate packageDelegate;
 
@@ -40,8 +45,12 @@ public class PackageController {
      * Get learning path by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PackageResponse>> getPackage(@PathVariable String id) {
-        PackageResponse response = packageDelegate.getPackageById(id);
+    public ResponseEntity<ApiResponse<PackageResponse>> getPackage(
+            @PathVariable String id,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        Set<String> roles = extractRoles(authentication);
+        PackageResponse response = packageDelegate.getPackageById(id, userId, roles, TICKET_MODULE);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -50,10 +59,13 @@ public class PackageController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllPackages(
-            @RequestParam(required = false) TypeName type) {
+            @RequestParam(required = false) TypeName type,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        Set<String> roles = extractRoles(authentication);
         List<PackageResponse> response = (type != null)
-                ? packageDelegate.getPackagesByType(type)
-                : packageDelegate.getAllPackages();
+                ? packageDelegate.getPackagesByType(type, userId, roles, TICKET_MODULE)
+                : packageDelegate.getAllPackages(userId, roles, TICKET_MODULE);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
@@ -112,5 +124,37 @@ public class PackageController {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         PackageResponse response = packageDelegate.removeFolderFromPackage(packageId, folderId, principal.userId());
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @PostMapping("/{id}/publish")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<ApiResponse<PackageResponse>> publishPackage(
+            @PathVariable String id, Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.publishPackage(id, principal.userId())));
+    }
+
+    @PostMapping("/{id}/unpublish")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<ApiResponse<PackageResponse>> unpublishPackage(
+            @PathVariable String id, Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.unpublishPackage(id, principal.userId())));
+    }
+
+    private String extractUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated())
+            return null;
+        if (authentication.getPrincipal() instanceof AuthPrincipal p)
+            return p.userId();
+        return null;
+    }
+
+    private Set<String> extractRoles(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated())
+            return Collections.emptySet();
+        return authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .collect(Collectors.toSet());
     }
 }

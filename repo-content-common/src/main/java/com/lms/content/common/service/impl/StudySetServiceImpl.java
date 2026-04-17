@@ -1,20 +1,29 @@
 package com.lms.content.common.service.impl;
 
+import com.lms.common.event.PackageStatusEvent;
+import com.lms.common.event.PackageStatusPublisher;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.dto.request.CreateStudySetRequest;
 import com.lms.content.common.dto.request.UpdateStudySetRequest;
 import com.lms.content.common.dto.response.StudySetResponse;
+import com.lms.content.common.entity.Folder;
+import com.lms.content.common.entity.Package;
 import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.entity.enums.PublishStatus;
 import com.lms.content.common.mapper.StudySetMapper;
+import com.lms.content.common.repository.FolderRepository;
+import com.lms.content.common.repository.PackageRepository;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.content.common.service.StudySetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,44 +32,49 @@ import java.util.List;
 public class StudySetServiceImpl implements StudySetService {
 
     private final StudySetRepository studySetRepository;
-    private final com.lms.content.common.repository.FolderRepository folderRepository;
+    private final FolderRepository folderRepository;
+    private final PackageRepository packageRepository;
     private final StudySetMapper studySetMapper;
-    private final org.springframework.context.ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
+    private final PackageStatusPublisher packageStatusPublisher;
+
+    // ── CREATE ────────────────────────────────────────────────────────────────
 
     @Override
     public StudySetResponse createStudySet(CreateStudySetRequest request, String userId) {
         log.info("Creating study set for user: {}", userId);
 
-        // Hook: validate
         validateCreateStudySet(request, userId);
 
         StudySet studySet = studySetMapper.toEntity(request);
         studySet.setUserId(userId);
 
-        // Hook: before save
         beforeSaveStudySet(studySet, request);
 
         StudySet saved = studySetRepository.save(studySet);
 
         // Link to folder if provided
         if (request.getFolderId() != null && !request.getFolderId().trim().isEmpty()) {
-            com.lms.content.common.entity.Folder folder = folderRepository.findById(request.getFolderId())
+            Folder folder = folderRepository.findById(request.getFolderId())
                     .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-            // Check permission: folder must belong to same user
             if (!folder.getUserId().equals(userId)) {
                 throw new ApiException(ErrorCode.E240, "No permission to add study set to this folder");
             }
 
             folder.addStudySet(saved);
-            folderRepository.save(folder);
+            Folder savedFolder = folderRepository.save(folder);
+
+            // StudySet mới trong folder → revert package về DRAFT
+            revertParentPackagesToDraft(savedFolder, userId);
         }
 
-        // Hook: after save
         afterSaveStudySet(saved);
 
         return studySetMapper.toResponse(saved);
     }
+
+    // ── READ ──────────────────────────────────────────────────────────────────
 
     @Override
     @Transactional(readOnly = true)
@@ -102,9 +116,8 @@ public class StudySetServiceImpl implements StudySetService {
     @Transactional(readOnly = true)
     public List<StudySetResponse> getStudySetsByPackageType(String packageType) {
         try {
-            com.lms.content.common.entity.TypeName typeName = com.lms.content.common.entity.TypeName.valueOf(packageType);
-            // Strict exclusivity is only needed by video-course when importing modules for a VIDEO_COURSE step.
-            // Keep other packageType behaviors unchanged to reduce regression risk.
+            com.lms.content.common.entity.TypeName typeName = com.lms.content.common.entity.TypeName
+                    .valueOf(packageType);
             List<StudySet> studySets = typeName == com.lms.content.common.entity.TypeName.VIDEO_COURSE
                     ? studySetRepository.findByPackageTypeNameStrict(typeName)
                     : studySetRepository.findByPackageTypeName(typeName);
@@ -123,17 +136,54 @@ public class StudySetServiceImpl implements StudySetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean isStudySetLearningAllowed(String studySetId) {
+        if (studySetId == null || studySetId.isBlank()) {
+            return false;
+        }
+
+        if (!studySetRepository.existsById(studySetId)) {
+            return false;
+        }
+
+        long linkedFolderCount = studySetRepository.countActiveLinkedFolders(studySetId);
+        if (linkedFolderCount == 0) {
+            // Backward compatible: orphan study sets are still learnable.
+            return true;
+        }
+
+        return studySetRepository.existsInPublishedPackage(studySetId);
+    }
+
+    @Override
+    public void assertStudySetLearningAllowed(String studySetId) {
+        if (!isStudySetLearningAllowed(studySetId)) {
+            throw new ApiException(
+                    ErrorCode.PACKAGE_UNDER_MAINTENANCE,
+                    "Goi hoc dang tam sua. Vui long quay lai sau khi goi hoc duoc publish lai.");
+        }
+    }
+
+    @Override
+    public void revertParentPackagesToDraft(String studySetId, String triggeredBy) {
+        if (studySetId == null || studySetId.isBlank()) {
+            return;
+        }
+
+        StudySet studySet = studySetRepository.findById(studySetId)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
+
+        String actor = (triggeredBy == null || triggeredBy.isBlank()) ? "system" : triggeredBy;
+        revertParentPackagesOfStudySetToDraft(studySet, actor);
+    }
+
+    // ── UPDATE ────────────────────────────────────────────────────────────────
+
+    @Override
     public StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId) {
         StudySet studySet = studySetRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
 
-        // Check ownership - DISABLED
-        // if (!studySet.getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to modify this study
-        // set");
-        // }
-
-        // Hook: validate update
         validateUpdateStudySet(studySet, request, userId);
 
         if (request.getTitle() != null) {
@@ -146,53 +196,107 @@ public class StudySetServiceImpl implements StudySetService {
             studySet.setPrivate(request.getIsPrivate());
         }
 
-        // Hook: before update
         beforeUpdateStudySet(studySet, request);
 
         StudySet updated = studySetRepository.save(studySet);
 
-        // Hook: after update
+        // StudySet bị sửa → revert các package cha về DRAFT
+        revertParentPackagesOfStudySetToDraft(updated, userId);
+
         afterUpdateStudySet(updated);
 
         return studySetMapper.toResponse(updated);
     }
+
+    // ── DELETE ────────────────────────────────────────────────────────────────
 
     @Override
     public void deleteStudySet(String id, String userId) {
         StudySet studySet = studySetRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
 
-        // Check ownership - DISABLED
-        // if (!studySet.getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to delete this study
-        // set");
-        // }
+        // Lưu danh sách folder trước khi xóa
+        List<Folder> parentFolders = studySet.getFolders() != null
+                ? List.copyOf(studySet.getFolders())
+                : List.of();
 
-        // Unlink from all folders first to avoid FK constraint violation
-        List<com.lms.content.common.entity.Folder> folders = studySet.getFolders();
-        if (folders != null && !folders.isEmpty()) {
-            // Create a copy of the list to avoid ConcurrentModificationException if
-            // modifying the collection while iterating
-            List<com.lms.content.common.entity.Folder> folderList = List.copyOf(folders);
-            for (com.lms.content.common.entity.Folder folder : folderList) {
+        // Unlink from all folders
+        if (!parentFolders.isEmpty()) {
+            for (Folder folder : parentFolders) {
                 folder.removeStudySet(studySet);
                 folderRepository.save(folder);
             }
         }
 
-        // Hook: before delete
         beforeDeleteStudySet(studySet, userId);
 
-        // Publish event to notify other modules (e.g. Multimedia for video cleanup)
-        eventPublisher.publishEvent(new com.lms.content.common.event.StudySetDeletedEvent(this, id));
+        eventPublisher.publishEvent(
+                new com.lms.content.common.event.StudySetDeletedEvent(this, id));
 
         studySetRepository.delete(studySet);
 
-        // Hook: after delete
+        // StudySet bị xóa → revert package cha về DRAFT
+        for (Folder folder : parentFolders) {
+            if (folder.getPackageEntity() != null) {
+                packageRepository.findById(folder.getPackageEntity().getId())
+                        .ifPresent(pkg -> revertPackageToDraft(pkg, userId));
+            }
+        }
+
         afterDeleteStudySet(id, userId);
     }
 
-    // ========== EXTENSION HOOKS ==========
+    // ── REVERT HELPERS ────────────────────────────────────────────────────────
+
+    /**
+     * Revert package cha của folder về DRAFT nếu đang PUBLISHED.
+     * Tránh circular dependency — dùng PackageRepository trực tiếp.
+     */
+    private void revertParentPackagesToDraft(Folder folder, String userId) {
+        if (folder.getPackageEntity() != null) {
+            packageRepository.findById(folder.getPackageEntity().getId())
+                    .ifPresent(pkg -> revertPackageToDraft(pkg, userId));
+        }
+    }
+
+    /**
+     * Revert tất cả package cha của studySet về DRAFT nếu đang PUBLISHED.
+     */
+    private void revertParentPackagesOfStudySetToDraft(StudySet studySet, String userId) {
+        if (studySet.getFolders() == null || studySet.getFolders().isEmpty())
+            return;
+
+        studySet.getFolders().stream()
+                .filter(f -> f.getPackageEntity() != null)
+                .map(f -> f.getPackageEntity().getId())
+                .distinct()
+                .forEach(pkgId -> packageRepository.findById(pkgId)
+                        .ifPresent(pkg -> revertPackageToDraft(pkg, userId)));
+    }
+
+    /**
+     * Nếu package đang PUBLISHED → set DRAFT + broadcast Kafka event.
+     * Idempotent: nếu đã DRAFT thì bỏ qua.
+     */
+    private void revertPackageToDraft(Package pkg, String triggeredBy) {
+        if (pkg.getPublishStatus() == PublishStatus.PUBLISHED) {
+            pkg.setPublishStatus(PublishStatus.DRAFT);
+            packageRepository.save(pkg);
+
+            packageStatusPublisher.publish(new PackageStatusEvent(
+                    pkg.getId(),
+                    pkg.getName(),
+                    pkg.getType() != null ? pkg.getType().getName().name() : null,
+                    PublishStatus.DRAFT.name(),
+                    triggeredBy,
+                    "CONTENT_UPDATED"));
+
+            log.info("Package {} auto-reverted to DRAFT due to study set CUD by userId={}",
+                    pkg.getId(), triggeredBy);
+        }
+    }
+
+    // ── EXTENSION HOOKS ───────────────────────────────────────────────────────
 
     protected void validateCreateStudySet(CreateStudySetRequest request, String userId) {
     }

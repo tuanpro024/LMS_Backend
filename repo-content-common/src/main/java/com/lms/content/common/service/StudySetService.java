@@ -24,6 +24,23 @@ public interface StudySetService {
 
     List<StudySetResponse> findByTitleAndUserIdIgnoreCase(String title, String userId);
 
+    /**
+     * Learning is allowed when study set is linked to at least one active
+     * PUBLISHED package, or when it is not linked to any package.
+     */
+    boolean isStudySetLearningAllowed(String studySetId);
+
+    /**
+     * Throws ApiException when study set is not available for learning.
+     */
+    void assertStudySetLearningAllowed(String studySetId);
+
+    /**
+     * Revert all parent packages of a study set to DRAFT when lower-level content
+     * changes.
+     */
+    void revertParentPackagesToDraft(String studySetId, String triggeredBy);
+
     StudySetResponse updateStudySet(String id, UpdateStudySetRequest request, String userId);
 
     void deleteStudySet(String id, String userId);

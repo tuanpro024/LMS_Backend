@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.lms.common.dto.ApiResponse;
+import com.lms.common.exception.ApiException;
+import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.content.common.entity.TypeName;
@@ -31,16 +33,21 @@ import java.util.Locale;
  * WebClient wrapper để gọi các repo ôn luyện
  * (flashcard, writing, kanji, pronunciation, quiz, listening, ai-practice).
  * <p>
- * - GET /study-sets  → lấy danh sách study set có sẵn (dùng InternalApiClient ở service)
+ * - GET /study-sets → lấy danh sách study set có sẵn (dùng InternalApiClient ở
+ * service)
  * - POST /packages/import-excel (multipart) → import Excel tạo nội dung mới
  * <p>
- * Không dùng Feign vì cần forward MultipartFile; WebClient (đã có trong project) đơn giản hơn.
+ * Không dùng Feign vì cần forward MultipartFile; WebClient (đã có trong
+ * project) đơn giản hơn.
  */
 @Component
 @Slf4j
 public class PracticeModuleWebClient {
 
-    /** WebClient KHÔNG có baseUrl cố định — URL được build từ Eureka service-name pattern. */
+    /**
+     * WebClient KHÔNG có baseUrl cố định — URL được build từ Eureka service-name
+     * pattern.
+     */
     private final WebClient.Builder webClientBuilder;
 
     public PracticeModuleWebClient(@Qualifier("loadBalancedWebClientBuilder") WebClient.Builder webClientBuilder) {
@@ -58,15 +65,16 @@ public class PracticeModuleWebClient {
     }
 
     /**
-     * Gọi POST /packages/import-excel trên repo ngoài rồi trả về HierarchicalImportResult.
+     * Gọi POST /packages/import-excel trên repo ngoài rồi trả về
+     * HierarchicalImportResult.
      *
      * @param serviceBaseUrl URL của service đích, ví dụ "http://repo-flashcard"
      * @param file           File Excel do client upload
      * @param typeName       Loại nội dung (LEARNING, FREE, …)
      */
     public HierarchicalImportResult importExcel(String serviceBaseUrl,
-                                                 MultipartFile file,
-                                                 TypeName typeName) {
+            MultipartFile file,
+            TypeName typeName) {
         try {
             MultipartBodyBuilder builder = new MultipartBodyBuilder();
             builder.part("file", file.getResource());
@@ -80,7 +88,8 @@ public class PracticeModuleWebClient {
                     .uri(serviceBaseUrl + "/packages/import-excel")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .headers(h -> {
-                        if (authHeader != null) h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                        if (authHeader != null)
+                            h.set(HttpHeaders.AUTHORIZATION, authHeader);
                     })
                     .body(BodyInserters.fromMultipartData(builder.build()))
                     .retrieve()
@@ -93,7 +102,8 @@ public class PracticeModuleWebClient {
 
             ObjectMapper om = new ObjectMapper();
             ApiResponse<HierarchicalImportResult> resp = om.readValue(
-                    raw, new TypeReference<>() {});
+                    raw, new TypeReference<>() {
+                    });
 
             if (resp == null || resp.data() == null) {
                 return HierarchicalImportResult.builder().build();
@@ -124,7 +134,8 @@ public class PracticeModuleWebClient {
                     .get()
                     .uri(serviceBaseUrl + "/study-sets/" + id)
                     .headers(h -> {
-                        if (authHeader != null) h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                        if (authHeader != null)
+                            h.set(HttpHeaders.AUTHORIZATION, authHeader);
                     })
                     .retrieve()
                     .bodyToMono(String.class)
@@ -137,7 +148,8 @@ public class PracticeModuleWebClient {
 
             ObjectMapper om = new ObjectMapper();
             om.findAndRegisterModules();
-            ApiResponse<StudySetResponse> resp = om.readValue(raw, new TypeReference<>() {});
+            ApiResponse<StudySetResponse> resp = om.readValue(raw, new TypeReference<>() {
+            });
             return resp != null ? resp.data() : null;
         } catch (WebClientResponseException.NotFound ex) {
             return null;
@@ -165,26 +177,75 @@ public class PracticeModuleWebClient {
                     .get()
                     .uri(uri)
                     .headers(h -> {
-                        if (authHeader != null) h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                        if (authHeader != null)
+                            h.set(HttpHeaders.AUTHORIZATION, authHeader);
                     })
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(TIMEOUT)
                     .block();
 
-            if (raw == null) return new ArrayList<>();
+            if (raw == null)
+                return new ArrayList<>();
 
             ObjectMapper om = new ObjectMapper();
             // register JavaTimeModule for Instant deserialization
             om.findAndRegisterModules();
             ApiResponse<List<StudySetResponse>> resp = om.readValue(
-                    raw, new TypeReference<>() {});
+                    raw, new TypeReference<>() {
+                    });
 
             return (resp != null && resp.data() != null) ? resp.data() : new ArrayList<>();
 
         } catch (Exception e) {
-            log.warn("PracticeModuleWebClient.getStudySets({}, q={}) failed: {}", serviceBaseUrl, query, e.getMessage());
+            log.warn("PracticeModuleWebClient.getStudySets({}, q={}) failed: {}", serviceBaseUrl, query,
+                    e.getMessage());
             return new ArrayList<>();
+        }
+    }
+
+    public void assertStudySetLearningAllowed(String serviceBaseUrl, String studySetId) {
+        if (studySetId == null || studySetId.isBlank()) {
+            return;
+        }
+
+        String authHeader = getAuthHeader();
+        String uri = serviceBaseUrl + "/internal/study-sets/" + studySetId + "/learning-allowed/assert";
+
+        try {
+            webClientBuilder.build()
+                    .get()
+                    .uri(uri)
+                    .headers(h -> {
+                        if (authHeader != null) {
+                            h.set(HttpHeaders.AUTHORIZATION, authHeader);
+                        }
+                    })
+                    .retrieve()
+                    .toBodilessEntity()
+                    .timeout(TIMEOUT)
+                    .block();
+        } catch (WebClientResponseException.Forbidden ex) {
+            throw new ApiException(
+                    ErrorCode.PACKAGE_UNDER_MAINTENANCE,
+                    extractApiErrorMessage(ex,
+                            "Goi hoc dang tam sua. Vui long quay lai sau khi goi hoc duoc publish lai."),
+                    HttpStatus.FORBIDDEN);
+        } catch (WebClientResponseException ex) {
+            log.warn("Study-set learning guard call failed uri={} status={} body={}",
+                    uri,
+                    ex.getStatusCode(),
+                    ex.getResponseBodyAsString());
+            throw new ApiException(
+                    ErrorCode.E305,
+                    "Khong the kiem tra trang thai goi hoc. Vui long thu lai sau.",
+                    HttpStatus.BAD_GATEWAY);
+        } catch (Exception ex) {
+            log.warn("Study-set learning guard call failed uri={} reason={}", uri, ex.getMessage());
+            throw new ApiException(
+                    ErrorCode.E305,
+                    "Khong the kiem tra trang thai goi hoc. Vui long thu lai sau.",
+                    HttpStatus.BAD_GATEWAY);
         }
     }
 
@@ -436,5 +497,24 @@ public class PracticeModuleWebClient {
             normalized = 100;
         }
         return Double.valueOf(String.format(Locale.ROOT, "%.2f", normalized));
+    }
+
+    private String extractApiErrorMessage(WebClientResponseException ex, String defaultMessage) {
+        try {
+            String body = ex.getResponseBodyAsString();
+            if (body == null || body.isBlank()) {
+                return defaultMessage;
+            }
+
+            ObjectMapper om = new ObjectMapper();
+            JsonNode root = om.readTree(body);
+            String message = root.path("errorMessage").asText(null);
+            if (message != null && !message.isBlank()) {
+                return message;
+            }
+        } catch (Exception ignored) {
+            // Keep fallback message if body is not parsable.
+        }
+        return defaultMessage;
     }
 }

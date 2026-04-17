@@ -1,5 +1,6 @@
 package com.lms.videocourse.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.videocourse.client.MultimediaClient;
 import com.lms.videocourse.client.dto.MultimediaVideoResponse;
 import com.lms.videocourse.dto.request.CreateVideoModuleRequest;
@@ -29,11 +30,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class VideoModuleServiceImpl implements IVideoModuleService {
 
+    private static final String SYSTEM_TRIGGER = "system";
+
     private final VideoModuleRepository videoModuleRepository;
     private final VideoStepRepository videoStepRepository;
     private final VideoWatchProgressRepository watchProgressRepository;
     private final VideoPracticeModuleProgressRepository practiceProgressRepository;
     private final MultimediaClient multimediaClient;
+    private final StudySetApiDelegate studySetApiDelegate;
 
     @Override
     @Transactional
@@ -41,7 +45,7 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
         log.info("Creating video module: {} for step {}", request.getTitle(), request.getStepId());
 
         // Validate step exists
-        videoStepRepository.findById(request.getStepId())
+        var step = videoStepRepository.findById(request.getStepId())
                 .orElseThrow(() -> new ResourceNotFoundException("Video step not found: " + request.getStepId()));
 
         // Validate module type
@@ -99,6 +103,7 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .build();
 
         module = videoModuleRepository.save(module);
+        studySetApiDelegate.revertParentPackagesToDraft(step.getStudySetId(), SYSTEM_TRIGGER);
         return toResponse(module, null, null);
     }
 
@@ -117,7 +122,8 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .stream()
                 .map(module -> {
                     VideoWatchProgressResponse watchProgress = getWatchProgressForUser(userId, module.getId());
-                    VideoPracticeModuleProgressResponse practiceProgress = getPracticeProgressForUser(userId, module.getId());
+                    VideoPracticeModuleProgressResponse practiceProgress = getPracticeProgressForUser(userId,
+                            module.getId());
                     return toResponse(module, watchProgress, practiceProgress);
                 })
                 .collect(Collectors.toList());
@@ -157,6 +163,10 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
             module.setIsActive(request.getIsActive());
 
         module = videoModuleRepository.save(module);
+        String studySetId = videoStepRepository.findById(module.getStepId())
+                .map(s -> s.getStudySetId())
+                .orElse(null);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, SYSTEM_TRIGGER);
         return toResponse(module, null, null);
     }
 
@@ -165,8 +175,12 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
     public void deleteVideoModule(String id) {
         VideoModule module = videoModuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Video module not found: " + id));
+        String studySetId = videoStepRepository.findById(module.getStepId())
+                .map(s -> s.getStudySetId())
+                .orElse(null);
         module.setIsActive(false);
         videoModuleRepository.save(module);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, SYSTEM_TRIGGER);
     }
 
     private VideoWatchProgressResponse getWatchProgressForUser(String userId, String moduleId) {
@@ -209,7 +223,8 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .orElse(null);
     }
 
-    private VideoModuleResponse toResponse(VideoModule module, VideoWatchProgressResponse watchProgress, VideoPracticeModuleProgressResponse practiceProgress) {
+    private VideoModuleResponse toResponse(VideoModule module, VideoWatchProgressResponse watchProgress,
+            VideoPracticeModuleProgressResponse practiceProgress) {
         return VideoModuleResponse.builder()
                 .id(module.getId())
                 .stepId(module.getStepId())
@@ -233,15 +248,19 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
     }
 
     private com.lms.videocourse.entity.enums.ModuleType parseModuleType(String typeStr) {
-        if (typeStr == null || typeStr.isBlank()) return null;
+        if (typeStr == null || typeStr.isBlank())
+            return null;
         String type = typeStr.trim().toUpperCase();
 
         // Handle legacy/alias mapping
-        if ("KANJI".equals(type)) return com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
-        if ("LISTENING_PRACTICE".equals(type)) return com.lms.videocourse.entity.enums.ModuleType.LISTENING;
+        if ("KANJI".equals(type))
+            return com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
+        if ("LISTENING_PRACTICE".equals(type))
+            return com.lms.videocourse.entity.enums.ModuleType.LISTENING;
 
         try {
-            com.lms.videocourse.entity.enums.ModuleType result = com.lms.videocourse.entity.enums.ModuleType.valueOf(type);
+            com.lms.videocourse.entity.enums.ModuleType result = com.lms.videocourse.entity.enums.ModuleType
+                    .valueOf(type);
             // Additionally check if it's one of the 6 allowed types
             List<com.lms.videocourse.entity.enums.ModuleType> allowed = List.of(
                     com.lms.videocourse.entity.enums.ModuleType.FLASHCARD,
@@ -249,8 +268,7 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                     com.lms.videocourse.entity.enums.ModuleType.LISTENING,
                     com.lms.videocourse.entity.enums.ModuleType.WRITING,
                     com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN,
-                    com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION
-            );
+                    com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION);
             if (!allowed.contains(result)) {
                 throw new IllegalArgumentException("Invalid practice module type: " + typeStr);
             }

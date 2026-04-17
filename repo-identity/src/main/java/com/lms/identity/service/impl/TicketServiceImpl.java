@@ -217,6 +217,13 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean hasAnyTicket(String userId) {
+        // Có ít nhất 1 ticket hợp lệ (bất kỳ module, status != CLOSE)
+        return ticketRepository.existsByAssignedIdAndStatusNot(userId, TicketStatus.CLOSE);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<TicketAssigneeOptionResponse> listAssignableUsers(String query) {
         List<User> teachers = userRepository.findByRolesName(RoleName.ROLE_TEACHER);
         List<User> collaborators = userRepository.findByRolesName(RoleName.ROLE_COLLABORATOR);

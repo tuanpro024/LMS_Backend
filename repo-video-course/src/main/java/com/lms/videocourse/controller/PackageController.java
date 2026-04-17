@@ -19,7 +19,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -31,6 +33,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/packages")
 @RequiredArgsConstructor
 public class PackageController {
+
+    private static final String TICKET_MODULE = TicketModuleEnum.VIDEO_COURSE.name();
 
     private final PackageApiDelegate packageDelegate;
 
@@ -63,22 +67,29 @@ public class PackageController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PackageResponse>> getPackage(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.getPackageById(id)));
+    public ResponseEntity<ApiResponse<PackageResponse>> getPackage(
+            @PathVariable String id,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        Set<String> roles = extractRoles(authentication);
+        return ResponseEntity.ok(ApiResponse.ok(
+                packageDelegate.getPackageById(id, userId, roles, TICKET_MODULE)));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllPackages(
             @RequestParam(required = false) TypeName type,
-            @RequestParam(required = false) com.lms.content.common.entity.CategoryType category) {
-
+            @RequestParam(required = false) com.lms.content.common.entity.CategoryType category,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        Set<String> roles = extractRoles(authentication);
         List<PackageResponse> response;
         if (type != null && category != null) {
-            response = packageDelegate.getPackagesByTypeAndCategory(type, category);
+            response = packageDelegate.getPackagesByTypeAndCategory(type, category, userId, roles, TICKET_MODULE);
         } else if (type != null) {
-            response = packageDelegate.getPackagesByType(type);
+            response = packageDelegate.getPackagesByType(type, userId, roles, TICKET_MODULE);
         } else {
-            response = packageDelegate.getAllPackages();
+            response = packageDelegate.getAllPackages(userId, roles, TICKET_MODULE);
         }
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
@@ -134,5 +145,37 @@ public class PackageController {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         return ResponseEntity.ok(ApiResponse.ok(
                 packageDelegate.removeFolderFromPackage(packageId, folderId, principal.userId())));
+    }
+
+    @PostMapping("/{id}/publish")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<ApiResponse<PackageResponse>> publishPackage(
+            @PathVariable String id, Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.publishPackage(id, principal.userId())));
+    }
+
+    @PostMapping("/{id}/unpublish")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<ApiResponse<PackageResponse>> unpublishPackage(
+            @PathVariable String id, Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.unpublishPackage(id, principal.userId())));
+    }
+
+    private String extractUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated())
+            return null;
+        if (authentication.getPrincipal() instanceof AuthPrincipal p)
+            return p.userId();
+        return null;
+    }
+
+    private Set<String> extractRoles(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated())
+            return Collections.emptySet();
+        return authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .collect(Collectors.toSet());
     }
 }

@@ -1,5 +1,7 @@
 package com.lms.content.common.service.impl;
 
+import com.lms.common.event.PackageStatusEvent;
+import com.lms.common.event.PackageStatusPublisher;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.dto.request.CreateFolderRequest;
@@ -8,6 +10,7 @@ import com.lms.content.common.dto.response.FolderResponse;
 import com.lms.content.common.entity.Folder;
 import com.lms.content.common.entity.Package;
 import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.entity.enums.PublishStatus;
 import com.lms.content.common.mapper.FolderMapper;
 import com.lms.content.common.repository.FolderRepository;
 import com.lms.content.common.repository.PackageRepository;
@@ -30,34 +33,40 @@ public class FolderServiceImpl implements FolderService {
     private final PackageRepository packageRepository;
     private final StudySetRepository studySetRepository;
     private final FolderMapper folderMapper;
+    private final PackageStatusPublisher packageStatusPublisher;
+
+    // ── CREATE ────────────────────────────────────────────────────────────────
 
     @Override
     public FolderResponse createFolder(CreateFolderRequest request, String userId) {
         log.info("Creating folder for user: {}", userId);
 
-        // Hook: validate
         validateCreateFolder(request, userId);
 
         Folder folder = folderMapper.toEntity(request);
         folder.setUserId(userId);
 
-        // Set package if provided
         if (request.getPackageId() != null) {
             Package packageEntity = packageRepository.findById(request.getPackageId())
                     .orElseThrow(() -> new ApiException(ErrorCode.E227, "Package not found"));
             folder.setPackageEntity(packageEntity);
         }
 
-        // Hook: before save
         beforeSaveFolder(folder, request);
 
         Folder saved = folderRepository.save(folder);
 
-        // Hook: after save
+        // Nội dung mới tạo trong package → revert package về DRAFT
+        if (saved.getPackageEntity() != null) {
+            revertPackageToDraft(saved.getPackageEntity(), userId);
+        }
+
         afterSaveFolder(saved);
 
         return folderMapper.toResponse(saved);
     }
+
+    // ── READ ──────────────────────────────────────────────────────────────────
 
     @Override
     @Transactional(readOnly = true)
@@ -95,18 +104,13 @@ public class FolderServiceImpl implements FolderService {
         return folderMapper.toResponseList(folders);
     }
 
+    // ── UPDATE ────────────────────────────────────────────────────────────────
+
     @Override
     public FolderResponse updateFolder(String id, UpdateFolderRequest request, String userId) {
         Folder folder = folderRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        // Check ownership - DISABLED
-        // if (!folder.getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to modify this
-        // folder");
-        // }
-
-        // Hook: validate update
         validateUpdateFolder(folder, request, userId);
 
         if (request.getName() != null) {
@@ -119,57 +123,61 @@ public class FolderServiceImpl implements FolderService {
             folder.setPrivate(request.getIsPrivate());
         }
 
-        // Hook: before update
         beforeUpdateFolder(folder, request);
 
         Folder updated = folderRepository.save(folder);
 
-        // Hook: after update
+        // Nội dung trong package bị sửa → revert package về DRAFT
+        if (updated.getPackageEntity() != null) {
+            revertPackageToDraft(updated.getPackageEntity(), userId);
+        }
+
         afterUpdateFolder(updated);
 
         return folderMapper.toResponse(updated);
     }
+
+    // ── DELETE ────────────────────────────────────────────────────────────────
 
     @Override
     public void deleteFolder(String id, String userId) {
         Folder folder = folderRepository.findById(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        // Check ownership - DISABLED
-        // if (!folder.getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to delete this
-        // folder");
-        // }
+        // Lưu thông tin package trước khi xóa folder
+        Package parentPackage = folder.getPackageEntity();
 
-        // Hook: before delete
         beforeDeleteFolder(folder, userId);
-
-        // Note: Folder deletion should NOT delete StudySets (Many-to-Many).
-        // JPA will automatically handle the removal of rows in the join table because
-        // Folder owns the relationship.
 
         folderRepository.delete(folder);
 
-        // Hook: after delete
+        // Nội dung xóa khỏi package → revert package về DRAFT
+        if (parentPackage != null) {
+            // Reload để tránh dùng detached entity
+            packageRepository.findById(parentPackage.getId())
+                    .ifPresent(pkg -> revertPackageToDraft(pkg, userId));
+        }
+
         afterDeleteFolder(id, userId);
     }
+
+    // ── STUDY SET MANAGEMENT ──────────────────────────────────────────────────
 
     @Override
     public FolderResponse addStudySetToFolder(String folderId, String studySetId, String userId) {
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        // Check ownership - DISABLED
-        // if (!folder.getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to modify this
-        // folder");
-        // }
-
         StudySet studySet = studySetRepository.findById(studySetId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
 
         folder.addStudySet(studySet);
         Folder updated = folderRepository.save(folder);
+
+        // Nội dung thêm vào folder → revert package về DRAFT
+        if (updated.getPackageEntity() != null) {
+            revertPackageToDraft(updated.getPackageEntity(), userId);
+        }
 
         return folderMapper.toResponse(updated);
     }
@@ -179,17 +187,16 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        // Check ownership - DISABLED
-        // if (!folder.getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to modify this
-        // folder");
-        // }
-
         StudySet studySet = studySetRepository.findById(studySetId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "StudySet not found"));
 
         folder.removeStudySet(studySet);
         Folder updated = folderRepository.save(folder);
+
+        // Nội dung xóa khỏi folder → revert package về DRAFT
+        if (updated.getPackageEntity() != null) {
+            revertPackageToDraft(updated.getPackageEntity(), userId);
+        }
 
         return folderMapper.toResponse(updated);
     }
@@ -199,17 +206,42 @@ public class FolderServiceImpl implements FolderService {
         Folder folder = folderRepository.findById(folderId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Folder not found"));
 
-        // Check ownership - DISABLED
-        // if (!folder.getUserId().equals(userId)) {
-        // throw new ApiException(ErrorCode.E240, "No permission to modify this
-        // folder");
-        // }
-
         folder.setPrivate(isPrivate);
-        folderRepository.save(folder);
+        Folder updated = folderRepository.save(folder);
+
+        // Thay đổi privacy → revert package về DRAFT
+        if (updated.getPackageEntity() != null) {
+            revertPackageToDraft(updated.getPackageEntity(), userId);
+        }
     }
 
-    // ========== EXTENSION HOOKS ==========
+    // ── REVERT HELPER ─────────────────────────────────────────────────────────
+
+    /**
+     * Nếu package đang PUBLISHED, tự động revert về DRAFT và broadcast Kafka event.
+     * Idempotent — nếu đã DRAFT thì không làm gì.
+     * Gọi trực tiếp trên PackageRepository để tránh circular dependency với PackageServiceImpl.
+     */
+    private void revertPackageToDraft(Package pkg, String triggeredBy) {
+        if (pkg.getPublishStatus() == PublishStatus.PUBLISHED) {
+            pkg.setPublishStatus(PublishStatus.DRAFT);
+            packageRepository.save(pkg);
+
+            packageStatusPublisher.publish(new PackageStatusEvent(
+                    pkg.getId(),
+                    pkg.getName(),
+                    pkg.getType() != null ? pkg.getType().getName().name() : null,
+                    PublishStatus.DRAFT.name(),
+                    triggeredBy,
+                    "CONTENT_UPDATED"
+            ));
+
+            log.info("Package {} auto-reverted to DRAFT due to folder CUD by userId={}",
+                    pkg.getId(), triggeredBy);
+        }
+    }
+
+    // ── EXTENSION HOOKS ───────────────────────────────────────────────────────
 
     protected void validateCreateFolder(CreateFolderRequest request, String userId) {
     }

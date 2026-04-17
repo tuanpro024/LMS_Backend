@@ -55,6 +55,12 @@ public interface TicketService {
     boolean checkAccess(String userId, TicketModule module);
 
     /**
+     * Kiểm tra xem userId có bất kỳ ticket hợp lệ nào (bất kỳ module) không.
+     * Dùng bởi /internal/tickets/has-any để xác định ticket-holder cho việc hiển thị DRAFT.
+     */
+    boolean hasAnyTicket(String userId);
+
+    /**
      * Danh sách user có thể assign ticket (TEACHER/COLLABORATOR) cho UI chọn
      * assignee.
      */

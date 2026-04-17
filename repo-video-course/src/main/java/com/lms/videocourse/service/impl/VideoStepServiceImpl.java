@@ -1,5 +1,6 @@
 package com.lms.videocourse.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.videocourse.dto.request.CreateVideoStepRequest;
 import com.lms.videocourse.dto.request.UpdateVideoStepRequest;
 import com.lms.videocourse.dto.response.VideoStepProgressResponse;
@@ -25,17 +26,21 @@ import java.util.stream.Collectors;
 @Slf4j
 public class VideoStepServiceImpl implements IVideoStepService {
 
+    private static final String SYSTEM_TRIGGER = "system";
+
     private final VideoStepRepository videoStepRepository;
     private final VideoModuleRepository videoModuleRepository;
     private final IVideoUnlockService unlockService;
     private final IVideoProgressService progressService;
+    private final StudySetApiDelegate studySetApiDelegate;
 
     @Override
     @Transactional
     public VideoStepResponse createVideoStep(CreateVideoStepRequest request) {
         log.info("Creating video step: {} for studySet {}", request.getTitle(), request.getStudySetId());
 
-        // Validate studySet exists (using videoCourseRepository for now if it's the source, but we
+        // Validate studySet exists (using videoCourseRepository for now if it's the
+        // source, but we
         // should ideally check studySet)
         // Since we are removing VideoCourse, we bypass the course check.
         // We'll trust the studySetId provided for now or implement a different check.
@@ -53,6 +58,7 @@ public class VideoStepServiceImpl implements IVideoStepService {
                 .build();
 
         step = videoStepRepository.save(step);
+        studySetApiDelegate.revertParentPackagesToDraft(request.getStudySetId(), SYSTEM_TRIGGER);
 
         int moduleCount = (int) videoModuleRepository.countByStepIdAndIsActiveTrue(step.getId());
         return toResponse(step, null, null, null, moduleCount);
@@ -112,6 +118,7 @@ public class VideoStepServiceImpl implements IVideoStepService {
             step.setIsActive(request.getIsActive());
 
         step = videoStepRepository.save(step);
+        studySetApiDelegate.revertParentPackagesToDraft(step.getStudySetId(), SYSTEM_TRIGGER);
         int moduleCount = (int) videoModuleRepository.countByStepIdAndIsActiveTrue(step.getId());
         return toResponse(step, null, null, null, moduleCount);
     }
@@ -123,6 +130,7 @@ public class VideoStepServiceImpl implements IVideoStepService {
                 .orElseThrow(() -> new ResourceNotFoundException("Video step not found: " + id));
         step.setIsActive(false);
         videoStepRepository.save(step);
+        studySetApiDelegate.revertParentPackagesToDraft(step.getStudySetId(), SYSTEM_TRIGGER);
     }
 
     private VideoStepResponse toResponse(VideoStep step, Boolean isUnlocked, String lockReason,

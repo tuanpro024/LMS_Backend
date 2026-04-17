@@ -91,3 +91,8 @@ notification:
     topic: notification.events
     group: notification-service
 
+package:
+  status:
+    kafka:
+      topic: package.status.events
+      group: notification-package-status

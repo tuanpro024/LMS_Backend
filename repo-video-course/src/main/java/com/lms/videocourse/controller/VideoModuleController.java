@@ -79,7 +79,7 @@ public class VideoModuleController {
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
     public ResponseEntity<ApiResponse<VideoModuleResponse>> updateVideoModule(
             @PathVariable String id,
-            @RequestBody UpdateVideoModuleRequest request,
+            @RequestBody @Valid UpdateVideoModuleRequest request,
             Authentication authentication) {
 
         VideoModuleResponse response = videoModuleService.updateVideoModule(id, request);

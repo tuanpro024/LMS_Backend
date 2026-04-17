@@ -16,15 +16,13 @@ public interface LearningPathImportService {
      * Phase 1 (NO TRANSACTION): Create content in external repos via Feign
      * Phase 2 (LOCAL TRANSACTION): Build learning path hierarchy
      * 
-     * @param file      Excel file with Structure sheet and content sheets
-     * @param typeName  TypeName enum for the Package Type
-     * @param userId    User ID performing the import
-     * @param isPrivate Whether created content should be private
+     * @param file     Excel file with Structure sheet and content sheets
+     * @param typeName TypeName enum for the Package Type
+     * @param userId   User ID performing the import
      * @return Import result with IDs, counters, and errors
      */
     LearningPathImportResult importFromExcel(
             MultipartFile file,
             TypeName typeName,
-            String userId,
-            boolean isPrivate);
+            String userId);
 }

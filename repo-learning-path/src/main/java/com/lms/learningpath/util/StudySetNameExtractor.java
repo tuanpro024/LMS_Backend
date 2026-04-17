@@ -7,6 +7,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -18,12 +19,14 @@ import java.util.Optional;
 @Slf4j
 public class StudySetNameExtractor {
 
+    private static final String H_STUDY_SET_NAME = "studysetname";
+
     /**
-     * Column index for studySetName in all module type Excel files.
-     * Based on common format across all repos (Flashcard, Writing, Kanji,
-     * Pronunciation, Quiz).
+     * Fallback column index for StudySetName when header is missing.
+     * Common hierarchical template: PackageName..StudySetName (column E => index
+     * 4).
      */
-    private static final int STUDY_SET_NAME_COLUMN = 10;
+    private static final int FALLBACK_STUDY_SET_NAME_COLUMN = 4;
 
     /**
      * Row index for first data row (row 0 is header).
@@ -54,16 +57,23 @@ public class StudySetNameExtractor {
 
             Sheet sheet = workbook.getSheetAt(0);
 
-            // Get first data row (skip header at row 0)
-            Row dataRow = sheet.getRow(FIRST_DATA_ROW);
-            if (dataRow == null) {
-                log.warn("No data row found in sheet (moduleType: {})", moduleType);
-                return Optional.empty();
-            }
+            int studySetNameColumn = resolveStudySetNameColumn(sheet.getRow(0));
 
-            // Get studySetName from column 0
-            Cell cell = dataRow.getCell(STUDY_SET_NAME_COLUMN);
-            String studySetName = getCellValueAsString(cell);
+            // Scan data rows and pick the first non-empty StudySetName.
+            String studySetName = null;
+            for (int rowIndex = FIRST_DATA_ROW; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row dataRow = sheet.getRow(rowIndex);
+                if (dataRow == null) {
+                    continue;
+                }
+
+                Cell cell = dataRow.getCell(studySetNameColumn);
+                String candidate = getCellValueAsString(cell);
+                if (candidate != null && !candidate.isBlank()) {
+                    studySetName = candidate;
+                    break;
+                }
+            }
 
             if (studySetName == null || studySetName.isBlank()) {
                 log.debug("StudySetName is null/blank in sheet (moduleType: {})", moduleType);
@@ -82,6 +92,35 @@ public class StudySetNameExtractor {
                     moduleType, e.getMessage());
             return Optional.empty();
         }
+    }
+
+    private static int resolveStudySetNameColumn(Row headerRow) {
+        if (headerRow == null) {
+            return FALLBACK_STUDY_SET_NAME_COLUMN;
+        }
+
+        short firstCell = headerRow.getFirstCellNum();
+        short lastCell = headerRow.getLastCellNum();
+        if (firstCell < 0 || lastCell < 0) {
+            return FALLBACK_STUDY_SET_NAME_COLUMN;
+        }
+
+        for (int i = firstCell; i < lastCell; i++) {
+            String header = getCellValueAsString(headerRow.getCell(i));
+            if (header == null) {
+                continue;
+            }
+
+            if (H_STUDY_SET_NAME.equals(normalizeHeader(header))) {
+                return i;
+            }
+        }
+
+        return FALLBACK_STUDY_SET_NAME_COLUMN;
+    }
+
+    private static String normalizeHeader(String value) {
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 
     /**

@@ -56,8 +56,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
     public LearningPathImportResult importFromExcel(
             MultipartFile file,
             TypeName typeName,
-            String userId,
-            boolean isPrivate) {
+            String userId) {
 
         log.info("Starting Learning Path import for user: {} with typeName: {}", userId, typeName);
 
@@ -83,12 +82,12 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
         // ======== PHASE 1: NO TRANSACTION — Create content in external repos ========
         log.info("Phase 1: Processing content sheets (NO transaction)");
         Map<String, ContentReference> contentRefMap = processContentSheets(
-                excelData, packageType.getName(), userId, isPrivate, result);
+                excelData, packageType.getName(), userId, result);
 
         // ======== PHASE 2: LOCAL TRANSACTION — Build learning path hierarchy ========
         log.info("Phase 2: Building learning path hierarchy (WITH transaction)");
         txHelper.buildLearningPathHierarchy(
-                excelData.getStructureRows(), contentRefMap, packageType, userId, isPrivate, result);
+                excelData.getStructureRows(), contentRefMap, packageType, userId, result);
 
         // Build summary message
         result.setMessage(String.format(
@@ -114,7 +113,6 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             LearningPathExcelData excelData,
             com.lms.content.common.entity.TypeName typeName,
             String userId,
-            boolean isPrivate,
             LearningPathImportResult result) {
 
         Map<String, ContentReference> refMap = new LinkedHashMap<>();
@@ -131,6 +129,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                             "Invalid module type at row " + row.getRowNumber() + " for sheet '" + normalizedSheetName
                                     + "': " + row.getModuleType());
                 }
+                moduleType = normalizeImportModuleType(moduleType);
 
                 ModuleType existingModuleType = sheetModuleMap.get(normalizedSheetName);
                 if (existingModuleType != null && existingModuleType != moduleType) {
@@ -157,7 +156,7 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                 ContentReference ref = resolveContentForSheet(
                         sheetName, moduleType,
                         excelData.getContentSheetBytes().get(sheetName),
-                        typeName, userId, isPrivate, detail);
+                        typeName, userId, detail);
 
                 if (ref == null || ref.getContentSetId() == null || ref.getContentSetId().isBlank()) {
                     throw new IllegalStateException(
@@ -199,7 +198,6 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             byte[] sheetBytes,
             TypeName typeName,
             String userId,
-            boolean isPrivate,
             ContentImportDetail detail) throws IOException {
 
         // Priority 2: Check for duplicates by studySetName (extracted from sheetBytes)
@@ -294,6 +292,22 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
             }
 
             case KANJI: {
+                MultipartFile sheetFile = LearningPathExcelParser.bytesToMultipartFile(sheetBytes, sheetName);
+                ApiResponse<HierarchicalImportResult> resp = kanjiClient.importExcel(sheetFile, typeName);
+                String setId = extractFirstStudySetId(resp, sheetName, moduleType);
+                detail.setNewlyCreated(true);
+                detail.setContentSetId(setId);
+                detail.setItemCount(resp.data().getTotalContentItems());
+                log.info("Created kanji content: {}", setId);
+                return ContentReference.builder()
+                        .moduleType(moduleType)
+                        .contentSetId(setId)
+                        .repoName("repo-kanji-origin")
+                        .newlyCreated(true)
+                        .build();
+            }
+
+            case KANJI_ORIGIN: {
                 MultipartFile sheetFile = LearningPathExcelParser.bytesToMultipartFile(sheetBytes, sheetName);
                 ApiResponse<HierarchicalImportResult> resp = kanjiClient.importExcel(sheetFile, typeName);
                 String setId = extractFirstStudySetId(resp, sheetName, moduleType);
@@ -417,6 +431,10 @@ public class LearningPathImportServiceImpl implements LearningPathImportService 
                     "Failed to validate content sheet '" + sheetName + "' before external import: " + e.getMessage(),
                     e);
         }
+    }
+
+    private ModuleType normalizeImportModuleType(ModuleType moduleType) {
+        return moduleType == ModuleType.KANJI_ORIGIN ? ModuleType.KANJI : moduleType;
     }
 
     private String readHeader(Row row, int col) {

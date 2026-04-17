@@ -33,11 +33,11 @@ import java.util.Optional;
 @Slf4j
 public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalImportService<KanjiOrigin> {
 
-    private static final int COL_ORIGIN_TEXT_CN = 28;
-    private static final int COL_ORIGIN_TEXT_EN = 29;
-    private static final int COL_STROKE_ANIMATION_URL = 30;
-    private static final int COL_EXAMPLE_MEANING_VI = 31;
-    private static final int COL_EXAMPLE_MEANING_EN = 32;
+    private static final int[] COL_ORIGIN_TEXT_CN = { 22, 28 };
+    private static final int[] COL_ORIGIN_TEXT_EN = { 23, 29 };
+    private static final int[] COL_STROKE_ANIMATION_URL = { 24, 30 };
+    private static final int[] COL_EXAMPLE_MEANING_VI = { 25, 31 };
+    private static final int[] COL_EXAMPLE_MEANING_EN = { 26, 32 };
 
     private static final String H_ORIGIN_TEXT_CN = "origintextcn";
     private static final String H_ORIGIN_TEXT_EN = "origintexten";
@@ -46,12 +46,15 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
     private static final String H_EXAMPLE_MEANING_EN = "examplemeaningen";
 
     private static final Map<String, List<String>> EXTRA_HEADER_ALIASES = Map.ofEntries(
-            Map.entry(H_ORIGIN_TEXT_CN, List.of("origintextcn", "origin_text_cn", "origin cn")),
-            Map.entry(H_ORIGIN_TEXT_EN, List.of("origintexten", "origin_text_en", "origin en")),
+            Map.entry(H_ORIGIN_TEXT_CN,
+                    List.of("origintextcn", "origin_text_cn", "origin cn", "origincntext", "origintextzh")),
+            Map.entry(H_ORIGIN_TEXT_EN,
+                    List.of("origintexten", "origin_text_en", "origin en", "originentext")),
             Map.entry(H_STROKE_ANIMATION_URL,
-                    List.of("strokeanimationurl", "stroke_animation_url", "strokeurl", "animationurl")),
+                    List.of("strokeanimationurl", "stroke_animation_url", "strokeurl", "animationurl",
+                            "strokegifurl")),
             Map.entry(H_EXAMPLE_MEANING_VI,
-                    List.of("examplemeaningvi", "example_meaning_vi", "examplevimeaning")),
+                    List.of("examplemeaningvi", "example_meaning_vi", "examplevimeaning", "examplemeaningvn")),
             Map.entry(H_EXAMPLE_MEANING_EN,
                     List.of("examplemeaningen", "example_meaning_en", "exampleenmeaning")));
 
@@ -170,11 +173,17 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
 
             int originTextCnIdx = resolveColumnIndex(headerIndexMap, H_ORIGIN_TEXT_CN, COL_ORIGIN_TEXT_CN);
             int originTextEnIdx = resolveColumnIndex(headerIndexMap, H_ORIGIN_TEXT_EN, COL_ORIGIN_TEXT_EN);
-            int strokeAnimationUrlIdx = resolveColumnIndex(headerIndexMap, H_STROKE_ANIMATION_URL,
+            int strokeAnimationUrlIdx = resolveColumnIndex(
+                    headerIndexMap,
+                    H_STROKE_ANIMATION_URL,
                     COL_STROKE_ANIMATION_URL);
-            int exampleMeaningViIdx = resolveColumnIndex(headerIndexMap, H_EXAMPLE_MEANING_VI,
+            int exampleMeaningViIdx = resolveColumnIndex(
+                    headerIndexMap,
+                    H_EXAMPLE_MEANING_VI,
                     COL_EXAMPLE_MEANING_VI);
-            int exampleMeaningEnIdx = resolveColumnIndex(headerIndexMap, H_EXAMPLE_MEANING_EN,
+            int exampleMeaningEnIdx = resolveColumnIndex(
+                    headerIndexMap,
+                    H_EXAMPLE_MEANING_EN,
                     COL_EXAMPLE_MEANING_EN);
 
             for (int i = firstRowNum + 1; i <= lastRowNum; i++) {
@@ -234,7 +243,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
         return headerIndexMap;
     }
 
-    private static int resolveColumnIndex(Map<String, Integer> headerIndexMap, String key, int fallback) {
+    private static int resolveColumnIndex(Map<String, Integer> headerIndexMap, String key, int... fallbacks) {
         List<String> aliases = EXTRA_HEADER_ALIASES.getOrDefault(key, List.of(key));
         for (String alias : aliases) {
             Integer index = headerIndexMap.get(normalizeHeader(alias));
@@ -242,7 +251,10 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
                 return index;
             }
         }
-        return fallback;
+        if (fallbacks != null && fallbacks.length > 0) {
+            return fallbacks[0];
+        }
+        return -1;
     }
 
     private static String normalizeHeader(String value) {
@@ -250,7 +262,11 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
     }
 
     private static String getCellStr(Row row, int colIndex) {
-        Cell cell = row.getCell(colIndex);
+        if (colIndex < 0) {
+            return null;
+        }
+
+        Cell cell = row.getCell(colIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
         if (cell == null) {
             return null;
         }
@@ -265,6 +281,19 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
                 yield v == Math.floor(v) ? String.valueOf((long) v) : String.valueOf(v);
             }
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
+            case FORMULA -> {
+                try {
+                    String text = cell.getStringCellValue();
+                    yield trimToNull(text);
+                } catch (Exception ignored) {
+                    try {
+                        double v = cell.getNumericCellValue();
+                        yield v == Math.floor(v) ? String.valueOf((long) v) : String.valueOf(v);
+                    } catch (Exception ignoredAgain) {
+                        yield null;
+                    }
+                }
+            }
             default -> null;
         };
     }

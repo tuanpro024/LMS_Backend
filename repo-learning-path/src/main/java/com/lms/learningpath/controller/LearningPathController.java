@@ -122,13 +122,12 @@ public class LearningPathController {
     public ResponseEntity<ApiResponse<LearningPathImportResult>> importFromExcel(
             @RequestParam("file") MultipartFile file,
             @RequestParam("typeName") String typeNameStr,
-            @RequestParam(value = "isPrivate", defaultValue = "false") boolean isPrivate,
             Authentication authentication) {
 
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         TypeName typeName = TypeName.valueOf(typeNameStr);
         LearningPathImportResult result = learningPathImportService.importFromExcel(
-                file, typeName, principal.userId(), isPrivate);
+                file, typeName, principal.userId());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(result));

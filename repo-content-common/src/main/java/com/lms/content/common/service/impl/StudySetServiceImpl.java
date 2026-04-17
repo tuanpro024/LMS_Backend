@@ -159,8 +159,8 @@ public class StudySetServiceImpl implements StudySetService {
     public void assertStudySetLearningAllowed(String studySetId) {
         if (!isStudySetLearningAllowed(studySetId)) {
             throw new ApiException(
-                    ErrorCode.FORBIDDEN,
-                    "Study set is unavailable for learning because its package is DRAFT");
+                    ErrorCode.PACKAGE_UNDER_MAINTENANCE,
+                    "Goi hoc dang tam sua. Vui long quay lai sau khi goi hoc duoc publish lai.");
         }
     }
 

@@ -3,6 +3,9 @@ package com.lms.flashcard.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.common.http.TicketAccessClient;
+import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
@@ -19,6 +22,9 @@ import com.lms.flashcard.repository.UserCardProgressRepository;
 import com.lms.flashcard.service.CardService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,11 +39,14 @@ import java.util.stream.Collectors;
 @Transactional
 public class CardServiceImpl implements CardService {
 
+    private static final Set<String> PRIVILEGED_ROLES = Set.of("ROLE_ADMIN", "ROLE_TEACHER_MANAGER");
+
     private final CardRepository cardRepository;
     private final UserCardProgressRepository userCardProgressRepository;
     private final CardMapper cardMapper;
     private final StudySetRepository studySetRepository;
     private final StudySetApiDelegate studySetApiDelegate;
+    private final TicketAccessClient ticketAccessClient;
     private final ObjectMapper objectMapper;
     private final com.lms.flashcard.service.FlashcardProgressService flashcardProgressService;
 
@@ -123,8 +132,8 @@ public class CardServiceImpl implements CardService {
         log.debug("Adding cards to StudySet: studySetId={}, studySetOwnerId={}, requestUserId={}",
                 studySetId, studySet.getUserId(), userId);
 
-        // Check ownership — only the study set owner can add cards
-        if (!studySet.getUserId().equals(userId)) {
+        // Check ownership (owner) or privileged role (admin/manager)
+        if (!canManageStudySet(studySet, userId)) {
             throw new ApiException(ErrorCode.E240, "No permission to add cards to this study set");
         }
 
@@ -178,9 +187,9 @@ public class CardServiceImpl implements CardService {
         Card card = cardRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
 
-        // Verify ownership
+        // Verify ownership (owner) or privileged role (admin/manager)
         StudySet studySet = card.getStudySet();
-        if (!studySet.getUserId().equals(userId)) {
+        if (!canManageStudySet(studySet, userId)) {
             throw new ApiException(ErrorCode.E228, "You don't have permission to update this card");
         }
 
@@ -248,9 +257,9 @@ public class CardServiceImpl implements CardService {
         Card card = cardRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Card not found"));
 
-        // Verify ownership
+        // Verify ownership (owner) or privileged role (admin/manager)
         StudySet studySet = card.getStudySet();
-        if (!studySet.getUserId().equals(userId)) {
+        if (!canManageStudySet(studySet, userId)) {
             throw new ApiException(ErrorCode.E228, "You don't have permission to delete this card");
         }
 
@@ -265,5 +274,72 @@ public class CardServiceImpl implements CardService {
 
         // Update StudySet progress
         flashcardProgressService.updateStudySetProgress(userId, studySetId);
+    }
+
+    private boolean canManageStudySet(StudySet studySet, String userId) {
+        if (studySet != null && studySet.getUserId() != null && studySet.getUserId().equals(userId)) {
+            return true;
+        }
+        return hasPrivilegedRole() || hasFlashcardTicketAccess(userId);
+    }
+
+    private boolean hasPrivilegedRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return false;
+        }
+
+        Set<String> normalizedRoles = new HashSet<>();
+
+        if (authentication.getAuthorities() != null) {
+            normalizedRoles.addAll(authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .map(this::normalizeRole)
+                    .collect(Collectors.toSet()));
+        }
+
+        if (authentication.getPrincipal() instanceof AuthPrincipal principal && principal.roles() != null) {
+            normalizedRoles.addAll(principal.roles().stream()
+                    .map(this::normalizeRole)
+                    .collect(Collectors.toSet()));
+        }
+
+        return normalizedRoles.stream().anyMatch(PRIVILEGED_ROLES::contains);
+    }
+
+    private boolean hasFlashcardTicketAccess(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return false;
+        }
+
+        try {
+            return ticketAccessClient.checkAccess(userId, TicketModuleEnum.FLASHCARD.name());
+        } catch (Exception ex) {
+            log.warn("Failed to verify ticket access for userId={} module={}: {}",
+                    userId, TicketModuleEnum.FLASHCARD.name(), ex.getMessage());
+            return false;
+        }
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null) {
+            return "";
+        }
+
+        String normalized = role.trim().toUpperCase();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+
+        if (!normalized.startsWith("ROLE_")) {
+            normalized = "ROLE_" + normalized;
+        }
+
+        // Backward compatibility: legacy manager naming.
+        if ("ROLE_MANAGER".equals(normalized)) {
+            return "ROLE_TEACHER_MANAGER";
+        }
+
+        return normalized;
     }
 }

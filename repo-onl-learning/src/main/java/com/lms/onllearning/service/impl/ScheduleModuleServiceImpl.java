@@ -2,7 +2,6 @@ package com.lms.onllearning.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
-import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.content.common.entity.TypeName;
@@ -64,7 +63,6 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
     private final SyllabusScheduleRepository syllabusScheduleRepository;
     private final TimetableSessionRepository timetableSessionRepository;
     private final ScheduleModuleUserProgressRepository userProgressRepository;
-    private final StudySetApiDelegate studySetApiDelegate;
 
     @Value("${practice.service.flashcard-url:http://repo-flashcard}")
     private String flashcardUrl;
@@ -215,7 +213,9 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
 
     @Override
     public ScheduleModuleResponse getById(String moduleId) {
-        return toResponse(findById(moduleId));
+        ScheduleModule module = findById(moduleId);
+        assertModuleLearningAllowed(module);
+        return toResponse(module);
     }
 
     @Override
@@ -228,94 +228,97 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
     }
 
     @Override
-    public ScheduleSessionProgressResponse getMySessionProgress(String courseId, String scheduleId, String userId, String email) {
+    public ScheduleSessionProgressResponse getMySessionProgress(String courseId, String scheduleId, String userId,
+            String email) {
         if (!StringUtils.hasText(scheduleId)) {
             throw new ApiException(ErrorCode.BAD_REQUEST,
-                "scheduleId là bắt buộc.",
-                HttpStatus.BAD_REQUEST);
+                    "scheduleId là bắt buộc.",
+                    HttpStatus.BAD_REQUEST);
         }
 
         SyllabusSchedule currentSchedule = syllabusScheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new ApiException(
-                ErrorCode.E227,
-                "Không tìm thấy buổi học với id: " + scheduleId,
-                HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.E227,
+                        "Không tìm thấy buổi học với id: " + scheduleId,
+                        HttpStatus.NOT_FOUND));
 
-        String scheduleSyllabusId = currentSchedule.getSyllabus() != null ? currentSchedule.getSyllabus().getId() : null;
+        String scheduleSyllabusId = currentSchedule.getSyllabus() != null ? currentSchedule.getSyllabus().getId()
+                : null;
         if (!StringUtils.hasText(scheduleSyllabusId)) {
             throw new ApiException(
-                ErrorCode.BAD_REQUEST,
-                "Buổi học chưa liên kết syllabus.",
-                HttpStatus.BAD_REQUEST);
+                    ErrorCode.BAD_REQUEST,
+                    "Buổi học chưa liên kết syllabus.",
+                    HttpStatus.BAD_REQUEST);
         }
 
         OnlineCourse course = resolveCourseForProgress(courseId, scheduleSyllabusId);
 
         List<ScheduleModule> modules = moduleRepo
-            .findByScheduleIdAndIsActiveTrueAndDeletedFalseOrderByModuleOrderAsc(scheduleId);
+                .findByScheduleIdAndIsActiveTrueAndDeletedFalseOrderByModuleOrderAsc(scheduleId);
 
         String userKey = resolveUserKey(userId, email);
         Map<String, ScheduleModuleUserProgress> localProgressByModule = loadLocalProgressByModule(modules, userKey);
 
         List<ScheduleSessionProgressResponse.ModuleProgressItem> moduleProgresses = modules.stream()
-            .map(module -> resolveModuleProgress(module, localProgressByModule.get(module.getId())))
-            .toList();
+                .map(module -> resolveModuleProgress(module, localProgressByModule.get(module.getId())))
+                .toList();
 
-        ScheduleSessionProgressResponse.HomeworkSummary homeworkSummary = buildHomeworkSummary(modules, moduleProgresses);
+        ScheduleSessionProgressResponse.HomeworkSummary homeworkSummary = buildHomeworkSummary(modules,
+                moduleProgresses);
         ScheduleSessionProgressResponse.ProgressLock progressLock = resolveProgressLock(
-            course.getSyllabusId(),
-            currentSchedule,
-            email);
+                course.getSyllabusId(),
+                currentSchedule,
+                email);
 
         return new ScheduleSessionProgressResponse(
-            new ScheduleSessionProgressResponse.CourseInfo(
-                course.getId(),
-                course.getCode(),
-                course.getName(),
-                course.getLevel(),
-                course.getSyllabusId(),
-                course.getPrice(),
-                course.getRating(),
-                course.getThumbnail()),
-            new ScheduleSessionProgressResponse.SessionInfo(
-                currentSchedule.getId(),
-                currentSchedule.getSessionNo(),
-                currentSchedule.getTopic(),
-                currentSchedule.getContent()),
-            moduleProgresses,
-            homeworkSummary,
-            progressLock);
+                new ScheduleSessionProgressResponse.CourseInfo(
+                        course.getId(),
+                        course.getCode(),
+                        course.getName(),
+                        course.getLevel(),
+                        course.getSyllabusId(),
+                        course.getPrice(),
+                        course.getRating(),
+                        course.getThumbnail()),
+                new ScheduleSessionProgressResponse.SessionInfo(
+                        currentSchedule.getId(),
+                        currentSchedule.getSessionNo(),
+                        currentSchedule.getTopic(),
+                        currentSchedule.getContent()),
+                moduleProgresses,
+                homeworkSummary,
+                progressLock);
     }
 
     private OnlineCourse resolveCourseForProgress(String courseId, String scheduleSyllabusId) {
         if (StringUtils.hasText(courseId)) {
             OnlineCourse course = onlineCourseRepository.findByIdAndDeletedFalse(courseId.trim())
-                .orElseThrow(() -> new ApiException(
-                    ErrorCode.E227,
-                    "Không tìm thấy khóa học: " + courseId,
-                    HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new ApiException(
+                            ErrorCode.E227,
+                            "Không tìm thấy khóa học: " + courseId,
+                            HttpStatus.NOT_FOUND));
 
             if (!StringUtils.hasText(course.getSyllabusId())) {
                 throw new ApiException(
-                    ErrorCode.BAD_REQUEST,
-                    "Khóa học chưa liên kết syllabus.",
-                    HttpStatus.BAD_REQUEST);
+                        ErrorCode.BAD_REQUEST,
+                        "Khóa học chưa liên kết syllabus.",
+                        HttpStatus.BAD_REQUEST);
             }
 
             if (!course.getSyllabusId().equals(scheduleSyllabusId)) {
                 throw new ApiException(
-                    ErrorCode.BAD_REQUEST,
-                    "Buổi học không thuộc syllabus của khóa học.",
-                    HttpStatus.BAD_REQUEST);
+                        ErrorCode.BAD_REQUEST,
+                        "Buổi học không thuộc syllabus của khóa học.",
+                        HttpStatus.BAD_REQUEST);
             }
             return course;
         }
 
         return onlineCourseRepository.findFirstBySyllabusIdAndDeletedFalseOrderByCreatedAtDesc(scheduleSyllabusId)
-            .orElseThrow(() -> new ApiException(
-                ErrorCode.E227,
-                "Không tìm thấy khóa học gắn với syllabus của buổi học.",
-                HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.E227,
+                        "Không tìm thấy khóa học gắn với syllabus của buổi học.",
+                        HttpStatus.NOT_FOUND));
     }
 
     @Override
@@ -323,10 +326,7 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
     public void updateMyModuleProgress(String moduleId, String userId, String email,
             UpdateMyScheduleModuleProgressRequest request) {
         ScheduleModule module = findById(moduleId);
-
-        if (StringUtils.hasText(module.getContentSetId())) {
-            studySetApiDelegate.assertStudySetLearningAllowed(module.getContentSetId());
-        }
+        assertModuleLearningAllowed(module);
 
         String userKey = resolveUserKey(userId, email);
         if (!StringUtils.hasText(userKey)) {
@@ -342,10 +342,12 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                         .userId(userKey)
                         .build());
 
-        double percentage = request.getProgressPercentage() == null ? 0.0 : clampAndRound(request.getProgressPercentage());
+        double percentage = request.getProgressPercentage() == null ? 0.0
+                : clampAndRound(request.getProgressPercentage());
         boolean completed = Boolean.TRUE.equals(request.getCompleted()) || percentage >= 100.0;
 
-        progress.setUserEmail(StringUtils.hasText(email) ? email.trim().toLowerCase(Locale.ROOT) : progress.getUserEmail());
+        progress.setUserEmail(
+                StringUtils.hasText(email) ? email.trim().toLowerCase(Locale.ROOT) : progress.getUserEmail());
         progress.setProgressPercentage(percentage);
         progress.setCompleted(completed);
         progress.setCompletedItems(request.getCompletedItems());
@@ -355,6 +357,15 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
         progress.setDeleted(false);
 
         userProgressRepository.save(progress);
+    }
+
+    private void assertModuleLearningAllowed(ScheduleModule module) {
+        if (module == null || !StringUtils.hasText(module.getContentSetId())) {
+            return;
+        }
+
+        String serviceUrl = resolveServiceUrl(module.getModuleType());
+        practiceWebClient.assertStudySetLearningAllowed(serviceUrl, module.getContentSetId());
     }
 
     @Override
@@ -369,24 +380,24 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
 
         // Group progresses by Module ID to batch fetch module info
         Map<String, List<ScheduleModuleUserProgress>> progressesByModuleId = allProgresses.stream()
-            .collect(Collectors.groupingBy(ScheduleModuleUserProgress::getModuleId));
+                .collect(Collectors.groupingBy(ScheduleModuleUserProgress::getModuleId));
 
         List<String> moduleIds = new ArrayList<>(progressesByModuleId.keySet());
         List<ScheduleModule> modules = moduleRepo.findAllById(moduleIds);
 
         Map<String, ScheduleModule> moduleById = modules.stream()
-            .collect(Collectors.toMap(ScheduleModule::getId, m -> m, (a, b) -> a));
+                .collect(Collectors.toMap(ScheduleModule::getId, m -> m, (a, b) -> a));
 
         // Get all schedules and courses
         List<String> scheduleIds = modules.stream()
-            .map(ScheduleModule::getScheduleId)
-            .filter(StringUtils::hasText)
-            .distinct()
-            .toList();
+                .map(ScheduleModule::getScheduleId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
 
         List<SyllabusSchedule> schedules = syllabusScheduleRepository.findAllById(scheduleIds);
         Map<String, SyllabusSchedule> scheduleById = schedules.stream()
-            .collect(Collectors.toMap(SyllabusSchedule::getId, s -> s, (a, b) -> a));
+                .collect(Collectors.toMap(SyllabusSchedule::getId, s -> s, (a, b) -> a));
 
         // Build responses per course (map schedule ID to course)
         Map<String, OnlineCourse> courseByScheduleId = new HashMap<>();
@@ -399,9 +410,10 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
 
             // Find or create course for this syllabus
             OnlineCourse course = onlineCourseRepository
-                .findFirstBySyllabusIdAndDeletedFalseOrderByCreatedAtDesc(syllabusId)
-                .orElse(null);
-            if (course == null) continue;
+                    .findFirstBySyllabusIdAndDeletedFalseOrderByCreatedAtDesc(syllabusId)
+                    .orElse(null);
+            if (course == null)
+                continue;
 
             courseByScheduleId.put(schedule.getId(), course);
         }
@@ -415,25 +427,28 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
             List<ScheduleModuleUserProgress> moduleProgresses = entry.getValue();
 
             ScheduleModule module = moduleById.get(moduleId);
-            if (module == null) continue;
+            if (module == null)
+                continue;
 
             SyllabusSchedule schedule = scheduleById.get(module.getScheduleId());
-            if (schedule == null) continue;
+            if (schedule == null)
+                continue;
 
             OnlineCourse course = courseByScheduleId.get(schedule.getId());
-            if (course == null) continue;
+            if (course == null)
+                continue;
 
             String courseId = course.getId();
-            courseInfo.putIfAbsent(courseId, new CourseInfo(course.getId(), course.getCode(), course.getName(), course.getSyllabusId()));
+            courseInfo.putIfAbsent(courseId,
+                    new CourseInfo(course.getId(), course.getCode(), course.getName(), course.getSyllabusId()));
             Integer sessionNo = schedule.getSessionNo();
 
             for (ScheduleModuleUserProgress progress : moduleProgresses) {
                 String fallbackEmail = StringUtils.hasText(progress.getUserId()) && progress.getUserId().contains("@")
-                    ? progress.getUserId()
-                    : null;
+                        ? progress.getUserId()
+                        : null;
 
-                CourseStudentModuleProgressResponse.StudentModuleProgressItem item = 
-                    new CourseStudentModuleProgressResponse.StudentModuleProgressItem(
+                CourseStudentModuleProgressResponse.StudentModuleProgressItem item = new CourseStudentModuleProgressResponse.StudentModuleProgressItem(
                         module.getId(),
                         module.getScheduleId(),
                         sessionNo,
@@ -442,7 +457,8 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                         module.getModuleType(),
                         progress.getUserId(),
                         StringUtils.hasText(progress.getUserEmail()) ? progress.getUserEmail() : fallbackEmail,
-                        clampAndRound(progress.getProgressPercentage() == null ? 0.0 : progress.getProgressPercentage()),
+                        clampAndRound(
+                                progress.getProgressPercentage() == null ? 0.0 : progress.getProgressPercentage()),
                         Boolean.TRUE.equals(progress.getCompleted()),
                         progress.getCompletedItems(),
                         progress.getTotalItems(),
@@ -455,26 +471,26 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
 
         // Convert to response list
         return itemsByCourseId.entrySet().stream()
-            .map(entry -> {
-                String courseId = entry.getKey();
-                List<CourseStudentModuleProgressResponse.StudentModuleProgressItem> items = entry.getValue();
-                CourseInfo info = courseInfo.get(courseId);
+                .map(entry -> {
+                    String courseId = entry.getKey();
+                    List<CourseStudentModuleProgressResponse.StudentModuleProgressItem> items = entry.getValue();
+                    CourseInfo info = courseInfo.get(courseId);
 
-                long uniqueModuleCount = items.stream()
-                    .map(CourseStudentModuleProgressResponse.StudentModuleProgressItem::moduleId)
-                    .distinct()
-                    .count();
+                    long uniqueModuleCount = items.stream()
+                            .map(CourseStudentModuleProgressResponse.StudentModuleProgressItem::moduleId)
+                            .distinct()
+                            .count();
 
-                return new CourseStudentModuleProgressResponse(
-                    info.courseId,
-                    info.code,
-                    info.name,
-                    info.syllabusId,
-                    (int) uniqueModuleCount,
-                    items.size(),
-                    items);
-            })
-            .toList();
+                    return new CourseStudentModuleProgressResponse(
+                            info.courseId,
+                            info.code,
+                            info.name,
+                            info.syllabusId,
+                            (int) uniqueModuleCount,
+                            items.size(),
+                            items);
+                })
+                .toList();
     }
 
     private static class CourseInfo {
@@ -551,9 +567,10 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
         }
         return switch (type) {
             case AI_WRITING,
-                 AI_SPEAKING,
-                 AI_LISTENING,
-                 AI_READING -> ScheduleModuleType.AI_PRACTICE;
+                    AI_SPEAKING,
+                    AI_LISTENING,
+                    AI_READING ->
+                ScheduleModuleType.AI_PRACTICE;
             default -> type;
         };
     }
@@ -567,10 +584,11 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
             case QUIZ -> quizUrl;
             case LISTENING -> listeningUrl;
             case AI_PRACTICE,
-                 AI_WRITING,
-                 AI_SPEAKING,
-                 AI_LISTENING,
-                 AI_READING -> aiPracticeUrl;
+                    AI_WRITING,
+                    AI_SPEAKING,
+                    AI_LISTENING,
+                    AI_READING ->
+                aiPracticeUrl;
         };
     }
 
@@ -616,13 +634,13 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                 .build();
     }
 
-        private ScheduleSessionProgressResponse.ModuleProgressItem resolveModuleProgress(
+    private ScheduleSessionProgressResponse.ModuleProgressItem resolveModuleProgress(
             ScheduleModule module,
             ScheduleModuleUserProgress localProgress) {
         Double localPercentage = localProgress != null ? clampAndRound(localProgress.getProgressPercentage()) : null;
         boolean localCompleted = localProgress != null
-            && (Boolean.TRUE.equals(localProgress.getCompleted())
-                || (localPercentage != null && localPercentage >= 100.0));
+                && (Boolean.TRUE.equals(localProgress.getCompleted())
+                        || (localPercentage != null && localPercentage >= 100.0));
 
         if (!StringUtils.hasText(module.getContentSetId())) {
             double fallback = localCompleted ? 100.0 : (localPercentage != null ? localPercentage : 0.0);
@@ -632,10 +650,10 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                     module.getTitle(),
                     module.getModuleType(),
                     module.getContentSetId(),
-                fallback,
-                localCompleted || fallback >= 100.0,
-                localProgress != null ? "ONLINE_COURSE" : "NONE",
-                localProgress != null ? null : "Module chưa có contentSetId.");
+                    fallback,
+                    localCompleted || fallback >= 100.0,
+                    localProgress != null ? "ONLINE_COURSE" : "NONE",
+                    localProgress != null ? null : "Module chưa có contentSetId.");
         }
 
         Double progress = switch (module.getModuleType()) {
@@ -647,11 +665,12 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
             case QUIZ -> practiceWebClient.getQuizStudySetProgressPercentage(quizUrl, module.getContentSetId());
             case LISTENING -> practiceWebClient.getListeningProgressPercentage(listeningUrl, module.getContentSetId());
             case AI_PRACTICE,
-                 AI_WRITING,
-                 AI_SPEAKING,
-                 AI_LISTENING,
-                 AI_READING -> practiceWebClient.getAiPracticeProgressPercentage(aiPracticeUrl,
-                    module.getContentSetId());
+                    AI_WRITING,
+                    AI_SPEAKING,
+                    AI_LISTENING,
+                    AI_READING ->
+                practiceWebClient.getAiPracticeProgressPercentage(aiPracticeUrl,
+                        module.getContentSetId());
         };
 
         if (progress == null && localProgress == null) {
@@ -687,7 +706,8 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                 null);
     }
 
-    private Map<String, ScheduleModuleUserProgress> loadLocalProgressByModule(List<ScheduleModule> modules, String userKey) {
+    private Map<String, ScheduleModuleUserProgress> loadLocalProgressByModule(List<ScheduleModule> modules,
+            String userKey) {
         if (!StringUtils.hasText(userKey) || modules == null || modules.isEmpty()) {
             return Map.of();
         }

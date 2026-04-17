@@ -23,17 +23,21 @@ import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.repository.StudySetRepository;
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +59,8 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
     private final GradingResultNormalizer normalizer;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
+    @Resource(name = "aiPracticeEventExecutor")
+    private Executor asyncExecutor;
 
     @Override
     public AttemptResponse createAttempt(CreateAttemptRequest request, String userId) {
@@ -100,8 +106,14 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
         answer.setSubmittedAt(Instant.now());
         answer = answerRepository.save(answer);
 
-        // Dispatch grading asynchronously
-        orchestrationService.dispatchGrading(item, answer);
+        // Audio-based subtypes (SPEAKING_*, AUDIO_COMPARE) may spend more time
+        // in provider calls. Dispatch after commit in background so save-answer
+        // endpoint can return quickly and avoid client timeout.
+        if (shouldDispatchAfterCommit(item)) {
+            dispatchGradingAfterCommit(item, answer);
+        } else {
+            orchestrationService.dispatchGrading(item, answer);
+        }
 
         return mapper.toAttemptResponse(attempt);
     }
@@ -467,5 +479,37 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
                     ex.getMessage());
             return false;
         }
+    }
+
+    private boolean shouldDispatchAfterCommit(AiPracticeItem item) {
+        if (item == null || item.getQuestionSubtype() == null) {
+            return false;
+        }
+
+        return item.getQuestionSubtype() == AiItemSubtype.AUDIO_COMPARE
+                || item.getQuestionSubtype().name().startsWith("SPEAKING_");
+    }
+
+    private void dispatchGradingAfterCommit(AiPracticeItem item, AiPracticeAnswer answer) {
+        Runnable task = () -> {
+            try {
+                orchestrationService.dispatchGrading(item, answer);
+            } catch (Exception ex) {
+                log.error("Async grading dispatch failed: answerId={} itemId={} err={}",
+                        answer.getId(), item.getId(), ex.getMessage(), ex);
+            }
+        };
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    asyncExecutor.execute(task);
+                }
+            });
+            return;
+        }
+
+        asyncExecutor.execute(task);
     }
 }

@@ -11,6 +11,7 @@ import com.lms.videocourse.repository.VideoModuleRepository;
 import com.lms.videocourse.service.IVideoStepService;
 import com.lms.videocourse.service.IVideoUnlockService;
 import com.lms.videocourse.service.IVideoProgressService;
+import com.lms.common.util.SanitizationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,8 +42,8 @@ public class VideoStepServiceImpl implements IVideoStepService {
 
         VideoStep step = VideoStep.builder()
                 .studySetId(request.getStudySetId())
-                .title(request.getTitle())
-                .description(request.getDescription())
+                .title(SanitizationUtils.stripHtmlTags(request.getTitle()))
+                .description(SanitizationUtils.stripHtmlTags(request.getDescription()))
                 .stepOrder(request.getStepOrder())
                 .icon(request.getIcon())
                 .color(request.getColor())
@@ -94,9 +95,9 @@ public class VideoStepServiceImpl implements IVideoStepService {
                 .orElseThrow(() -> new ResourceNotFoundException("Video step not found: " + id));
 
         if (request.getTitle() != null)
-            step.setTitle(request.getTitle());
+            step.setTitle(SanitizationUtils.stripHtmlTags(request.getTitle()));
         if (request.getDescription() != null)
-            step.setDescription(request.getDescription());
+            step.setDescription(SanitizationUtils.stripHtmlTags(request.getDescription()));
         if (request.getStepOrder() != null)
             step.setStepOrder(request.getStepOrder());
         if (request.getIcon() != null)

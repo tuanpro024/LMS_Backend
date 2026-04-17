@@ -15,6 +15,7 @@ import com.lms.videocourse.repository.VideoPracticeModuleProgressRepository;
 import com.lms.videocourse.dto.response.VideoPracticeModuleProgressResponse;
 import com.lms.videocourse.entity.VideoPracticeModuleProgress;
 import com.lms.videocourse.service.IVideoModuleService;
+import com.lms.common.util.SanitizationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -84,8 +85,8 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
         VideoModule module = VideoModule.builder()
                 .stepId(request.getStepId())
                 .moduleOrder(request.getModuleOrder())
-                .title(request.getTitle())
-                .description(request.getDescription())
+                .title(SanitizationUtils.stripHtmlTags(request.getTitle()))
+                .description(SanitizationUtils.stripHtmlTags(request.getDescription()))
                 .videoUrl(videoUrl)
                 .thumbnailUrl(thumbnailUrl)
                 .duration(duration)
@@ -129,9 +130,9 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Video module not found: " + id));
 
         if (request.getTitle() != null)
-            module.setTitle(request.getTitle());
+            module.setTitle(SanitizationUtils.stripHtmlTags(request.getTitle()));
         if (request.getDescription() != null)
-            module.setDescription(request.getDescription());
+            module.setDescription(SanitizationUtils.stripHtmlTags(request.getDescription()));
         if (request.getModuleOrder() != null)
             module.setModuleOrder(request.getModuleOrder());
         if (request.getVideoUrl() != null)

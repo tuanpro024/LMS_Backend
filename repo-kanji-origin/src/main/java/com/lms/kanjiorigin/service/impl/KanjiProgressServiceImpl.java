@@ -2,6 +2,7 @@ package com.lms.kanjiorigin.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.kanjiorigin.dto.request.UpdateKanjiStatusRequest;
 import com.lms.kanjiorigin.dto.response.KanjiStatusResponse;
@@ -39,6 +40,7 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
     private final KanjiStudySetProgressRepository kanjiStudySetProgressRepository;
     private final KanjiOriginRepository kanjiOriginRepository;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -46,6 +48,9 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
         KanjiOrigin origin = kanjiOriginRepository.findById(kanjiId)
                 .filter(o -> !o.isDeleted())
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiOrigin not found with id: " + kanjiId));
+
+        String studySetId = extractStudySetId(origin);
+        studySetApiDelegate.assertStudySetLearningAllowed(studySetId);
 
         UserKanjiProgress progress = userKanjiProgressRepository.findByUserIdAndKanjiOriginId(userId, kanjiId)
                 .orElseGet(() -> UserKanjiProgress.builder()
@@ -62,14 +67,22 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
         }
 
         UserKanjiProgress saved = userKanjiProgressRepository.save(progress);
-        recalculateStudySetProgress(userId, origin.getStudySet().getId(), true);
+        recalculateStudySetProgress(userId, studySetId, true);
 
-        return toKanjiStatusResponse(origin, saved);
+        return toKanjiStatusResponse(origin, saved, studySetId);
     }
 
     @Override
     public KanjiStudySetProgressResponse getStudySetProgress(String userId, String studySetId) {
         validateStudySetExists(studySetId);
+
+        if (!studySetApiDelegate.isStudySetLearningAllowed(studySetId)) {
+            KanjiStudySetProgress readOnlyProgress = kanjiStudySetProgressRepository
+                    .findByUserIdAndStudySetId(userId, studySetId)
+                    .orElseGet(() -> buildReadOnlyProgressSnapshot(userId, studySetId));
+            return toStudySetProgressResponse(readOnlyProgress);
+        }
+
         KanjiStudySetProgress progress = recalculateStudySetProgress(userId, studySetId, false);
         return toStudySetProgressResponse(progress);
     }
@@ -79,14 +92,15 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
     public List<KanjiStatusResponse> getStudySetKanjiStatuses(String userId, String studySetId) {
         validateStudySetExists(studySetId);
 
-        List<KanjiOrigin> origins = kanjiOriginRepository.findByStudySetIdAndDeletedFalseOrderByContentIndexAsc(studySetId);
+        List<KanjiOrigin> origins = kanjiOriginRepository
+                .findByStudySetIdAndDeletedFalseOrderByContentIndexAsc(studySetId);
         Map<String, UserKanjiProgress> progressByKanjiId = userKanjiProgressRepository
                 .findByUserIdAndStudySetId(userId, studySetId)
                 .stream()
                 .collect(Collectors.toMap(p -> p.getKanjiOrigin().getId(), Function.identity(), (a, b) -> a));
 
         return origins.stream()
-                .map(origin -> toKanjiStatusResponse(origin, progressByKanjiId.get(origin.getId())))
+                .map(origin -> toKanjiStatusResponse(origin, progressByKanjiId.get(origin.getId()), studySetId))
                 .toList();
     }
 
@@ -94,6 +108,42 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
         if (!studySetRepository.existsById(studySetId)) {
             throw new ApiException(ErrorCode.E227, "StudySet not found with id: " + studySetId);
         }
+    }
+
+    private String extractStudySetId(KanjiOrigin origin) {
+        if (origin.getStudySet() == null || origin.getStudySet().getId() == null) {
+            throw new ApiException(ErrorCode.E227,
+                    "StudySet not found for KanjiOrigin id: " + origin.getId());
+        }
+        return origin.getStudySet().getId();
+    }
+
+    private KanjiStudySetProgress buildReadOnlyProgressSnapshot(String userId, String studySetId) {
+        long totalKanjis = kanjiOriginRepository.countByStudySetIdAndDeletedFalse(studySetId);
+        long learnedKanjis = userKanjiProgressRepository.countByUserIdAndStudySetIdAndStatus(
+                userId,
+                studySetId,
+                KanjiStatus.LEARNED);
+
+        StudySetProgressStatus status;
+        if (totalKanjis == 0) {
+            status = StudySetProgressStatus.COMPLETED;
+        } else if (learnedKanjis == 0) {
+            status = StudySetProgressStatus.NOT_STARTED;
+        } else if (learnedKanjis >= totalKanjis) {
+            status = StudySetProgressStatus.COMPLETED;
+        } else {
+            status = StudySetProgressStatus.IN_PROGRESS;
+        }
+
+        return KanjiStudySetProgress.builder()
+                .userId(userId)
+                .studySetId(studySetId)
+                .status(status)
+                .learnedLessons((int) learnedKanjis)
+                .totalLessons((int) totalKanjis)
+                .progressPercentage(totalKanjis > 0 ? (double) learnedKanjis / totalKanjis : 1.0)
+                .build();
     }
 
     private KanjiStudySetProgress recalculateStudySetProgress(String userId, String studySetId, boolean publishEvent) {
@@ -161,10 +211,13 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
         return saved;
     }
 
-    private KanjiStatusResponse toKanjiStatusResponse(KanjiOrigin origin, UserKanjiProgress progress) {
+    private KanjiStatusResponse toKanjiStatusResponse(
+            KanjiOrigin origin,
+            UserKanjiProgress progress,
+            String studySetId) {
         return KanjiStatusResponse.builder()
                 .kanjiId(origin.getId())
-                .studySetId(origin.getStudySet().getId())
+                .studySetId(studySetId)
                 .contentIndex(origin.getContentIndex())
                 .term(origin.getTerm())
                 .pinyin(origin.getPinyin())

@@ -11,6 +11,7 @@ import com.lms.aipractice.repository.AiPracticeItemRepository;
 import com.lms.aipractice.service.AiPracticeItemService;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,11 @@ import java.util.stream.Collectors;
 @Transactional
 public class AiPracticeItemServiceImpl implements AiPracticeItemService {
 
+    private static final String SYSTEM_TRIGGER = "system";
+
     private final AiPracticeItemRepository itemRepository;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final AiPracticeMapper mapper;
     private final MultimediaFileClient multimediaFileClient;
 
@@ -123,7 +127,9 @@ public class AiPracticeItemServiceImpl implements AiPracticeItemService {
             item.setContentIndex(request.getContentIndex());
         }
 
-        return withMediaUrls(mapper.toResponse(itemRepository.save(item)));
+        AiPracticeItem saved = itemRepository.save(item);
+        studySetApiDelegate.revertParentPackagesToDraft(request.getStudySetId(), SYSTEM_TRIGGER);
+        return withMediaUrls(mapper.toResponse(saved));
     }
 
     @Override
@@ -142,7 +148,11 @@ public class AiPracticeItemServiceImpl implements AiPracticeItemService {
 
         mapper.updateEntity(item, request);
         normalizeSpeakingPartLevel(item);
-        return withMediaUrls(mapper.toResponse(itemRepository.save(item)));
+        AiPracticeItem saved = itemRepository.save(item);
+        if (item.getStudySet() != null) {
+            studySetApiDelegate.revertParentPackagesToDraft(item.getStudySet().getId(), SYSTEM_TRIGGER);
+        }
+        return withMediaUrls(mapper.toResponse(saved));
     }
 
     @Override
@@ -155,6 +165,9 @@ public class AiPracticeItemServiceImpl implements AiPracticeItemService {
         }
         item.setDeleted(true);
         itemRepository.save(item);
+        if (item.getStudySet() != null) {
+            studySetApiDelegate.revertParentPackagesToDraft(item.getStudySet().getId(), SYSTEM_TRIGGER);
+        }
     }
 
     @Override

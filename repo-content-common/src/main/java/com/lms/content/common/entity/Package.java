@@ -1,6 +1,7 @@
 package com.lms.content.common.entity;
 
 import com.lms.common.jpa.BaseEntity;
+import com.lms.content.common.entity.enums.PublishStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -47,6 +48,15 @@ public class Package extends BaseEntity {
     @Column(name = "enrollment_count")
     @Builder.Default
     private Integer enrollmentCount = 0;
+
+    /**
+     * Trạng thái publish. Mặc định DRAFT khi tạo mới.
+     * DDL có DEFAULT 'PUBLISHED' để bản ghi cũ không bị ảnh hưởng.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "publish_status", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'PUBLISHED'")
+    @Builder.Default
+    private PublishStatus publishStatus = PublishStatus.DRAFT;
 
     @OneToMany(mappedBy = "packageEntity", cascade = CascadeType.PERSIST)
     @Builder.Default

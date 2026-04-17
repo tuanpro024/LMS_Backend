@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class VideoMetadataServiceImpl implements VideoMetadataService {
 
+    private static final String SYSTEM_TRIGGER = "system";
+
     private final VideoMetadataRepository videoMetadataRepository;
     private final StudySetService studySetService; // From content-common
     private final RestTemplate restTemplate = new RestTemplate();
@@ -59,6 +61,7 @@ public class VideoMetadataServiceImpl implements VideoMetadataService {
                 .build();
 
         videoMetadata = videoMetadataRepository.save(videoMetadata);
+        studySetService.revertParentPackagesToDraft(studySetId, userId);
         log.info("Added video {} to study set {} with ID {}", request.getVideoCode(), studySetId,
                 videoMetadata.getId());
 
@@ -86,6 +89,7 @@ public class VideoMetadataServiceImpl implements VideoMetadataService {
 
         videoMetadata.setDeleted(true);
         videoMetadataRepository.save(videoMetadata);
+        studySetService.revertParentPackagesToDraft(studySetId, userId);
 
         log.info("Removed video {} from study set {}", videoCode, studySetId);
     }
@@ -102,6 +106,7 @@ public class VideoMetadataServiceImpl implements VideoMetadataService {
 
         videoMetadata.setDisplayOrder(displayOrder);
         videoMetadata = videoMetadataRepository.save(videoMetadata);
+        studySetService.revertParentPackagesToDraft(studySetId, userId);
 
         return mapToResponse(videoMetadata);
     }
@@ -126,6 +131,7 @@ public class VideoMetadataServiceImpl implements VideoMetadataService {
         videoMetadata.setPlaylistUrl(videoData.getPlaylistUrl());
 
         videoMetadata = videoMetadataRepository.save(videoMetadata);
+        studySetService.revertParentPackagesToDraft(studySetId, SYSTEM_TRIGGER);
 
         return mapToResponse(videoMetadata);
     }

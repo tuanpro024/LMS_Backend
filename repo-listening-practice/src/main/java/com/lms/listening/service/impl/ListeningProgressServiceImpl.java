@@ -1,5 +1,6 @@
 package com.lms.listening.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.listening.dto.request.UpdateListeningProgressRequest;
 import com.lms.listening.dto.response.ListeningStudySetProgressResponse;
 import com.lms.listening.dto.response.ListeningVideoProgressResponse;
@@ -29,12 +30,15 @@ public class ListeningProgressServiceImpl implements ListeningProgressService {
     private final ListeningVideoProgressRepository videoProgressRepository;
     private final ListeningStudySetProgressRepository studySetProgressRepository;
     private final VideoMetadataRepository videoMetadataRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
     public ListeningVideoProgressResponse startWatching(String userId, String studySetId, String videoCode) {
         log.info("User {} started watching video {} in study set {}", userId, videoCode, studySetId);
+
+        studySetApiDelegate.assertStudySetLearningAllowed(studySetId);
 
         VideoMetadata video = validateVideoMetadata(studySetId, videoCode);
 
@@ -63,6 +67,7 @@ public class ListeningProgressServiceImpl implements ListeningProgressService {
     @Override
     @Transactional
     public ListeningVideoProgressResponse updateWatchProgress(String userId, String studySetId, String videoCode, UpdateListeningProgressRequest request) {
+        studySetApiDelegate.assertStudySetLearningAllowed(studySetId);
         VideoMetadata video = validateVideoMetadata(studySetId, videoCode);
 
         ListeningVideoProgress progress = videoProgressRepository
@@ -113,6 +118,7 @@ public class ListeningProgressServiceImpl implements ListeningProgressService {
     @Override
     @Transactional
     public ListeningVideoProgressResponse forceComplete(String userId, String studySetId, String videoCode) {
+        studySetApiDelegate.assertStudySetLearningAllowed(studySetId);
         VideoMetadata video = validateVideoMetadata(studySetId, videoCode);
         ListeningVideoProgress progress = videoProgressRepository
                 .findByUserIdAndStudySetIdAndVideoCode(userId, studySetId, videoCode)

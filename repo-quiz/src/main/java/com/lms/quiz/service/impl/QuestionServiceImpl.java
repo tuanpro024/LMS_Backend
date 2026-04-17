@@ -1,5 +1,6 @@
 package com.lms.quiz.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.quiz.dto.request.CreateQuestionRequest;
 import com.lms.quiz.dto.response.QuestionResponse;
 import com.lms.quiz.entity.Quiz;
@@ -27,6 +28,7 @@ public class QuestionServiceImpl implements IQuestionService {
     private final QuizQuestionRepository quizQuestionRepository;
     private final QuestionMapper questionMapper;
     private final QuizMapper quizMapper;
+    private final StudySetApiDelegate studySetApiDelegate;
 
     @Override
     @Transactional
@@ -42,6 +44,9 @@ public class QuestionServiceImpl implements IQuestionService {
         QuizQuestion question = questionMapper.toEntity(request, quiz, nextIndex);
 
         question = quizQuestionRepository.save(question);
+        if (quiz.getStudySet() != null) {
+            studySetApiDelegate.revertParentPackagesToDraft(quiz.getStudySet().getId(), userId);
+        }
         return quizMapper.mapQuestionForAdmin(question);
     }
 
@@ -76,6 +81,9 @@ public class QuestionServiceImpl implements IQuestionService {
         updated.setId(existing.getId());
 
         updated = quizQuestionRepository.save(updated);
+        if (quiz.getStudySet() != null) {
+            studySetApiDelegate.revertParentPackagesToDraft(quiz.getStudySet().getId(), userId);
+        }
         return quizMapper.mapQuestionForAdmin(updated);
     }
 
@@ -85,6 +93,10 @@ public class QuestionServiceImpl implements IQuestionService {
         log.info("Deleting question {}", questionId);
         QuizQuestion question = quizQuestionRepository.findById(questionId)
                 .orElseThrow(() -> new EntityNotFoundException("Question not found: " + questionId));
+        String studySetId = question.getQuiz() != null && question.getQuiz().getStudySet() != null
+                ? question.getQuiz().getStudySet().getId()
+                : null;
         quizQuestionRepository.delete(question);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
     }
 }

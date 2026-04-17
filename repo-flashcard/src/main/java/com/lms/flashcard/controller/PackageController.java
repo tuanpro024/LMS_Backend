@@ -1,9 +1,9 @@
 package com.lms.flashcard.controller;
 
-import com.lms.common.security.RequiresTicket;
-import com.lms.common.security.TicketModuleEnum;
 import com.lms.common.dto.ApiResponse;
 import com.lms.common.security.AuthPrincipal;
+import com.lms.common.security.RequiresTicket;
+import com.lms.common.security.TicketModuleEnum;
 import com.lms.content.common.delegate.api.PackageApiDelegate;
 import com.lms.content.common.dto.excel.HierarchicalImportResult;
 import com.lms.content.common.dto.request.CreatePackageRequest;
@@ -16,29 +16,38 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Thin controller that delegates to PackageApiDelegate
- * Handles HTTP concerns only (status codes, response wrapping)
+ * Thin controller delegates đến {@link PackageApiDelegate}.
+ * Chỉ xử lý HTTP concerns (status codes, response wrapping, auth extraction).
  */
 @RestController
 @RequestMapping("/packages")
 @RequiredArgsConstructor
 public class PackageController {
 
+    private static final String TICKET_MODULE = TicketModuleEnum.FLASHCARD.name();
+
     private final PackageApiDelegate delegate;
     private final ExcelImportService excelImportService;
 
+    // ── TYPES ─────────────────────────────────────────────────────────────────
+
     @GetMapping("/types")
     public ResponseEntity<ApiResponse<List<TypeResponse>>> getPackageTypes() {
-        List<TypeResponse> types = delegate.getPackageTypes();
-        return ResponseEntity.ok(ApiResponse.ok(types));
+        return ResponseEntity.ok(ApiResponse.ok(delegate.getPackageTypes()));
     }
+
+    // ── CREATE ────────────────────────────────────────────────────────────────
 
     @PostMapping
     @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
@@ -50,20 +59,31 @@ public class PackageController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(response));
     }
 
+    // ── READ (phân quyền theo role/ticket) ───────────────────────────────────
+
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PackageResponse>> getPackageById(@PathVariable String id) {
-        PackageResponse response = delegate.getPackageById(id);
-        return ResponseEntity.ok(ApiResponse.ok(response));
+    public ResponseEntity<ApiResponse<PackageResponse>> getPackageById(
+            @PathVariable String id,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        Set<String> roles = extractRoles(authentication);
+        return ResponseEntity.ok(ApiResponse.ok(
+                delegate.getPackageById(id, userId, roles, TICKET_MODULE)));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<PackageResponse>>> getPackages(
-            @RequestParam(required = false) TypeName type) {
+            @RequestParam(required = false) TypeName type,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        Set<String> roles = extractRoles(authentication);
         List<PackageResponse> response = (type != null)
-                ? delegate.getPackagesByType(type)
-                : delegate.getAllPackages();
+                ? delegate.getPackagesByType(type, userId, roles, TICKET_MODULE)
+                : delegate.getAllPackages(userId, roles, TICKET_MODULE);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
+
+    // ── UPDATE ────────────────────────────────────────────────────────────────
 
     @PutMapping("/{id}")
     @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
@@ -72,9 +92,11 @@ public class PackageController {
             @RequestBody @Valid UpdatePackageRequest request,
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        PackageResponse response = delegate.updatePackage(id, request, principal.userId());
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        return ResponseEntity.ok(ApiResponse.ok(
+                delegate.updatePackage(id, request, principal.userId())));
     }
+
+    // ── DELETE ────────────────────────────────────────────────────────────────
 
     @DeleteMapping("/{id}")
     @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
@@ -86,6 +108,8 @@ public class PackageController {
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
+    // ── FOLDER MANAGEMENT ─────────────────────────────────────────────────────
+
     @PostMapping("/{packageId}/folders/{folderId}")
     @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
     public ResponseEntity<ApiResponse<PackageResponse>> addFolderToPackage(
@@ -93,8 +117,8 @@ public class PackageController {
             @PathVariable String folderId,
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        PackageResponse response = delegate.addFolderToPackage(packageId, folderId, principal.userId());
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        return ResponseEntity.ok(ApiResponse.ok(
+                delegate.addFolderToPackage(packageId, folderId, principal.userId())));
     }
 
     @DeleteMapping("/{packageId}/folders/{folderId}")
@@ -104,9 +128,39 @@ public class PackageController {
             @PathVariable String folderId,
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        PackageResponse response = delegate.removeFolderFromPackage(packageId, folderId, principal.userId());
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        return ResponseEntity.ok(ApiResponse.ok(
+                delegate.removeFolderFromPackage(packageId, folderId, principal.userId())));
     }
+
+    // ── PUBLISH WORKFLOW ──────────────────────────────────────────────────────
+
+    /**
+     * Admin/Manager duyệt → PUBLISHED.
+     * Người dùng thường sẽ thấy package sau khi publish.
+     */
+    @PostMapping("/{id}/publish")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<ApiResponse<PackageResponse>> publishPackage(
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(delegate.publishPackage(id, principal.userId())));
+    }
+
+    /**
+     * Admin/Manager unpublish → DRAFT.
+     * Package bị ẩn khỏi danh sách public.
+     */
+    @PostMapping("/{id}/unpublish")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<ApiResponse<PackageResponse>> unpublishPackage(
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(delegate.unpublishPackage(id, principal.userId())));
+    }
+
+    // ── IMPORT EXCEL ──────────────────────────────────────────────────────────
 
     @PostMapping("/import-excel")
     @RequiresTicket(module = TicketModuleEnum.FLASHCARD)
@@ -115,8 +169,26 @@ public class PackageController {
             @RequestParam("typeName") TypeName typeName,
             Authentication authentication) {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
-        HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, typeName,
-                principal.userId(), false);
+        HierarchicalImportResult response = excelImportService.importFromPackageExcel(
+                file, typeName, principal.userId(), false);
         return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    // ── HELPERS ───────────────────────────────────────────────────────────────
+
+    private String extractUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated())
+            return null;
+        if (authentication.getPrincipal() instanceof AuthPrincipal p)
+            return p.userId();
+        return null;
+    }
+
+    private Set<String> extractRoles(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated())
+            return Collections.emptySet();
+        return authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .collect(Collectors.toSet());
     }
 }

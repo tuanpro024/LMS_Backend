@@ -2,6 +2,7 @@ package com.lms.content.common.dto.response;
 
 import com.lms.content.common.entity.CategoryType;
 import com.lms.content.common.entity.TypeName;
+import com.lms.content.common.entity.enums.PublishStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,6 +28,7 @@ public class PackageResponse {
     private String pricingType;
     private String userId;
     private Integer enrollmentCount;
+    private PublishStatus publishStatus;
     private List<FolderResponse> folders;
     private Instant createdAt;
     private Instant updatedAt;

@@ -2,6 +2,7 @@ package com.lms.quiz.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.quiz.dto.request.CheckQuestionRequest;
 import com.lms.quiz.dto.request.SubmitQuizRequest;
 import com.lms.quiz.dto.request.UpdateQuestionResultRequest;
@@ -47,6 +48,7 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
     private final UserQuizProgressRepository userQuizProgressRepository;
     private final UserQuizStudySetProgressRepository studySetProgressRepository;
     private final ObjectMapper objectMapper;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -56,6 +58,10 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
 
         Quiz quiz = quizRepository.findById(request.getQuizId())
                 .orElseThrow(() -> new EntityNotFoundException("Quiz not found: " + request.getQuizId()));
+
+        if (quiz.getStudySet() != null) {
+            studySetApiDelegate.assertStudySetLearningAllowed(quiz.getStudySet().getId());
+        }
 
         // Build answer map: questionId -> SubmitAnswerRequest
         Map<String, SubmitQuizRequest.SubmitAnswerRequest> answerMap = new HashMap<>();

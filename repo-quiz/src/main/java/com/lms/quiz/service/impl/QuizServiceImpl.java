@@ -1,5 +1,6 @@
 package com.lms.quiz.service.impl;
 
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.quiz.dto.request.CreateQuestionRequest;
@@ -30,6 +31,7 @@ public class QuizServiceImpl implements IQuizService {
 
     private final QuizRepository quizRepository;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final QuizMapper quizMapper;
     private final QuestionMapper questionMapper;
 
@@ -68,6 +70,7 @@ public class QuizServiceImpl implements IQuizService {
         }
 
         Quiz saved = quizRepository.save(quiz);
+        studySetApiDelegate.revertParentPackagesToDraft(studySet.getId(), userId);
         log.info("Created quiz with ID: {}", saved.getId());
 
         return quizMapper.toQuizDetailResponse(saved);
@@ -130,6 +133,9 @@ public class QuizServiceImpl implements IQuizService {
         }
 
         Quiz saved = quizRepository.save(quiz);
+        if (quiz.getStudySet() != null) {
+            studySetApiDelegate.revertParentPackagesToDraft(quiz.getStudySet().getId(), userId);
+        }
         return quizMapper.toQuizDetailResponse(saved);
     }
 
@@ -139,6 +145,8 @@ public class QuizServiceImpl implements IQuizService {
         log.info("Deleting quiz {}", quizId);
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new EntityNotFoundException("Quiz not found: " + quizId));
+        String studySetId = quiz.getStudySet() != null ? quiz.getStudySet().getId() : null;
         quizRepository.delete(quiz);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
     }
 }

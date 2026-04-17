@@ -14,13 +14,15 @@ import org.springframework.stereotype.Component;
 import java.util.Set;
 
 /**
- * AOP Aspect kiểm tra ticket access cho các method được đánh dấu @RequiresTicket.
+ * AOP Aspect kiểm tra ticket access cho các method được đánh
+ * dấu @RequiresTicket.
  *
- * <p>Logic:
+ * <p>
+ * Logic:
  * <ol>
- *   <li>Nếu user có role ADMIN hoặc TEACHER_MANAGER → bypass.</li>
- *   <li>Ngược lại gọi identity-service để kiểm tra có ticket hợp lệ không.</li>
- *   <li>Không có → throw 403 FORBIDDEN.</li>
+ * <li>Nếu user có role ADMIN hoặc TEACHER_MANAGER → bypass.</li>
+ * <li>Ngược lại gọi identity-service để kiểm tra có ticket hợp lệ không.</li>
+ * <li>Không có → throw 403 FORBIDDEN.</li>
  * </ol>
  * </p>
  */
@@ -45,7 +47,7 @@ public class TicketAccessAspect {
 
         // Lấy roles
         Set<String> userRoles = authentication.getAuthorities().stream()
-                .map(ga -> ga.getAuthority())
+                .map(ga -> normalizeRole(ga.getAuthority()))
                 .collect(java.util.stream.Collectors.toSet());
 
         // ADMIN và TEACHER_MANAGER được bypass
@@ -67,9 +69,32 @@ public class TicketAccessAspect {
         if (!hasAccess) {
             log.warn("TicketAccessAspect: DENIED userId={} module={}", userId, module);
             throw new ApiException(ErrorCode.FORBIDDEN,
-                    "Bạn không có ticket hợp lệ cho module " + module + ". Vui lòng liên hệ quản lý để được cấp quyền.");
+                    "Bạn không có ticket hợp lệ cho module " + module
+                            + ". Vui lòng liên hệ quản lý để được cấp quyền.");
         }
 
         log.debug("TicketAccessAspect: ALLOWED userId={} module={}", userId, module);
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null) {
+            return "";
+        }
+
+        String normalized = role.trim().toUpperCase();
+        if (normalized.isEmpty()) {
+            return "";
+        }
+
+        if (!normalized.startsWith("ROLE_")) {
+            normalized = "ROLE_" + normalized;
+        }
+
+        // Backward compatibility: legacy manager naming.
+        if ("ROLE_MANAGER".equals(normalized)) {
+            return "ROLE_TEACHER_MANAGER";
+        }
+
+        return normalized;
     }
 }

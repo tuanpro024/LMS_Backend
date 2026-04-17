@@ -2,6 +2,7 @@ package com.lms.writing.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.writing.dto.request.CreateWordRequest;
@@ -38,6 +39,7 @@ public class WordServiceImpl implements WordService {
     private final UserWordProgressRepository userWordProgressRepository;
     private final WordMapper wordMapper;
     private final StudySetRepository studySetRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -69,6 +71,7 @@ public class WordServiceImpl implements WordService {
         wordMapper.updateEntity(word, request);
 
         Word updated = wordRepository.save(word);
+        studySetApiDelegate.revertParentPackagesToDraft(updated.getStudySet().getId(), userId);
         return wordMapper.toResponse(updated);
     }
 
@@ -82,11 +85,14 @@ public class WordServiceImpl implements WordService {
             throw new ApiException(ErrorCode.E240, "No permission to delete this word");
         }
 
+        String studySetId = word.getStudySet().getId();
+
         // Delete associated user progress records first to avoid FK constraint
         // violation
         userWordProgressRepository.deleteByWordId(id);
 
         wordRepository.delete(word);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
     }
 
     @Override
@@ -139,6 +145,7 @@ public class WordServiceImpl implements WordService {
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
         String studySetId = word.getStudySet().getId();
+        studySetApiDelegate.assertStudySetLearningAllowed(studySetId);
         Instant now = Instant.now();
 
         UserWordProgress progress = userWordProgressRepository.findByUserIdAndWordId(userId, wordId)
@@ -211,6 +218,7 @@ public class WordServiceImpl implements WordService {
                 .collect(Collectors.toList());
 
         List<Word> savedWords = wordRepository.saveAll(wordEntities);
+        studySetApiDelegate.revertParentPackagesToDraft(studySetId, userId);
 
         log.info("Added {} words to StudySet {} by user {}", savedWords.size(), studySetId, userId);
 

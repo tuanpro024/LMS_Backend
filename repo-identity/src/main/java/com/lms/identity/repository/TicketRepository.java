@@ -29,6 +29,12 @@ public interface TicketRepository extends JpaRepository<Ticket, String> {
     boolean existsByAssignedIdAndModuleAndStatusNot(String assignedId, TicketModule module, TicketStatus status);
 
     /**
+     * Kiểm tra user có bất kỳ ticket hợp lệ (status != CLOSE) không.
+     * Dùng bởi /internal/tickets/has-any để xác định ticket-holder.
+     */
+    boolean existsByAssignedIdAndStatusNot(String assignedId, TicketStatus status);
+
+    /**
      * Tìm ticket theo người assign và module.
      */
     List<Ticket> findByAssignedIdAndModule(String assignedId, TicketModule module);

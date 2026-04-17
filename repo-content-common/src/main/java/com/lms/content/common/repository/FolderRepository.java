@@ -1,6 +1,7 @@
 package com.lms.content.common.repository;
 
 import com.lms.content.common.entity.Folder;
+import com.lms.content.common.entity.enums.PublishStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,4 +29,17 @@ public interface FolderRepository extends JpaRepository<Folder, String> {
 
     @Query("SELECT f FROM Folder f JOIN f.studySets s WHERE s.id = :studySetId")
     List<Folder> findByStudySetId(@Param("studySetId") String studySetId);
+
+    /**
+     * Chỉ trả folder thuộc package đang PUBLISHED (dùng cho public GET).
+     * Admin và ticket-holder dùng {@link #findByPackageId} không filter.
+     */
+    @Query("""
+            SELECT f FROM Folder f
+            WHERE f.packageEntity.id = :packageId
+            AND f.packageEntity.publishStatus = :status
+            """)
+    List<Folder> findByPackageIdAndPublishStatus(
+            @Param("packageId") String packageId,
+            @Param("status") PublishStatus status);
 }

@@ -1,3 +1,5 @@
+# Ignore local dev config
+application-dev.yml
 # Maven build artifacts
 target/
 **/target/

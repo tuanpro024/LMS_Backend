@@ -237,6 +237,10 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
                         .feedbackText(result.getFeedbackText())
                         .transcriptText(result.getTranscriptText())
                         .analyticsJson(result.getAnalyticsJson());
+
+                // Populate structured display fields from analyticsJson
+                // so FE does not need to parse nested JSON.
+                enrichWithDisplayFields(rb, result.getAnalyticsJson());
             }
 
             responses.add(rb.build());
@@ -251,6 +255,83 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
         AiGradingJob job = jobRepository.findByIdAndDeletedFalse(jobId)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "GradingJob not found: " + jobId));
         return mapper.toJobResponse(job);
+    }
+
+    // ── display field extraction ──────────────────────────────────────
+
+    /**
+     * Parses analyticsJson (stored by GradingResultNormalizer.buildWritingAnalytics)
+     * and populates the structured display fields in the response builder.
+     * Safe to call with null/blank analyticsJson — will silently skip.
+     */
+    private void enrichWithDisplayFields(
+            GradingResultResponse.GradingResultResponseBuilder rb,
+            String analyticsJson) {
+        if (analyticsJson == null || analyticsJson.isBlank()) {
+            return;
+        }
+
+        try {
+            JsonNode a = objectMapper.readTree(analyticsJson);
+
+            // --- Bài làm mẫu của AI ---
+            rb.modelAnswer(textOrNull(a, "model_answer"));
+
+            // --- Các dạng bài đã sửa ---
+            rb.correctedAnswer(textOrNull(a, "corrected_answer"));
+            rb.correctedParagraph(textOrNull(a, "corrected_paragraph"));
+            rb.correctedSummary(textOrNull(a, "corrected_summary"));
+
+            // --- Kết quả nhị phân (sentence_arrangement) ---
+            rb.correctAnswer(textOrNull(a, "correct_answer"));
+            if (!a.path("is_correct").isMissingNode() && !a.path("is_correct").isNull()) {
+                rb.isCorrect(a.path("is_correct").asBoolean());
+            }
+
+            // --- Thống kê ký tự ---
+            if (a.path("character_count").isNumber()) {
+                rb.characterCount(a.path("character_count").asInt());
+            }
+            if (!a.path("character_count_valid").isMissingNode() && !a.path("character_count_valid").isNull()) {
+                rb.characterCountValid(a.path("character_count_valid").asBoolean());
+            }
+            rb.characterCountNote(textOrNull(a, "character_count_note"));
+
+            // --- Ngữ pháp ---
+            rb.grammarExplanation(textOrNull(a, "grammar_explanation"));
+
+            // --- required_words_check (short_paragraph) ---
+            JsonNode rwc = a.path("required_words_check");
+            if (!rwc.isMissingNode() && !rwc.isNull() && rwc.isObject()) {
+                rb.requiredWordsCheck(
+                        objectMapper.convertValue(rwc, new TypeReference<Map<String, Object>>() {}));
+            }
+
+            // --- title_check (summary_writing) ---
+            JsonNode tc = a.path("title_check");
+            if (!tc.isMissingNode() && !tc.isNull() && tc.isObject()) {
+                rb.titleCheck(
+                        objectMapper.convertValue(tc, new TypeReference<Map<String, Object>>() {}));
+            }
+
+            // --- missing_source_points (summary_writing) ---
+            JsonNode msp = a.path("missing_source_points");
+            if (!msp.isMissingNode() && !msp.isNull() && msp.isArray()) {
+                rb.missingSourcePoints(
+                        objectMapper.convertValue(msp, new TypeReference<List<String>>() {}));
+            }
+
+        } catch (Exception ex) {
+            log.debug("Failed to enrich display fields from analyticsJson: {}", ex.getMessage());
+        }
+    }
+
+    /** Returns non-blank text or null from a JSON field. */
+    private String textOrNull(JsonNode node, String fieldName) {
+        JsonNode field = node.path(fieldName);
+        if (field.isMissingNode() || field.isNull()) return null;
+        String text = field.asText();
+        return (text == null || text.isBlank() || "null".equals(text)) ? null : text;
     }
 
     // ── helpers ──────────────────────────────────────────────────────

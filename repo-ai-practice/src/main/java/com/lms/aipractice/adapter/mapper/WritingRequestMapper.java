@@ -79,11 +79,14 @@ public class WritingRequestMapper {
         }
 
         return switch (subtype) {
-            // Aligned with BE_LMS/AI_JSON writing_*_input.json samples.
+            // All 6 writing types — must match HSK_API QuestionType enum values exactly.
             case SENTENCE_ARRANGEMENT -> "sentence_arrangement";
-            case SHORT_PARAGRAPH -> "short_paragraph";
-            case SUMMARY_WRITING -> "summary_writing";
-            // Keep legacy/extended subtypes backward compatible.
+            case HANZI_WRITING        -> "hanzi_writing";
+            case PICTURE_SENTENCE     -> "picture_sentence";
+            case SHORT_PARAGRAPH      -> "short_paragraph";
+            case PICTURE_PARAGRAPH    -> "picture_paragraph";
+            case SUMMARY_WRITING      -> "summary_writing";
+            // Keep non-writing subtypes backward compatible.
             default -> subtype.name().toLowerCase();
         };
     }

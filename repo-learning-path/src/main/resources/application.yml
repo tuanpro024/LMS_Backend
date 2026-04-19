@@ -3,9 +3,7 @@ spring:
     name: repo-learning-path
   kafka:
     #    prod
-#      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
-    #    local
-     bootstrap-servers: localhost:9092
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:lms-kafka:9092}
   datasource:
     url: jdbc:mysql://localhost:3306/lms_learning_path_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root

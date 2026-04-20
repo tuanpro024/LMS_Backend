@@ -64,10 +64,10 @@ public class WritingRequestMapper {
                 payload.put("required_words", words);
             } catch (Exception e) {
                 log.warn("Failed to parse requiredWordsJson for item {}: {}", item.getId(), e.getMessage());
-                payload.put("required_words", null);
+                payload.put("required_words", List.of());
             }
         } else {
-            payload.put("required_words", null);
+            payload.put("required_words", List.of());
         }
 
         return payload;

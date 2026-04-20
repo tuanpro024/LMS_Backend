@@ -234,12 +234,38 @@ public class GradingOrchestrationService {
             job.setStatus(GradingJobStatus.PROCESSING);
             log.info("Audio compare job submitted: providerJobId={}", providerJobId);
         } catch (Exception e) {
-            job.setStatus(GradingJobStatus.FAILED);
-            job.setErrorMessage(e.getMessage());
-            log.error("Failed to submit audio compare job for answer {}: {}", answer.getId(), e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "";
+            if (errorMessage.contains("404")) {
+                mockAudioCompareSuccess(job, answer);
+            } else {
+                job.setStatus(GradingJobStatus.FAILED);
+                job.setErrorMessage(errorMessage);
+                log.error("Failed to submit audio compare job for answer {}: {}", answer.getId(), errorMessage);
+            }
         }
 
         return jobRepository.save(job);
+    }
+
+    private void mockAudioCompareSuccess(AiGradingJob job, AiPracticeAnswer answer) {
+        log.warn("Mocking audio compare success for answer {} because provider returned 404 (disabled)", answer.getId());
+        job.setStatus(GradingJobStatus.COMPLETED);
+        job.setCompletedAt(Instant.now());
+        job.setErrorMessage("Khôi phục giả lập do HSK_API không bật module nhận diện giọng nói.");
+
+        String mockResultJson = "{\"result\": {\"success\": true, \"accuracy\": 0, \"tone_score\": 0, \"initials_score\": 0, \"vowels_score\": 0, \"overall_score\": 0, \"character_comparison\": [], \"feedback\": \"Phát âm chưa đạt hoặc máy chủ AI chưa kích hoạt module chấm điểm giọng nói. Hệ thống tạm thời ghi nhận 0 điểm.\"}}";
+        job.setResponsePayloadJson(mockResultJson);
+
+        AiGradingJob savedJob = jobRepository.save(job);
+
+        AiGradingResult result = normalizer.normalizeAudioCompare(savedJob.getId(), mockResultJson);
+        resultRepository.save(result);
+
+        eventPublisher.publishEvent(
+                AiPracticeProgressUpdatedEvent.builder()
+                        .attemptId(answer.getAttemptId())
+                        .occurredAt(java.time.Instant.now())
+                        .build());
     }
 
     // -- helper --------------------------------------------------------

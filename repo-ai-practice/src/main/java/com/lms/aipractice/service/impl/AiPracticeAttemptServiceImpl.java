@@ -186,6 +186,22 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<AttemptResponse> getAttemptHistory(String studySetId, String userId) {
+        if (studySetId == null || studySetId.isBlank()) {
+            return List.of();
+        }
+
+        List<AiPracticeAttempt> attempts = attemptRepository
+                .findByUserIdAndStudySetIdAndDeletedFalseOrderByCreatedAtDesc(userId, studySetId);
+
+        return attempts.stream()
+                .map(this::refreshAttemptAggregate)
+                .map(mapper::toAttemptResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     public List<GradingResultResponse> getResults(String attemptId, String userId) {
         getAttemptOwned(attemptId, userId); // access check
@@ -226,6 +242,8 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
                     .errorMessage(job.getErrorMessage())
                     .answerId(answer.getId())
                     .itemId(answer.getItemId())
+                    .studentAnswerText(answer.getAnswerText())
+                    .studentAudioUrl(answer.getAnswerAudioPath() != null ? "/api/media/file/" + answer.getAnswerAudioPath().replace("\\", "/").substring(answer.getAnswerAudioPath().lastIndexOf('/') + 1) : null) // Assuming we shouldn't send raw path, but in reality FE just doesn't display audio answer currently. Let's just set the path for now or skip audio
                     .jobStatus(job.getStatus())
                     .completedAt(job.getCompletedAt());
 

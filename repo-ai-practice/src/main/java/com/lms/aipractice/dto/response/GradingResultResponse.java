@@ -17,6 +17,8 @@ public class GradingResultResponse {
 
     private String answerId;
     private String itemId;
+    private String studentAnswerText;
+    private String studentAudioUrl;
     private GradingJobStatus jobStatus;
 
     // ── Populated when job is COMPLETED ───────────────────────────────

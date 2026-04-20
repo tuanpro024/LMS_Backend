@@ -59,6 +59,14 @@ public class AiPracticeAttemptController {
         return ResponseEntity.ok(ApiResponse.ok(attemptService.getLatestAttemptsByStudySetIds(studySetIds, userId)));
     }
 
+    @GetMapping("/attempts/history")
+    public ResponseEntity<ApiResponse<List<AttemptResponse>>> getAttemptHistory(
+            @RequestParam("studySetId") String studySetId,
+            Authentication auth) {
+        String userId = ((AuthPrincipal) auth.getPrincipal()).userId();
+        return ResponseEntity.ok(ApiResponse.ok(attemptService.getAttemptHistory(studySetId, userId)));
+    }
+
     @PostMapping("/attempts/{attemptId}/submit")
     public ResponseEntity<ApiResponse<AttemptResponse>> submitAttempt(
             @PathVariable String attemptId, Authentication auth) {

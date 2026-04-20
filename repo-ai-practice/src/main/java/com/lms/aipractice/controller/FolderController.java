@@ -39,7 +39,11 @@ public class FolderController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FolderResponse>>> getAll() {
+    public ResponseEntity<ApiResponse<List<FolderResponse>>> getAll(
+            @RequestParam(required = false) String packageId) {
+        if (packageId != null) {
+            return ResponseEntity.ok(ApiResponse.ok(delegate.getFoldersByPackageId(packageId)));
+        }
         return ResponseEntity.ok(ApiResponse.ok(delegate.getAllFolders()));
     }
 

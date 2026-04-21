@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.util.MultiValueMap;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -38,8 +40,10 @@ public class HskApiClient {
             ObjectMapper objectMapper) {
         this.timeoutMs = timeoutMs;
         this.objectMapper = objectMapper;
+        // Strip trailing slash to avoid 404 (e.g. //api/v2...)
+        String safeBaseUrl = baseUrl != null ? baseUrl.replaceAll("/+$", "") : "";
         this.webClient = WebClient.builder()
-                .baseUrl(baseUrl)
+                .baseUrl(safeBaseUrl)
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
@@ -75,6 +79,41 @@ public class HskApiClient {
     public String submitAudioCompareJob(Map<String, Object> payload) {
         log.debug("Submitting audio compare job to HSK_API");
         return postGradeJob("/api/v2/audio/compare", payload);
+    }
+
+    /**
+     * Submit an audio-compare grading job using multipart form data (bypasses WAF/Nginx Base64 body limits).
+     *
+     * @param parts MultiValueMap containing reference_text and student_audio file
+     * @return provider job_id
+     */
+    public String submitAudioCompareJobUpload(MultiValueMap<String, Object> parts) {
+        log.debug("Submitting audio compare job to HSK_API via upload");
+        String response = webClient.post()
+                .uri("/api/v2/audio/compare/upload")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(parts))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse -> clientResponse
+                        .bodyToMono(String.class)
+                        .defaultIfEmpty("")
+                        .map(body -> new RuntimeException(
+                                "HSK_API call failed (" + clientResponse.statusCode().value() + ") "
+                                        + "/api/v2/audio/compare/upload -> " + body)))
+                .bodyToMono(String.class)
+                .timeout(Duration.ofMillis(timeoutMs))
+                .block();
+
+        try {
+            JsonNode node = objectMapper.readTree(response);
+            JsonNode jobIdNode = node.get("job_id");
+            if (jobIdNode == null || jobIdNode.asText().isBlank()) {
+                throw new RuntimeException("Missing job_id in HSK_API response: " + response);
+            }
+            return jobIdNode.asText();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse job_id from HSK_API response: " + response, e);
+        }
     }
 
     /**

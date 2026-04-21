@@ -71,6 +71,17 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
         }
         studySetApiDelegate.assertStudySetLearningAllowed(request.getStudySetId());
 
+        // Optimize: Reuse latest IN_PROGRESS attempt if it has no answers to prevent DB spam
+        List<AiPracticeAttempt> existing = attemptRepository
+                .findByUserIdAndStudySetIdAndDeletedFalseOrderByCreatedAtDesc(userId, request.getStudySetId());
+        if (!existing.isEmpty()) {
+            AiPracticeAttempt latest = existing.get(0);
+            if (latest.getStatus() == AttemptStatus.IN_PROGRESS && !answerRepository.existsByAttemptIdAndDeletedFalse(latest.getId())) {
+                log.info("Reusing existing empty attempt={}", latest.getId());
+                return mapper.toAttemptResponse(latest);
+            }
+        }
+
         AiPracticeAttempt attempt = AiPracticeAttempt.builder()
                 .userId(userId)
                 .studySetId(request.getStudySetId())
@@ -186,7 +197,7 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional // Note: changed from readOnly to clean up legacy empty attempts
     public List<AttemptResponse> getAttemptHistory(String studySetId, String userId) {
         if (studySetId == null || studySetId.isBlank()) {
             return List.of();
@@ -195,7 +206,22 @@ public class AiPracticeAttemptServiceImpl implements AiPracticeAttemptService {
         List<AiPracticeAttempt> attempts = attemptRepository
                 .findByUserIdAndStudySetIdAndDeletedFalseOrderByCreatedAtDesc(userId, studySetId);
 
-        return attempts.stream()
+        List<AiPracticeAttempt> validAttempts = new ArrayList<>();
+        for (AiPracticeAttempt attempt : attempts) {
+            if (attempt.getStatus() == AttemptStatus.IN_PROGRESS) {
+                if ((attempt.getMaxScore() == null || attempt.getMaxScore() == 0) 
+                        && !answerRepository.existsByAttemptIdAndDeletedFalse(attempt.getId())) {
+                    log.info("Soft deleting legacy empty attempt: {}", attempt.getId());
+                    attempt.setDeleted(true);
+                    validAttempts.remove(attempt); // in case we tracked it somehow, just skip adding
+                    attemptRepository.save(attempt);
+                    continue;
+                }
+            }
+            validAttempts.add(attempt);
+        }
+
+        return validAttempts.stream()
                 .map(this::refreshAttemptAggregate)
                 .map(mapper::toAttemptResponse)
                 .collect(Collectors.toList());

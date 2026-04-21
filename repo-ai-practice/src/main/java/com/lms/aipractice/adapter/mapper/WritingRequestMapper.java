@@ -39,9 +39,10 @@ public class WritingRequestMapper {
         Map<String, Object> payload = new HashMap<>();
         String userInput = answer.getAnswerText() != null ? answer.getAnswerText() : "";
         String questionType = resolveQuestionType(item.getQuestionSubtype());
+        Integer alignedHskLevel = alignHskLevelWithSubtype(item.getQuestionSubtype(), item.getHskLevel());
 
         payload.put("question_type", questionType);
-        payload.put("hsk_level", item.getHskLevel());
+        payload.put("hsk_level", alignedHskLevel);
         payload.put("prompt", item.getPromptText());
         payload.put("question", item.getPromptText());
         payload.put("user_input", userInput);
@@ -88,6 +89,25 @@ public class WritingRequestMapper {
             case SUMMARY_WRITING      -> "summary_writing";
             // Keep non-writing subtypes backward compatible.
             default -> subtype.name().toLowerCase();
+        };
+    }
+
+    private Integer alignHskLevelWithSubtype(AiItemSubtype subtype, Integer inputLevel) {
+        if (subtype == null) return inputLevel;
+
+        return switch (subtype) {
+            case SHORT_PARAGRAPH -> 5;
+            case PICTURE_SENTENCE -> 4;
+            case PICTURE_PARAGRAPH -> 5;
+            case SUMMARY_WRITING -> 6;
+            case HANZI_WRITING -> 3;
+            case SENTENCE_ARRANGEMENT -> {
+                if (inputLevel != null && (inputLevel == 3 || inputLevel == 4 || inputLevel == 5)) {
+                    yield inputLevel;
+                }
+                yield 3; // Default for sentence arrangement
+            }
+            default -> inputLevel != null ? inputLevel : 4; // Default generic fallback
         };
     }
 }

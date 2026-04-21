@@ -171,43 +171,41 @@ public class GradingOrchestrationService {
                 .build();
 
         try {
-            String rawResponse = hskApiClient.submitSpeakingSyncV2(payload);
-            job.setResponsePayloadJson(rawResponse);
-            job.setStatus(GradingJobStatus.COMPLETED);
-            job.setCompletedAt(Instant.now());
-            job.setErrorMessage(null);
-            job.setProviderJobId(null);
-
-            AiGradingJob savedJob = jobRepository.save(job);
-            AiGradingResult result = normalizer.normalizeSpeaking(savedJob.getId(), rawResponse);
-            resultRepository.save(result);
-
-            eventPublisher.publishEvent(
-                    AiPracticeProgressUpdatedEvent.builder()
-                            .attemptId(answer.getAttemptId())
-                            .occurredAt(java.time.Instant.now())
-                            .build());
-
-            log.info("Speaking graded via sync endpoint: jobId={}", savedJob.getId());
-            return savedJob;
+            String providerJobId = hskApiClient.submitSpeakingJob(payload);
+            job.setProviderJobId(providerJobId);
+            log.info("Speaking job submitted: providerJobId={}", providerJobId);
         } catch (Exception e) {
-            if (shouldFallbackSpeakingToAsync(e)) {
+            if (shouldFallbackSpeakingToSync(e)) {
                 try {
-                    String providerJobId = hskApiClient.submitSpeakingJob(payload);
-                    job.setProviderJobId(providerJobId);
-                    job.setStatus(GradingJobStatus.PROCESSING);
+                    String rawResponse = hskApiClient.submitSpeakingSyncV2(payload);
+                    job.setResponsePayloadJson(rawResponse);
+                    job.setStatus(GradingJobStatus.COMPLETED);
+                    job.setCompletedAt(Instant.now());
                     job.setErrorMessage(null);
-                    log.warn("Speaking /sync unavailable, fallback async submitted: providerJobId={}", providerJobId);
+                    job.setProviderJobId(null);
+
+                    AiGradingJob savedJob = jobRepository.save(job);
+                    AiGradingResult result = normalizer.normalizeSpeaking(savedJob.getId(), rawResponse);
+                    resultRepository.save(result);
+
+                    eventPublisher.publishEvent(
+                            AiPracticeProgressUpdatedEvent.builder()
+                                    .attemptId(answer.getAttemptId())
+                                    .occurredAt(java.time.Instant.now())
+                                    .build());
+
+                    log.info("Speaking graded via fallback sync endpoint: jobId={}", savedJob.getId());
+                    return savedJob;
                 } catch (Exception fallbackEx) {
                     job.setStatus(GradingJobStatus.FAILED);
                     job.setErrorMessage(fallbackEx.getMessage());
-                    log.error("Fallback speaking async failed for answer {}: {}", answer.getId(),
+                    log.error("Fallback speaking sync failed for answer {}: {}", answer.getId(),
                             fallbackEx.getMessage());
                 }
             } else {
                 job.setStatus(GradingJobStatus.FAILED);
                 job.setErrorMessage(e.getMessage());
-                log.error("Failed to submit speaking sync job for answer {}: {}", answer.getId(), e.getMessage());
+                log.error("Failed to submit speaking job for answer {}: {}", answer.getId(), e.getMessage());
             }
         }
 
@@ -217,8 +215,14 @@ public class GradingOrchestrationService {
     // -- Audio Compare (HSK_API async queue) ---------------------------
 
     private AiGradingJob dispatchAudioCompare(AiPracticeItem item, AiPracticeAnswer answer) {
-        Map<String, Object> payload = buildAudioComparePayload(item, answer);
-        String requestJson = toCompactRequestJson(payload);
+        String audioPath = answer.getAnswerAudioPath();
+        boolean useMultipart = audioPath != null && !audioPath.isBlank() && Files.exists(Path.of(audioPath));
+
+        Map<String, Object> debugPayload = new HashMap<>();
+        debugPayload.put("reference_text", item.getReferenceText());
+        debugPayload.put("student_audio_path", audioPath);
+        debugPayload.put("upload_mode", true);
+        String requestJson = toCompactRequestJson(debugPayload);
 
         AiGradingJob job = AiGradingJob.builder()
                 .attemptId(answer.getAttemptId())
@@ -229,43 +233,27 @@ public class GradingOrchestrationService {
                 .build();
 
         try {
-            String providerJobId = hskApiClient.submitAudioCompareJob(payload);
+            String providerJobId;
+            if (useMultipart) {
+                org.springframework.util.MultiValueMap<String, Object> parts = new org.springframework.util.LinkedMultiValueMap<>();
+                parts.add("reference_text", item.getReferenceText());
+                parts.add("student_audio", new org.springframework.core.io.FileSystemResource(Path.of(audioPath)));
+                providerJobId = hskApiClient.submitAudioCompareJobUpload(parts);
+            } else {
+                Map<String, Object> payload = buildAudioComparePayload(item, answer);
+                providerJobId = hskApiClient.submitAudioCompareJob(payload);
+            }
             job.setProviderJobId(providerJobId);
             job.setStatus(GradingJobStatus.PROCESSING);
-            log.info("Audio compare job submitted: providerJobId={}", providerJobId);
+            log.info("Audio compare job submitted via {}: providerJobId={}", useMultipart ? "upload" : "base64", providerJobId);
         } catch (Exception e) {
             String errorMessage = e.getMessage() != null ? e.getMessage() : "";
-            if (errorMessage.contains("404")) {
-                mockAudioCompareSuccess(job, answer);
-            } else {
-                job.setStatus(GradingJobStatus.FAILED);
-                job.setErrorMessage(errorMessage);
-                log.error("Failed to submit audio compare job for answer {}: {}", answer.getId(), errorMessage);
-            }
+            job.setStatus(GradingJobStatus.FAILED);
+            job.setErrorMessage(errorMessage);
+            log.error("Failed to submit audio compare job for answer {}: {}", answer.getId(), errorMessage);
         }
 
         return jobRepository.save(job);
-    }
-
-    private void mockAudioCompareSuccess(AiGradingJob job, AiPracticeAnswer answer) {
-        log.warn("Mocking audio compare success for answer {} because provider returned 404 (disabled)", answer.getId());
-        job.setStatus(GradingJobStatus.COMPLETED);
-        job.setCompletedAt(Instant.now());
-        job.setErrorMessage("Khôi phục giả lập do HSK_API không bật module nhận diện giọng nói.");
-
-        String mockResultJson = "{\"result\": {\"success\": true, \"accuracy\": 0, \"tone_score\": 0, \"initials_score\": 0, \"vowels_score\": 0, \"overall_score\": 0, \"character_comparison\": [], \"feedback\": \"Phát âm chưa đạt hoặc máy chủ AI chưa kích hoạt module chấm điểm giọng nói. Hệ thống tạm thời ghi nhận 0 điểm.\"}}";
-        job.setResponsePayloadJson(mockResultJson);
-
-        AiGradingJob savedJob = jobRepository.save(job);
-
-        AiGradingResult result = normalizer.normalizeAudioCompare(savedJob.getId(), mockResultJson);
-        resultRepository.save(result);
-
-        eventPublisher.publishEvent(
-                AiPracticeProgressUpdatedEvent.builder()
-                        .attemptId(answer.getAttemptId())
-                        .occurredAt(java.time.Instant.now())
-                        .build());
     }
 
     // -- helper --------------------------------------------------------
@@ -314,13 +302,13 @@ public class GradingOrchestrationService {
                 || message.contains("Missing job_id in HSK_API response");
     }
 
-    private boolean shouldFallbackSpeakingToAsync(Exception e) {
+    private boolean shouldFallbackSpeakingToSync(Exception e) {
         String message = e.getMessage();
         if (message == null) {
             return false;
         }
 
-        return (message.contains("HSK_API call failed (404)") && message.contains("/api/v2/speaking/grade/sync"));
+        return message.contains("HSK_API call failed (404)") && message.contains("/api/v2/speaking/grade");
     }
 
     private Map<String, Object> buildAudioComparePayload(AiPracticeItem item, AiPracticeAnswer answer) {

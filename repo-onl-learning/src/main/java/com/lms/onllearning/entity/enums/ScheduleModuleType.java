@@ -9,10 +9,5 @@ public enum ScheduleModuleType {
     KANJI,
     PRONUNCIATION,
     QUIZ,
-    LISTENING,
-    AI_PRACTICE,
-    AI_WRITING,
-    AI_SPEAKING,
-    AI_LISTENING,
-    AI_READING
+    LISTENING
 }

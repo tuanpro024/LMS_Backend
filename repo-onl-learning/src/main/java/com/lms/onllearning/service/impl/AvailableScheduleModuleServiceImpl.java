@@ -43,9 +43,6 @@ public class AvailableScheduleModuleServiceImpl implements IAvailableScheduleMod
     @Value("${practice.service.listening-url:http://repo-listening-practice/api/listening-practice}")
     private String listeningUrl;
 
-    @Value("${practice.service.ai-practice-url:http://repo-ai-practice}")
-    private String aiPracticeUrl;
-
     @Override
     public List<AvailableScheduleModuleResponse> getAllAvailableModules(String query) {
         log.info("[AvailableScheduleModule] Fetching all modules, query={}", query);
@@ -56,7 +53,6 @@ public class AvailableScheduleModuleServiceImpl implements IAvailableScheduleMod
         all.addAll(fetch(pronunciationUrl, ScheduleModuleType.PRONUNCIATION, "repo-pronunciation", query));
         all.addAll(fetch(quizUrl,          ScheduleModuleType.QUIZ,          "repo-quiz",          query));
         all.addAll(fetch(listeningUrl,     ScheduleModuleType.LISTENING,     "repo-listening-practice", query));
-        all.addAll(fetch(aiPracticeUrl,    ScheduleModuleType.AI_PRACTICE,   "repo-ai-practice", query));
         log.info("[AvailableScheduleModule] Total {} modules found", all.size());
         return all;
     }
@@ -70,11 +66,6 @@ public class AvailableScheduleModuleServiceImpl implements IAvailableScheduleMod
             case PRONUNCIATION -> fetch(pronunciationUrl, type, "repo-pronunciation", query);
             case QUIZ          -> fetch(quizUrl,          type, "repo-quiz",          query);
             case LISTENING     -> fetch(listeningUrl,     type, "repo-listening-practice", query);
-            case AI_PRACTICE,
-                 AI_WRITING,
-                 AI_SPEAKING,
-                 AI_LISTENING,
-                  AI_READING   -> fetch(aiPracticeUrl,     ScheduleModuleType.AI_PRACTICE, "repo-ai-practice", query);
         };
     }
 

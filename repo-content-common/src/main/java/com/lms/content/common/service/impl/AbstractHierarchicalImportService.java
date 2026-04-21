@@ -112,7 +112,13 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
                 // Empty row marks end of current study set
                 if (currentStudySet != null) {
                     List<T> itemsToSave = currentContentItems != null ? currentContentItems : Collections.emptyList();
-                    saveStudySetWithItems(currentStudySet, itemsToSave);
+                    StudySet savedSet = saveStudySetWithItems(currentStudySet, itemsToSave);
+                    
+                    if (currentFolder != null) {
+                        currentFolder.addStudySet(savedSet);
+                        result.getStudySetIds().add(savedSet.getId());
+                    }
+
                     result.setTotalStudySets(result.getTotalStudySets() + 1);
                     result.setTotalContentItems(result.getTotalContentItems() + itemsToSave.size());
                     currentStudySet = null;
@@ -177,7 +183,13 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
             if (row.hasStudySetData()) {
                 if (currentStudySet != null) {
                     List<T> itemsToSave = currentContentItems != null ? currentContentItems : Collections.emptyList();
-                    saveStudySetWithItems(currentStudySet, itemsToSave);
+                    StudySet savedSet = saveStudySetWithItems(currentStudySet, itemsToSave);
+                    
+                    if (currentFolder != null) {
+                        currentFolder.addStudySet(savedSet);
+                        result.getStudySetIds().add(savedSet.getId());
+                    }
+
                     result.setTotalStudySets(result.getTotalStudySets() + 1);
                     result.setTotalContentItems(result.getTotalContentItems() + itemsToSave.size());
                 }
@@ -221,7 +233,8 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
             saveFolderHierarchy(currentFolder, currentStudySet, currentContentItems, result);
         } else if (currentStudySet != null) {
             List<T> itemsToSave = currentContentItems != null ? currentContentItems : Collections.emptyList();
-            saveStudySetWithItems(currentStudySet, itemsToSave);
+            StudySet savedSet = saveStudySetWithItems(currentStudySet, itemsToSave);
+            result.getStudySetIds().add(savedSet.getId());
             result.setTotalStudySets(result.getTotalStudySets() + 1);
             result.setTotalContentItems(result.getTotalContentItems() + itemsToSave.size());
         }
@@ -229,7 +242,7 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
         return result;
     }
 
-    private void saveStudySetWithItems(StudySet studySet, List<T> contentItems) {
+    private StudySet saveStudySetWithItems(StudySet studySet, List<T> contentItems) {
         StudySet savedStudySet = studySetRepository.save(studySet);
         for (T item : contentItems) {
             item.setStudySet(savedStudySet);
@@ -237,6 +250,7 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
         }
         log.debug("Saved study set: {} with {} {}(s)",
                 savedStudySet.getTitle(), contentItems.size(), getContentItemTypeName().toLowerCase());
+        return savedStudySet;
     }
 
     private void saveFolderHierarchy(Folder folder, StudySet studySet,
@@ -247,9 +261,9 @@ public abstract class AbstractHierarchicalImportService<T extends ImportableCont
 
         if (studySet != null) {
             List<T> itemsToSave = contentItems != null ? contentItems : Collections.emptyList();
-            saveStudySetWithItems(studySet, itemsToSave);
-            savedFolder.addStudySet(studySet);
-            result.getStudySetIds().add(studySet.getId());
+            StudySet savedSet = saveStudySetWithItems(studySet, itemsToSave);
+            savedFolder.addStudySet(savedSet);
+            result.getStudySetIds().add(savedSet.getId());
             result.setTotalStudySets(result.getTotalStudySets() + 1);
             result.setTotalContentItems(result.getTotalContentItems() + itemsToSave.size());
         }

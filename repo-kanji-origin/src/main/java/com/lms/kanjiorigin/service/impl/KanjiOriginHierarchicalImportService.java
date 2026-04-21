@@ -8,6 +8,7 @@ import com.lms.content.common.repository.PackageRepository;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.content.common.repository.TypeRepository;
 import com.lms.content.common.service.impl.AbstractHierarchicalImportService;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.kanjiorigin.dto.excel.KanjiExtraRowData;
 import com.lms.kanjiorigin.entity.KanjiOrigin;
 import com.lms.kanjiorigin.repository.KanjiOriginRepository;
@@ -24,10 +25,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
@@ -59,16 +62,20 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
                     List.of("examplemeaningen", "example_meaning_en", "exampleenmeaning")));
 
     private final KanjiOriginRepository kanjiOriginRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ThreadLocal<Map<Integer, KanjiExtraRowData>> extrasContext = new ThreadLocal<>();
+    private final ThreadLocal<Set<String>> studySetTracker = new ThreadLocal<>();
 
     public KanjiOriginHierarchicalImportService(
             PackageRepository packageRepository,
             FolderRepository folderRepository,
             StudySetRepository studySetRepository,
             TypeRepository typeRepository,
-            KanjiOriginRepository kanjiOriginRepository) {
+            KanjiOriginRepository kanjiOriginRepository,
+            StudySetApiDelegate studySetApiDelegate) {
         super(packageRepository, folderRepository, studySetRepository, typeRepository);
         this.kanjiOriginRepository = kanjiOriginRepository;
+        this.studySetApiDelegate = studySetApiDelegate;
     }
 
     @Override
@@ -77,9 +84,19 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
             MultipartFile file, TypeName typeName, String userId, boolean isPrivate) {
         try {
             extrasContext.set(preParseExtraColumns(file));
-            return super.importFromPackageExcel(file, typeName, userId, isPrivate);
+            studySetTracker.set(new HashSet<>());
+            HierarchicalImportResult result = super.importFromPackageExcel(file, typeName, userId, isPrivate);
+            
+            // Revert all affected study sets to draft status
+            Set<String> affectedStudySets = studySetTracker.get();
+            if (affectedStudySets != null) {
+                affectedStudySets.forEach(id -> studySetApiDelegate.revertParentPackagesToDraft(id, "system-import"));
+            }
+            
+            return result;
         } finally {
             extrasContext.remove();
+            studySetTracker.remove();
         }
     }
 
@@ -122,7 +139,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
 
         String studySetId = item.getStudySet().getId();
         Optional<KanjiOrigin> existingOpt = kanjiOriginRepository
-                .findByStudySetIdAndTermAndDeletedFalse(studySetId, item.getTerm());
+                .findByStudySetIdAndTerm(studySetId, item.getTerm());
 
         if (existingOpt.isPresent()) {
             KanjiOrigin existing = existingOpt.get();
@@ -141,18 +158,27 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
             existing.setExampleMeaningEn(item.getExampleMeaningEn());
             existing.setExamplePinyin(item.getExamplePinyin());
             kanjiOriginRepository.save(existing);
+            trackStudySet(studySetId);
             return;
         }
 
         Integer contentIndex = item.getContentIndex();
         if (contentIndex == null
-                || kanjiOriginRepository.existsByStudySetIdAndContentIndexAndDeletedFalse(studySetId, contentIndex)) {
+                || kanjiOriginRepository.existsByStudySetIdAndContentIndex(studySetId, contentIndex)) {
             Integer maxIndex = kanjiOriginRepository.findMaxContentIndexByStudySetId(studySetId);
             contentIndex = maxIndex == null ? 0 : maxIndex + 1;
             item.setContentIndex(contentIndex);
         }
 
         kanjiOriginRepository.save(item);
+        trackStudySet(studySetId);
+    }
+
+    private void trackStudySet(String studySetId) {
+        Set<String> set = studySetTracker.get();
+        if (set != null) {
+            set.add(studySetId);
+        }
     }
 
     @Override

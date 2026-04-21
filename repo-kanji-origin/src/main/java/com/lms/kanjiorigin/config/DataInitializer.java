@@ -16,10 +16,27 @@ import java.util.Arrays;
 public class DataInitializer implements CommandLineRunner {
 
     private final TypeRepository typeRepository;
+    private final com.lms.kanjiorigin.repository.KanjiOriginRepository kanjiOriginRepository;
+    private final com.lms.kanjiorigin.repository.UserKanjiProgressRepository userKanjiProgressRepository;
+    private final com.lms.kanjiorigin.repository.KanjiStudySetProgressRepository kanjiStudySetProgressRepository;
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void run(String... args) {
+        purgeLegacyData();
         initializeTypes();
+    }
+
+    private void purgeLegacyData() {
+        log.info("Purging legacy soft-deleted data for Kanji Origin module...");
+        try {
+            userKanjiProgressRepository.purgeSoftDeleted();
+            kanjiStudySetProgressRepository.purgeSoftDeleted();
+            kanjiOriginRepository.purgeSoftDeleted();
+            log.info("Legacy data purge completed successfully.");
+        } catch (Exception e) {
+            log.warn("Failed to purge legacy data: {}", e.getMessage());
+        }
     }
 
     private void initializeTypes() {

@@ -124,7 +124,7 @@ public class PackageController {
             Authentication authentication) {
         String userId = extractUserId(authentication);
         if (userId == null) {
-            userId = "test-user-id";
+            throw new com.lms.common.exception.ApiException(com.lms.common.exception.ErrorCode.UNAUTHORIZED, "Unauthorized");
         }
         HierarchicalImportResult response = excelImportService.importFromPackageExcel(file, typeName,
                 userId, false);

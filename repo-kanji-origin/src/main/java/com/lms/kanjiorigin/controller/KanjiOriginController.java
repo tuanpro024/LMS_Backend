@@ -32,22 +32,30 @@ public class KanjiOriginController {
 
     @PostMapping
     @RequiresTicket(module = TicketModuleEnum.KANJI_ORIGIN)
-    public ApiResponse<KanjiOriginResponse> createOrigin(@Valid @RequestBody CreateKanjiOriginRequest request) {
-        return ApiResponse.ok(kanjiOriginService.createOrigin(request));
+    public ApiResponse<KanjiOriginResponse> createOrigin(
+            @Valid @RequestBody CreateKanjiOriginRequest request,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ApiResponse.ok(kanjiOriginService.createOrigin(request, principal.userId()));
     }
 
     @PutMapping("/{id}")
     @RequiresTicket(module = TicketModuleEnum.KANJI_ORIGIN)
     public ApiResponse<KanjiOriginResponse> updateOrigin(
             @PathVariable String id,
-            @Valid @RequestBody UpdateKanjiOriginRequest request) {
-        return ApiResponse.ok(kanjiOriginService.updateOrigin(id, request));
+            @Valid @RequestBody UpdateKanjiOriginRequest request,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ApiResponse.ok(kanjiOriginService.updateOrigin(id, request, principal.userId()));
     }
 
     @DeleteMapping("/{id}")
     @RequiresTicket(module = TicketModuleEnum.KANJI_ORIGIN)
-    public ApiResponse<Void> deleteOrigin(@PathVariable String id) {
-        kanjiOriginService.deleteOrigin(id);
+    public ApiResponse<Void> deleteOrigin(
+            @PathVariable String id,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        kanjiOriginService.deleteOrigin(id, principal.userId());
         return ApiResponse.ok(null);
     }
 
@@ -57,13 +65,26 @@ public class KanjiOriginController {
     }
 
     @GetMapping
-    public ApiResponse<List<KanjiOriginResponse>> search(KanjiOriginSearchRequest request) {
-        return ApiResponse.ok(kanjiOriginService.search(request));
+    public ApiResponse<List<KanjiOriginResponse>> search(
+            @Valid KanjiOriginSearchRequest request,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        return ApiResponse.ok(kanjiOriginService.search(request, userId));
     }
 
     @GetMapping("/paged")
-    public ApiResponse<PageResponse<KanjiOriginResponse>> searchPaged(KanjiOriginSearchRequest request) {
-        return ApiResponse.ok(kanjiOriginService.searchPaged(request));
+    public ApiResponse<PageResponse<KanjiOriginResponse>> searchPaged(
+            @Valid KanjiOriginSearchRequest request,
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        return ApiResponse.ok(kanjiOriginService.searchPaged(request, userId));
+    }
+
+    private String extractUserId(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthPrincipal principal)) {
+            return null;
+        }
+        return principal.userId();
     }
 
     @PatchMapping("/{id}/status")

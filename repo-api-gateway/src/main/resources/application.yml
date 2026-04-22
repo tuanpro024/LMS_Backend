@@ -28,6 +28,7 @@ spring:
               - "http://127.0.0.1:*"
               - "http://lms.dangch.tech"
               - "https://lms.dangch.tech"
+              - "https://hocba-2026.web.app"
             allowedMethods:
               - GET
               - POST

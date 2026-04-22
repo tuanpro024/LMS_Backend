@@ -117,6 +117,43 @@ public class HskApiClient {
     }
 
     /**
+     * Submit audio-compare via multipart upload and wait for the full result (sync mode).
+     * The HSK_API /api/v2/audio/compare/upload endpoint returns the grading result directly
+     * when it finishes — no job polling needed.
+     *
+     * @param parts MultiValueMap containing reference_text and student_audio file
+     * @return raw JSON string of the full grading result
+     */
+    public String submitAudioCompareSyncUpload(MultiValueMap<String, Object> parts) {
+        log.debug("Submitting audio compare (sync-upload) to HSK_API");
+        return webClient.post()
+                .uri("/api/v2/audio/compare/upload")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(parts))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, clientResponse -> clientResponse
+                        .bodyToMono(String.class)
+                        .defaultIfEmpty("")
+                        .map(body -> new RuntimeException(
+                                "HSK_API call failed (" + clientResponse.statusCode().value() + ") "
+                                        + "/api/v2/audio/compare/upload -> " + body)))
+                .bodyToMono(String.class)
+                .timeout(Duration.ofMillis(timeoutMs))
+                .block();
+    }
+
+    /**
+     * Submit audio-compare via JSON/base64 and wait for the full result (sync mode).
+     *
+     * @param payload Map containing reference_text and student_audio_base64
+     * @return raw JSON string of the full grading result
+     */
+    public String submitAudioCompareSyncBase64(Map<String, Object> payload) {
+        log.debug("Submitting audio compare (sync-base64) to HSK_API");
+        return postRawJson("/api/v2/audio/compare", payload);
+    }
+
+    /**
      * Fallback for deployments where speaking async route is unavailable.
      * Returns full grading JSON (sync response, no job_id).
      */

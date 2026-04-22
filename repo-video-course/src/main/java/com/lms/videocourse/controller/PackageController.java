@@ -11,6 +11,9 @@ import com.lms.content.common.dto.response.PackageResponse;
 import com.lms.content.common.entity.TypeName;
 import com.lms.content.common.entity.CategoryType;
 import com.lms.videocourse.dto.response.SyllabusCategoryResponse;
+import com.lms.videocourse.dto.response.VideoCoursePackageResponse;
+import com.lms.videocourse.dto.response.VideoCourseReviewSummaryResponse;
+import com.lms.videocourse.service.IVideoCourseReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,6 +41,7 @@ public class PackageController {
     private static final String TICKET_MODULE = TicketModuleEnum.VIDEO_COURSE.name();
 
     private final PackageApiDelegate packageDelegate;
+    private final IVideoCourseReviewService reviewService;
 
     @PostMapping
     @RequiresTicket(module = TicketModuleEnum.VIDEO_COURSE)
@@ -49,35 +54,40 @@ public class PackageController {
     }
 
     @GetMapping("/latest")
-    public ResponseEntity<ApiResponse<List<PackageResponse>>> getLatestPackages(
+    public ResponseEntity<ApiResponse<List<VideoCoursePackageResponse>>> getLatestPackages(
             @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.getLatestPackages(TypeName.VIDEO_COURSE, limit)));
+        List<PackageResponse> packages = packageDelegate.getLatestPackages(TypeName.VIDEO_COURSE, limit);
+        return ResponseEntity.ok(ApiResponse.ok(enrichWithRatings(packages)));
     }
 
     @GetMapping("/most-enrolled")
-    public ResponseEntity<ApiResponse<List<PackageResponse>>> getMostEnrolledPackages(
+    public ResponseEntity<ApiResponse<List<VideoCoursePackageResponse>>> getMostEnrolledPackages(
             @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.getMostEnrolledPackages(TypeName.VIDEO_COURSE, limit)));
+        List<PackageResponse> packages = packageDelegate.getMostEnrolledPackages(TypeName.VIDEO_COURSE, limit);
+        return ResponseEntity.ok(ApiResponse.ok(enrichWithRatings(packages)));
     }
 
     @GetMapping("/free")
-    public ResponseEntity<ApiResponse<List<PackageResponse>>> getFreePackages(
+    public ResponseEntity<ApiResponse<List<VideoCoursePackageResponse>>> getFreePackages(
             @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(ApiResponse.ok(packageDelegate.getFreePackages(TypeName.VIDEO_COURSE, limit)));
+        List<PackageResponse> packages = packageDelegate.getFreePackages(TypeName.VIDEO_COURSE, limit);
+        return ResponseEntity.ok(ApiResponse.ok(enrichWithRatings(packages)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PackageResponse>> getPackage(
+    public ResponseEntity<ApiResponse<VideoCoursePackageResponse>> getPackage(
             @PathVariable String id,
             Authentication authentication) {
         String userId = extractUserId(authentication);
         Set<String> roles = extractRoles(authentication);
+        PackageResponse pkg = packageDelegate.getPackageById(id, userId, roles, TICKET_MODULE);
+        VideoCourseReviewSummaryResponse summary = reviewService.getReviewSummary(id);
         return ResponseEntity.ok(ApiResponse.ok(
-                packageDelegate.getPackageById(id, userId, roles, TICKET_MODULE)));
+                VideoCoursePackageResponse.from(pkg, summary.getAverageRating(), (int) summary.getReviewCount())));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<PackageResponse>>> getAllPackages(
+    public ResponseEntity<ApiResponse<List<VideoCoursePackageResponse>>> getAllPackages(
             @RequestParam(required = false) TypeName type,
             @RequestParam(required = false) com.lms.content.common.entity.CategoryType category,
             Authentication authentication) {
@@ -91,7 +101,7 @@ public class PackageController {
         } else {
             response = packageDelegate.getAllPackages(userId, roles, TICKET_MODULE);
         }
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        return ResponseEntity.ok(ApiResponse.ok(enrichWithRatings(response)));
     }
 
     @GetMapping("/categories")
@@ -177,5 +187,24 @@ public class PackageController {
         return authentication.getAuthorities().stream()
                 .map(a -> a.getAuthority())
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Enrich a list of PackageResponse with review rating summaries.
+     * Uses a single batch query (GROUP BY packageId) to avoid N+1.
+     */
+    private List<VideoCoursePackageResponse> enrichWithRatings(List<PackageResponse> packages) {
+        if (packages == null || packages.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> ids = packages.stream().map(PackageResponse::getId).collect(Collectors.toList());
+        Map<String, VideoCourseReviewSummaryResponse> summaries = reviewService.getReviewSummaries(ids);
+        return packages.stream().map(pkg -> {
+            VideoCourseReviewSummaryResponse summary = summaries.get(pkg.getId());
+            if (summary != null) {
+                return VideoCoursePackageResponse.from(pkg, summary.getAverageRating(), (int) summary.getReviewCount());
+            }
+            return VideoCoursePackageResponse.from(pkg, 0.0, 0);
+        }).collect(Collectors.toList());
     }
 }

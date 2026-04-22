@@ -76,8 +76,6 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
     private String quizUrl;
     @Value("${practice.service.listening-url:http://repo-listening-practice/api/listening-practice}")
     private String listeningUrl;
-    @Value("${practice.service.ai-practice-url:http://repo-ai-practice}")
-    private String aiPracticeUrl;
 
     // -----------------------------------------------------------------------
     // Add module (chọn study set có sẵn)
@@ -562,17 +560,7 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
     }
 
     private ScheduleModuleType normalizeModuleType(ScheduleModuleType type) {
-        if (type == null) {
-            return null;
-        }
-        return switch (type) {
-            case AI_WRITING,
-                    AI_SPEAKING,
-                    AI_LISTENING,
-                    AI_READING ->
-                ScheduleModuleType.AI_PRACTICE;
-            default -> type;
-        };
+        return type;
     }
 
     private String resolveServiceUrl(ScheduleModuleType type) {
@@ -583,12 +571,6 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
             case PRONUNCIATION -> pronunciationUrl;
             case QUIZ -> quizUrl;
             case LISTENING -> listeningUrl;
-            case AI_PRACTICE,
-                    AI_WRITING,
-                    AI_SPEAKING,
-                    AI_LISTENING,
-                    AI_READING ->
-                aiPracticeUrl;
         };
     }
 
@@ -664,13 +646,6 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                     module.getContentSetId());
             case QUIZ -> practiceWebClient.getQuizStudySetProgressPercentage(quizUrl, module.getContentSetId());
             case LISTENING -> practiceWebClient.getListeningProgressPercentage(listeningUrl, module.getContentSetId());
-            case AI_PRACTICE,
-                    AI_WRITING,
-                    AI_SPEAKING,
-                    AI_LISTENING,
-                    AI_READING ->
-                practiceWebClient.getAiPracticeProgressPercentage(aiPracticeUrl,
-                        module.getContentSetId());
         };
 
         if (progress == null && localProgress == null) {

@@ -56,7 +56,6 @@ public class LearningPathImportTransactionalHelper {
      * @param contentRefMap Map of sheetName → ContentReference from Phase 1
      * @param packageType   Package type entity
      * @param userId        User ID
-     * @param isPrivate     Privacy flag
      * @param result        Result object to populate
      */
     @Transactional
@@ -65,7 +64,6 @@ public class LearningPathImportTransactionalHelper {
             Map<String, ContentReference> contentRefMap,
             Type packageType,
             String userId,
-            boolean isPrivate,
             LearningPathImportResult result) {
 
         log.info("Building learning path hierarchy (TRANSACTIONAL Phase 2)");
@@ -117,7 +115,7 @@ public class LearningPathImportTransactionalHelper {
                         .description(row.getFolderDescription() != null ? row.getFolderDescription().trim() : null)
                         .packageEntity(currentPackage)
                         .userId(userId)
-                        .isPrivate(isPrivate)
+                        .isPrivate(false)
                         .studySets(new ArrayList<>())
                         .build();
                 currentFolder = folderRepository.save(currentFolder);
@@ -143,7 +141,7 @@ public class LearningPathImportTransactionalHelper {
                         .title(row.getStudySetName().trim())
                         .description(row.getStudySetDescription() != null ? row.getStudySetDescription().trim() : null)
                         .userId(userId)
-                        .isPrivate(isPrivate)
+                        .isPrivate(false)
                         .build();
                 currentStudySet = studySetRepository.save(currentStudySet);
                 currentFolder.addStudySet(currentStudySet);

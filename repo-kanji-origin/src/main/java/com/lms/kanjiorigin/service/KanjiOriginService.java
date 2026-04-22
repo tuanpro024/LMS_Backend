@@ -9,17 +9,17 @@ import com.lms.kanjiorigin.dto.response.KanjiOriginResponse;
 import java.util.List;
 
 public interface KanjiOriginService {
-    KanjiOriginResponse createOrigin(CreateKanjiOriginRequest request);
+    KanjiOriginResponse createOrigin(CreateKanjiOriginRequest request, String userId);
 
-    KanjiOriginResponse updateOrigin(String id, UpdateKanjiOriginRequest request);
+    KanjiOriginResponse updateOrigin(String id, UpdateKanjiOriginRequest request, String userId);
 
-    void deleteOrigin(String id);
+    void deleteOrigin(String id, String userId);
 
     KanjiOriginResponse getOrigin(String id);
 
     List<KanjiOriginResponse> getOriginsByStudySet(String studySetId);
 
-    List<KanjiOriginResponse> search(KanjiOriginSearchRequest request);
+    List<KanjiOriginResponse> search(KanjiOriginSearchRequest request, String userId);
 
-    PageResponse<KanjiOriginResponse> searchPaged(KanjiOriginSearchRequest request);
+    PageResponse<KanjiOriginResponse> searchPaged(KanjiOriginSearchRequest request, String userId);
 }

@@ -39,9 +39,10 @@ public class WritingRequestMapper {
         Map<String, Object> payload = new HashMap<>();
         String userInput = answer.getAnswerText() != null ? answer.getAnswerText() : "";
         String questionType = resolveQuestionType(item.getQuestionSubtype());
+        Integer alignedHskLevel = alignHskLevelWithSubtype(item.getQuestionSubtype(), item.getHskLevel());
 
         payload.put("question_type", questionType);
-        payload.put("hsk_level", item.getHskLevel());
+        payload.put("hsk_level", alignedHskLevel);
         payload.put("prompt", item.getPromptText());
         payload.put("question", item.getPromptText());
         payload.put("user_input", userInput);
@@ -64,10 +65,10 @@ public class WritingRequestMapper {
                 payload.put("required_words", words);
             } catch (Exception e) {
                 log.warn("Failed to parse requiredWordsJson for item {}: {}", item.getId(), e.getMessage());
-                payload.put("required_words", null);
+                payload.put("required_words", List.of());
             }
         } else {
-            payload.put("required_words", null);
+            payload.put("required_words", List.of());
         }
 
         return payload;
@@ -79,12 +80,34 @@ public class WritingRequestMapper {
         }
 
         return switch (subtype) {
-            // Aligned with BE_LMS/AI_JSON writing_*_input.json samples.
+            // All 6 writing types — must match HSK_API QuestionType enum values exactly.
             case SENTENCE_ARRANGEMENT -> "sentence_arrangement";
-            case SHORT_PARAGRAPH -> "short_paragraph";
-            case SUMMARY_WRITING -> "summary_writing";
-            // Keep legacy/extended subtypes backward compatible.
+            case HANZI_WRITING        -> "hanzi_writing";
+            case PICTURE_SENTENCE     -> "picture_sentence";
+            case SHORT_PARAGRAPH      -> "short_paragraph";
+            case PICTURE_PARAGRAPH    -> "picture_paragraph";
+            case SUMMARY_WRITING      -> "summary_writing";
+            // Keep non-writing subtypes backward compatible.
             default -> subtype.name().toLowerCase();
+        };
+    }
+
+    private Integer alignHskLevelWithSubtype(AiItemSubtype subtype, Integer inputLevel) {
+        if (subtype == null) return inputLevel;
+
+        return switch (subtype) {
+            case SHORT_PARAGRAPH -> 5;
+            case PICTURE_SENTENCE -> 4;
+            case PICTURE_PARAGRAPH -> 5;
+            case SUMMARY_WRITING -> 6;
+            case HANZI_WRITING -> 3;
+            case SENTENCE_ARRANGEMENT -> {
+                if (inputLevel != null && (inputLevel == 3 || inputLevel == 4 || inputLevel == 5)) {
+                    yield inputLevel;
+                }
+                yield 3; // Default for sentence arrangement
+            }
+            default -> inputLevel != null ? inputLevel : 4; // Default generic fallback
         };
     }
 }

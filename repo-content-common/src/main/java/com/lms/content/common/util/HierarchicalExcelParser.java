@@ -51,6 +51,14 @@ public class HierarchicalExcelParser {
     private static final String H_EXAMPLE_MEANING = "examplemeaning";
     private static final String H_CHARACTERS_JSON = "charactersjson";
 
+    // Legacy header aliases from older import templates.
+    private static final Map<String, String> HEADER_ALIASES = Map.of(
+            "studetsetdescription", H_STUDY_SET_DESC,
+            "meaning", H_DEFINITION,
+            "origintextvi", H_SINO_ORIGIN,
+            "originimage", H_IMAGE_ORIGIN,
+            "audiourl", H_AUDIO);
+
     private static final List<String> REQUIRED_HEADERS = Arrays.asList(
             H_PACKAGE_NAME, H_PACKAGE_DESCRIPTION,
             H_FOLDER_NAME, H_FOLDER_DESCRIPTION,
@@ -158,8 +166,9 @@ public class HierarchicalExcelParser {
                 String normalized = normalizeHeader(value);
                 if (!normalized.isEmpty()) {
                     map.putIfAbsent(normalized, i);
-                    if ("studetsetdescription".equals(normalized)) {
-                        map.putIfAbsent(H_STUDY_SET_DESC, i);
+                    String canonical = HEADER_ALIASES.get(normalized);
+                    if (canonical != null) {
+                        map.putIfAbsent(canonical, i);
                     }
                 }
             }

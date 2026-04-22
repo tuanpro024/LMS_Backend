@@ -16,7 +16,6 @@ public interface UserKanjiProgressRepository extends JpaRepository<UserKanjiProg
     @Query("SELECT COUNT(ukp) FROM UserKanjiProgress ukp " +
             "WHERE ukp.userId = :userId " +
             "AND ukp.kanjiOrigin.studySet.id = :studySetId " +
-            "AND ukp.kanjiOrigin.deleted = false " +
             "AND ukp.status = :status")
     long countByUserIdAndStudySetIdAndStatus(
             @Param("userId") String userId,
@@ -25,9 +24,18 @@ public interface UserKanjiProgressRepository extends JpaRepository<UserKanjiProg
 
     @Query("SELECT ukp FROM UserKanjiProgress ukp " +
             "WHERE ukp.userId = :userId " +
-            "AND ukp.kanjiOrigin.studySet.id = :studySetId " +
-            "AND ukp.kanjiOrigin.deleted = false")
+            "AND ukp.kanjiOrigin.studySet.id = :studySetId")
     List<UserKanjiProgress> findByUserIdAndStudySetId(
             @Param("userId") String userId,
             @Param("studySetId") String studySetId);
+
+    void deleteByKanjiOriginId(String kanjiOriginId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM UserKanjiProgress ukp WHERE ukp.kanjiOrigin.id IN (SELECT k.id FROM KanjiOrigin k WHERE k.studySet.id = :studySetId)")
+    void deleteByStudySetId(@Param("studySetId") String studySetId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM UserKanjiProgress p WHERE p.deleted = true")
+    void purgeSoftDeleted();
 }

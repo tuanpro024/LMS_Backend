@@ -19,6 +19,8 @@ public interface AiPracticeAttemptService {
 
     List<AttemptResponse> getLatestAttemptsByStudySetIds(List<String> studySetIds, String userId);
 
+    List<AttemptResponse> getAttemptHistory(String studySetId, String userId);
+
     List<GradingResultResponse> getResults(String attemptId, String userId);
 
     GradingJobResponse getJob(String jobId);

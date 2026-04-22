@@ -35,8 +35,7 @@ public class SecurityConfig {
     public BaseJwtFilter jwtFilter(RSAPublicKey publicKey) {
         List<String> skipPatterns = List.of(
                 "/health",
-                "/actuator/**",
-                "/packages/import-excel");
+                "/actuator/**");
 
         // All endpoints are expected to be accessed by authenticated users via API
         // Gateway.
@@ -52,7 +51,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/health", "/actuator/**", "/packages/import-excel").permitAll()
+                        .requestMatchers("/health", "/actuator/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

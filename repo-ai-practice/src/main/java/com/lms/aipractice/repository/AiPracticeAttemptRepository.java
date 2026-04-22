@@ -15,6 +15,8 @@ public interface AiPracticeAttemptRepository extends JpaRepository<AiPracticeAtt
 
     List<AiPracticeAttempt> findByStudySetIdAndDeletedFalse(String studySetId);
 
+    List<AiPracticeAttempt> findByUserIdAndStudySetIdAndDeletedFalseOrderByCreatedAtDesc(String userId, String studySetId);
+
     Optional<AiPracticeAttempt> findByIdAndDeletedFalse(String id);
 
     Optional<AiPracticeAttempt> findByUserIdAndStudySetIdAndStatusAndDeletedFalse(

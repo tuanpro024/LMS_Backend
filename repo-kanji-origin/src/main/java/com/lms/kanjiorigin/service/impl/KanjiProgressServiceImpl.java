@@ -46,7 +46,6 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
     @Override
     public KanjiStatusResponse updateKanjiStatus(String userId, String kanjiId, UpdateKanjiStatusRequest request) {
         KanjiOrigin origin = kanjiOriginRepository.findById(kanjiId)
-                .filter(o -> !o.isDeleted())
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "KanjiOrigin not found with id: " + kanjiId));
 
         String studySetId = extractStudySetId(origin);
@@ -93,7 +92,7 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
         validateStudySetExists(studySetId);
 
         List<KanjiOrigin> origins = kanjiOriginRepository
-                .findByStudySetIdAndDeletedFalseOrderByContentIndexAsc(studySetId);
+                .findByStudySetIdOrderByContentIndexAsc(studySetId);
         Map<String, UserKanjiProgress> progressByKanjiId = userKanjiProgressRepository
                 .findByUserIdAndStudySetId(userId, studySetId)
                 .stream()
@@ -119,7 +118,7 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
     }
 
     private KanjiStudySetProgress buildReadOnlyProgressSnapshot(String userId, String studySetId) {
-        long totalKanjis = kanjiOriginRepository.countByStudySetIdAndDeletedFalse(studySetId);
+        long totalKanjis = kanjiOriginRepository.countByStudySetId(studySetId);
         long learnedKanjis = userKanjiProgressRepository.countByUserIdAndStudySetIdAndStatus(
                 userId,
                 studySetId,
@@ -147,7 +146,7 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
     }
 
     private KanjiStudySetProgress recalculateStudySetProgress(String userId, String studySetId, boolean publishEvent) {
-        long totalKanjis = kanjiOriginRepository.countByStudySetIdAndDeletedFalse(studySetId);
+        long totalKanjis = kanjiOriginRepository.countByStudySetId(studySetId);
         long learnedKanjis = userKanjiProgressRepository.countByUserIdAndStudySetIdAndStatus(
                 userId,
                 studySetId,

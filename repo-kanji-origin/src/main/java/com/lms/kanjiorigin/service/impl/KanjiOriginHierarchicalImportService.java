@@ -8,6 +8,7 @@ import com.lms.content.common.repository.PackageRepository;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.content.common.repository.TypeRepository;
 import com.lms.content.common.service.impl.AbstractHierarchicalImportService;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.kanjiorigin.dto.excel.KanjiExtraRowData;
 import com.lms.kanjiorigin.entity.KanjiOrigin;
 import com.lms.kanjiorigin.repository.KanjiOriginRepository;
@@ -24,20 +25,22 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
 public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalImportService<KanjiOrigin> {
 
-    private static final int COL_ORIGIN_TEXT_CN = 28;
-    private static final int COL_ORIGIN_TEXT_EN = 29;
-    private static final int COL_STROKE_ANIMATION_URL = 30;
-    private static final int COL_EXAMPLE_MEANING_VI = 31;
-    private static final int COL_EXAMPLE_MEANING_EN = 32;
+    private static final int[] COL_ORIGIN_TEXT_CN = { 22, 28 };
+    private static final int[] COL_ORIGIN_TEXT_EN = { 23, 29 };
+    private static final int[] COL_STROKE_ANIMATION_URL = { 24, 30 };
+    private static final int[] COL_EXAMPLE_MEANING_VI = { 25, 31 };
+    private static final int[] COL_EXAMPLE_MEANING_EN = { 26, 32 };
 
     private static final String H_ORIGIN_TEXT_CN = "origintextcn";
     private static final String H_ORIGIN_TEXT_EN = "origintexten";
@@ -46,26 +49,33 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
     private static final String H_EXAMPLE_MEANING_EN = "examplemeaningen";
 
     private static final Map<String, List<String>> EXTRA_HEADER_ALIASES = Map.ofEntries(
-            Map.entry(H_ORIGIN_TEXT_CN, List.of("origintextcn", "origin_text_cn", "origin cn")),
-            Map.entry(H_ORIGIN_TEXT_EN, List.of("origintexten", "origin_text_en", "origin en")),
+            Map.entry(H_ORIGIN_TEXT_CN,
+                    List.of("origintextcn", "origin_text_cn", "origin cn", "origincntext", "origintextzh")),
+            Map.entry(H_ORIGIN_TEXT_EN,
+                    List.of("origintexten", "origin_text_en", "origin en", "originentext")),
             Map.entry(H_STROKE_ANIMATION_URL,
-                    List.of("strokeanimationurl", "stroke_animation_url", "strokeurl", "animationurl")),
+                    List.of("strokeanimationurl", "stroke_animation_url", "strokeurl", "animationurl",
+                            "strokegifurl")),
             Map.entry(H_EXAMPLE_MEANING_VI,
-                    List.of("examplemeaningvi", "example_meaning_vi", "examplevimeaning")),
+                    List.of("examplemeaningvi", "example_meaning_vi", "examplevimeaning", "examplemeaningvn")),
             Map.entry(H_EXAMPLE_MEANING_EN,
                     List.of("examplemeaningen", "example_meaning_en", "exampleenmeaning")));
 
     private final KanjiOriginRepository kanjiOriginRepository;
+    private final StudySetApiDelegate studySetApiDelegate;
     private final ThreadLocal<Map<Integer, KanjiExtraRowData>> extrasContext = new ThreadLocal<>();
+    private final ThreadLocal<Set<String>> studySetTracker = new ThreadLocal<>();
 
     public KanjiOriginHierarchicalImportService(
             PackageRepository packageRepository,
             FolderRepository folderRepository,
             StudySetRepository studySetRepository,
             TypeRepository typeRepository,
-            KanjiOriginRepository kanjiOriginRepository) {
+            KanjiOriginRepository kanjiOriginRepository,
+            StudySetApiDelegate studySetApiDelegate) {
         super(packageRepository, folderRepository, studySetRepository, typeRepository);
         this.kanjiOriginRepository = kanjiOriginRepository;
+        this.studySetApiDelegate = studySetApiDelegate;
     }
 
     @Override
@@ -74,9 +84,19 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
             MultipartFile file, TypeName typeName, String userId, boolean isPrivate) {
         try {
             extrasContext.set(preParseExtraColumns(file));
-            return super.importFromPackageExcel(file, typeName, userId, isPrivate);
+            studySetTracker.set(new HashSet<>());
+            HierarchicalImportResult result = super.importFromPackageExcel(file, typeName, userId, isPrivate);
+            
+            // Revert all affected study sets to draft status
+            Set<String> affectedStudySets = studySetTracker.get();
+            if (affectedStudySets != null) {
+                affectedStudySets.forEach(id -> studySetApiDelegate.revertParentPackagesToDraft(id, "system-import"));
+            }
+            
+            return result;
         } finally {
             extrasContext.remove();
+            studySetTracker.remove();
         }
     }
 
@@ -119,7 +139,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
 
         String studySetId = item.getStudySet().getId();
         Optional<KanjiOrigin> existingOpt = kanjiOriginRepository
-                .findByStudySetIdAndTermAndDeletedFalse(studySetId, item.getTerm());
+                .findByStudySetIdAndTerm(studySetId, item.getTerm());
 
         if (existingOpt.isPresent()) {
             KanjiOrigin existing = existingOpt.get();
@@ -138,18 +158,27 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
             existing.setExampleMeaningEn(item.getExampleMeaningEn());
             existing.setExamplePinyin(item.getExamplePinyin());
             kanjiOriginRepository.save(existing);
+            trackStudySet(studySetId);
             return;
         }
 
         Integer contentIndex = item.getContentIndex();
         if (contentIndex == null
-                || kanjiOriginRepository.existsByStudySetIdAndContentIndexAndDeletedFalse(studySetId, contentIndex)) {
+                || kanjiOriginRepository.existsByStudySetIdAndContentIndex(studySetId, contentIndex)) {
             Integer maxIndex = kanjiOriginRepository.findMaxContentIndexByStudySetId(studySetId);
             contentIndex = maxIndex == null ? 0 : maxIndex + 1;
             item.setContentIndex(contentIndex);
         }
 
         kanjiOriginRepository.save(item);
+        trackStudySet(studySetId);
+    }
+
+    private void trackStudySet(String studySetId) {
+        Set<String> set = studySetTracker.get();
+        if (set != null) {
+            set.add(studySetId);
+        }
     }
 
     @Override
@@ -170,11 +199,17 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
 
             int originTextCnIdx = resolveColumnIndex(headerIndexMap, H_ORIGIN_TEXT_CN, COL_ORIGIN_TEXT_CN);
             int originTextEnIdx = resolveColumnIndex(headerIndexMap, H_ORIGIN_TEXT_EN, COL_ORIGIN_TEXT_EN);
-            int strokeAnimationUrlIdx = resolveColumnIndex(headerIndexMap, H_STROKE_ANIMATION_URL,
+            int strokeAnimationUrlIdx = resolveColumnIndex(
+                    headerIndexMap,
+                    H_STROKE_ANIMATION_URL,
                     COL_STROKE_ANIMATION_URL);
-            int exampleMeaningViIdx = resolveColumnIndex(headerIndexMap, H_EXAMPLE_MEANING_VI,
+            int exampleMeaningViIdx = resolveColumnIndex(
+                    headerIndexMap,
+                    H_EXAMPLE_MEANING_VI,
                     COL_EXAMPLE_MEANING_VI);
-            int exampleMeaningEnIdx = resolveColumnIndex(headerIndexMap, H_EXAMPLE_MEANING_EN,
+            int exampleMeaningEnIdx = resolveColumnIndex(
+                    headerIndexMap,
+                    H_EXAMPLE_MEANING_EN,
                     COL_EXAMPLE_MEANING_EN);
 
             for (int i = firstRowNum + 1; i <= lastRowNum; i++) {
@@ -234,7 +269,7 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
         return headerIndexMap;
     }
 
-    private static int resolveColumnIndex(Map<String, Integer> headerIndexMap, String key, int fallback) {
+    private static int resolveColumnIndex(Map<String, Integer> headerIndexMap, String key, int... fallbacks) {
         List<String> aliases = EXTRA_HEADER_ALIASES.getOrDefault(key, List.of(key));
         for (String alias : aliases) {
             Integer index = headerIndexMap.get(normalizeHeader(alias));
@@ -242,7 +277,10 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
                 return index;
             }
         }
-        return fallback;
+        if (fallbacks != null && fallbacks.length > 0) {
+            return fallbacks[0];
+        }
+        return -1;
     }
 
     private static String normalizeHeader(String value) {
@@ -250,7 +288,11 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
     }
 
     private static String getCellStr(Row row, int colIndex) {
-        Cell cell = row.getCell(colIndex);
+        if (colIndex < 0) {
+            return null;
+        }
+
+        Cell cell = row.getCell(colIndex, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
         if (cell == null) {
             return null;
         }
@@ -265,6 +307,19 @@ public class KanjiOriginHierarchicalImportService extends AbstractHierarchicalIm
                 yield v == Math.floor(v) ? String.valueOf((long) v) : String.valueOf(v);
             }
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
+            case FORMULA -> {
+                try {
+                    String text = cell.getStringCellValue();
+                    yield trimToNull(text);
+                } catch (Exception ignored) {
+                    try {
+                        double v = cell.getNumericCellValue();
+                        yield v == Math.floor(v) ? String.valueOf((long) v) : String.valueOf(v);
+                    } catch (Exception ignoredAgain) {
+                        yield null;
+                    }
+                }
+            }
             default -> null;
         };
     }

@@ -1,6 +1,6 @@
 package com.lms.writing.service.impl;
 
-import com.lms.common.event.PackageStatusPublisher;
+
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.mapper.StudySetMapper;
 import com.lms.content.common.repository.FolderRepository;
@@ -34,9 +34,8 @@ public class WritingStudySetServiceImpl extends StudySetServiceImpl {
             PackageRepository packageRepository,
             StudySetMapper studySetMapper,
             ApplicationEventPublisher eventPublisher,
-            PackageStatusPublisher packageStatusPublisher,
             WordRepository wordRepository) {
-        super(studySetRepository, folderRepository, packageRepository, studySetMapper, eventPublisher, packageStatusPublisher);
+        super(studySetRepository, folderRepository, packageRepository, studySetMapper, eventPublisher);
         this.wordRepository = wordRepository;
     }
 

@@ -20,6 +20,16 @@ public interface StudySetRepository extends JpaRepository<StudySet, String> {
        @Query("SELECT s FROM StudySet s WHERE (s.title LIKE CONCAT('%', :keyword, '%') OR s.description LIKE CONCAT('%', :keyword, '%')) AND s.deleted = false")
        List<StudySet> searchByKeyword(@Param("keyword") String keyword);
 
+       @Query("SELECT DISTINCT s FROM StudySet s " +
+                     "JOIN s.folders f " +
+                     "LEFT JOIN f.packageEntity p " +
+                     "WHERE p.type.name = :typeName " +
+                     "AND (s.title LIKE CONCAT('%', :keyword, '%') OR s.description LIKE CONCAT('%', :keyword, '%')) " +
+                     "AND s.deleted = false")
+       List<StudySet> searchByKeywordAndPackageType(
+                     @Param("keyword") String keyword,
+                     @Param("typeName") com.lms.content.common.entity.TypeName typeName);
+
        @Query("SELECT s FROM StudySet s WHERE LOWER(s.title) = LOWER(:title) AND s.userId = :userId AND s.deleted = false")
        List<StudySet> findByTitleAndUserIdIgnoreCase(@Param("title") String title, @Param("userId") String userId);
 

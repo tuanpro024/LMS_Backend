@@ -105,6 +105,20 @@ public class StudySetServiceImpl implements StudySetService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<StudySetResponse> searchStudySetsByPackageType(String keyword, String packageType) {
+        try {
+            com.lms.content.common.entity.TypeName typeName =
+                    com.lms.content.common.entity.TypeName.valueOf(packageType);
+            List<StudySet> studySets = studySetRepository.searchByKeywordAndPackageType(keyword, typeName);
+            return studySetMapper.toResponseList(studySets);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid packageType provided: {}", packageType);
+            return List.of();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<StudySetResponse> getAllStudySets() {
         List<StudySet> studySets = studySetRepository.findAll();
         return studySetMapper.toResponseList(studySets);

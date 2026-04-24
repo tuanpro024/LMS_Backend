@@ -160,16 +160,20 @@ public class PracticeModuleWebClient {
     }
 
     /**
-     * GET /study-sets?q= từ repo ngoài.
+     * GET /study-sets?packageType=LEARNING&q= từ repo ngoài.
+     * Luôn lọc packageType=LEARNING để chỉ trả về study set thuộc gói học chính thức.
      *
      * @param serviceBaseUrl URL base của service (e.g. "http://repo-flashcard")
      * @param query          Từ khoá tìm kiếm, null nếu lấy tất cả
      */
     public List<StudySetResponse> getStudySets(String serviceBaseUrl, String query) {
         try {
-            String uri = (query != null && !query.isBlank())
-                    ? serviceBaseUrl + "/study-sets?q=" + query
-                    : serviceBaseUrl + "/study-sets";
+            String uri;
+            if (query != null && !query.isBlank()) {
+                uri = serviceBaseUrl + "/study-sets?packageType=LEARNING&q=" + query;
+            } else {
+                uri = serviceBaseUrl + "/study-sets?packageType=LEARNING";
+            }
 
             String authHeader = getAuthHeader();
 

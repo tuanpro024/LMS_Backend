@@ -212,7 +212,9 @@ public class GradingOrchestrationService {
         return jobRepository.save(job);
     }
 
-    // -- Audio Compare (HSK_API async queue) ---------------------------
+    // -- Audio Compare (HSK_API sync) ----------------------------------
+    // The /api/v2/audio/compare/upload endpoint returns the full grading result
+    // synchronously (like Postman — ~2-3s). No job polling is needed.
 
     private AiGradingJob dispatchAudioCompare(AiPracticeItem item, AiPracticeAnswer answer) {
         String audioPath = answer.getAnswerAudioPath();
@@ -221,7 +223,7 @@ public class GradingOrchestrationService {
         Map<String, Object> debugPayload = new HashMap<>();
         debugPayload.put("reference_text", item.getReferenceText());
         debugPayload.put("student_audio_path", audioPath);
-        debugPayload.put("upload_mode", true);
+        debugPayload.put("upload_mode", useMultipart);
         String requestJson = toCompactRequestJson(debugPayload);
 
         AiGradingJob job = AiGradingJob.builder()
@@ -233,27 +235,41 @@ public class GradingOrchestrationService {
                 .build();
 
         try {
-            String providerJobId;
+            String rawResponse;
             if (useMultipart) {
                 org.springframework.util.MultiValueMap<String, Object> parts = new org.springframework.util.LinkedMultiValueMap<>();
                 parts.add("reference_text", item.getReferenceText());
                 parts.add("student_audio", new org.springframework.core.io.FileSystemResource(Path.of(audioPath)));
-                providerJobId = hskApiClient.submitAudioCompareJobUpload(parts);
+                rawResponse = hskApiClient.submitAudioCompareSyncUpload(parts);
             } else {
                 Map<String, Object> payload = buildAudioComparePayload(item, answer);
-                providerJobId = hskApiClient.submitAudioCompareJob(payload);
+                rawResponse = hskApiClient.submitAudioCompareSyncBase64(payload);
             }
-            job.setProviderJobId(providerJobId);
-            job.setStatus(GradingJobStatus.PROCESSING);
-            log.info("Audio compare job submitted via {}: providerJobId={}", useMultipart ? "upload" : "base64", providerJobId);
+
+            job.setResponsePayloadJson(rawResponse);
+            job.setStatus(GradingJobStatus.COMPLETED);
+            job.setCompletedAt(Instant.now());
+            job.setProviderJobId(null); // sync — no provider job id
+
+            AiGradingJob savedJob = jobRepository.save(job);
+            AiGradingResult result = normalizer.normalizeAudioCompare(savedJob.getId(), rawResponse);
+            resultRepository.save(result);
+
+            eventPublisher.publishEvent(
+                    AiPracticeProgressUpdatedEvent.builder()
+                            .attemptId(answer.getAttemptId())
+                            .occurredAt(Instant.now())
+                            .build());
+
+            log.info("Audio compare graded synchronously via {}: jobId={}", useMultipart ? "upload" : "base64", savedJob.getId());
+            return savedJob;
         } catch (Exception e) {
-            String errorMessage = e.getMessage() != null ? e.getMessage() : "";
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
             job.setStatus(GradingJobStatus.FAILED);
             job.setErrorMessage(errorMessage);
-            log.error("Failed to submit audio compare job for answer {}: {}", answer.getId(), errorMessage);
+            log.error("Audio compare grading failed for answer {}: {}", answer.getId(), errorMessage, e);
+            return jobRepository.save(job);
         }
-
-        return jobRepository.save(job);
     }
 
     // -- helper --------------------------------------------------------

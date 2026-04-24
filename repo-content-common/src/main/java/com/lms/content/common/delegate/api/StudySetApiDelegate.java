@@ -35,6 +35,10 @@ public class StudySetApiDelegate {
         return studySetService.searchStudySets(keyword);
     }
 
+    public List<StudySetResponse> searchStudySetsByPackageType(String keyword, String packageType) {
+        return studySetService.searchStudySetsByPackageType(keyword, packageType);
+    }
+
     public List<StudySetResponse> getAllStudySets() {
         return studySetService.getAllStudySets();
     }

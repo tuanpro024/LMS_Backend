@@ -16,6 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -56,11 +58,17 @@ public class LeadServiceImpl implements ILeadService {
         log.info("Lead registered: id={}, userId={}, courseCode={}, status={}",
                 saved.getId(), userId, request.code(), saved.getStatus());
 
-        // Gửi in-app notification qua Kafka → repo-notification
-        publishRegistrationConfirmation(saved);
-
-        // Gửi email xác nhận bất đồng bộ
-        leadEmailService.sendRegistrationConfirmationEmail(saved);
+        // Gửi notification + email SAU KHI transaction commit thành công
+        // Tránh block response thread và đảm bảo data đã persist
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                // Kafka publish (fire-and-forget, đã có try-catch bên trong)
+                publishRegistrationConfirmation(saved);
+                // Email gửi async trên emailTaskExecutor thread pool
+                leadEmailService.sendRegistrationConfirmationEmail(saved);
+            }
+        });
 
         return mapper.toResponse(saved);
     }

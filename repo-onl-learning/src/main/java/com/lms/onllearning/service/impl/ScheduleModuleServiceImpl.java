@@ -10,6 +10,8 @@ import com.lms.onllearning.dto.request.AddModuleToScheduleRequest;
 import com.lms.onllearning.dto.request.ImportModuleToScheduleRequest;
 import com.lms.onllearning.dto.request.ReorderScheduleModulesRequest;
 import com.lms.onllearning.dto.request.UpdateMyScheduleModuleProgressRequest;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import com.lms.onllearning.dto.response.CourseStudentModuleProgressResponse;
 import com.lms.onllearning.dto.response.ScheduleModuleResponse;
 import com.lms.onllearning.dto.response.ScheduleSessionProgressResponse;
@@ -56,6 +58,9 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Slf4j
 public class ScheduleModuleServiceImpl implements IScheduleModuleService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final ScheduleModuleRepository moduleRepo;
     private final PracticeModuleWebClient practiceWebClient;
@@ -531,18 +536,34 @@ public class ScheduleModuleServiceImpl implements IScheduleModuleService {
                 scheduleId, request.getItems().size());
 
         // Pessimistic lock trên toàn bộ module của buổi học
-        moduleRepo.findByScheduleIdForUpdate(scheduleId);
+        List<ScheduleModule> locked = moduleRepo.findByScheduleIdForUpdate(scheduleId);
 
-        try {
-            for (ReorderScheduleModulesRequest.ReorderItem item : request.getItems()) {
-                ScheduleModule module = findById(item.getId());
-                module.setModuleOrder(item.getNewOrder());
-                moduleRepo.save(module);
+        // Build map để tra nhanh theo id
+        Map<String, ScheduleModule> moduleMap = locked.stream()
+                .collect(Collectors.toMap(ScheduleModule::getId, m -> m));
+
+        List<ReorderScheduleModulesRequest.ReorderItem> items = request.getItems();
+
+        // --- Phase 1: set order về giá trị âm tạm thời để tránh unique constraint ---
+        // Dùng -(index+1) * 10000 để chắc chắn không trùng với bất kỳ order dương nào
+        for (int i = 0; i < items.size(); i++) {
+            ScheduleModule module = moduleMap.get(items.get(i).getId());
+            if (module == null) {
+                throw new ApiException(ErrorCode.E227,
+                        "Không tìm thấy module với id: " + items.get(i).getId(),
+                        HttpStatus.NOT_FOUND);
             }
-        } catch (DataIntegrityViolationException ex) {
-            throw new ApiException(ErrorCode.CONFLICT,
-                    "Thứ tự cập nhật bị trùng — kiểm tra lại danh sách reorder.",
-                    HttpStatus.CONFLICT);
+            module.setModuleOrder(-(i + 1) * 10_000);
+            moduleRepo.save(module);
+        }
+        // Flush để DB nhận các giá trị âm trước khi set lại đúng
+        entityManager.flush();
+
+        // --- Phase 2: set lại đúng order theo request ---
+        for (ReorderScheduleModulesRequest.ReorderItem item : items) {
+            ScheduleModule module = moduleMap.get(item.getId());
+            module.setModuleOrder(item.getNewOrder());
+            moduleRepo.save(module);
         }
 
         log.info("[ScheduleModule] reorderModules done for scheduleId={}", scheduleId);

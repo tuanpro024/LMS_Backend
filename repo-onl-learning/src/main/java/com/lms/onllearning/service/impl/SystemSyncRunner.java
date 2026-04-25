@@ -16,6 +16,7 @@ public class SystemSyncRunner {
     private final ISyllabusSyncService syllabusSyncService;
     private final IOnlineCourseSyncService onlineCourseSyncService;
     private final ITimetableSyncService timetableSyncService;
+    private final LeadStatusReconciler leadStatusReconciler;
 
     @Async("syncAllTaskExecutor")
     public void runJob(String jobId, JobStatusCallback statusCallback) {
@@ -23,11 +24,14 @@ public class SystemSyncRunner {
             statusCallback.markStep("SYLLABUS", 10, "Đang đồng bộ syllabus...");
             syllabusSyncService.syncAll();
 
-            statusCallback.markStep("COURSE", 50, "Đang đồng bộ courses...");
+            statusCallback.markStep("COURSE", 40, "Đang đồng bộ courses...");
             onlineCourseSyncService.syncAll();
 
-            statusCallback.markStep("TIMETABLE", 80, "Đang đồng bộ timetable...");
+            statusCallback.markStep("TIMETABLE", 70, "Đang đồng bộ timetable...");
             timetableSyncService.syncAll();
+
+            statusCallback.markStep("LEAD_RECONCILE", 90, "Đang cập nhật trạng thái đăng ký...");
+            leadStatusReconciler.reconcile();
 
             statusCallback.markSuccess("Đồng bộ tất cả dữ liệu thành công");
         } catch (Exception ex) {

@@ -11,5 +11,7 @@ public record LeadRegistrationResponse(
         String email,
         String phone,
         String note,
-        LocalDateTime registeredAt) {
+        LocalDateTime registeredAt,
+        String status,
+        LocalDateTime completedAt) {
 }

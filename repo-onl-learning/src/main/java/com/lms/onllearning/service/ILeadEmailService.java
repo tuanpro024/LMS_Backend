@@ -9,7 +9,7 @@ import com.lms.onllearning.entity.LeadRegistration;
 public interface ILeadEmailService {
 
     /**
-     * Gửi email xác nhận đã nhận phiếu đăng ký (khi status → PENDING_SALES).
+     * Gửi email xác nhận đã nhận phiếu đăng ký (khi tạo mới hoặc đăng ký lại).
      * Nội dung: xác nhận đã tiếp nhận phiếu đăng ký.
      */
     void sendRegistrationConfirmationEmail(LeadRegistration lead);

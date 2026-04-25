@@ -1,11 +1,14 @@
 package com.lms.onllearning.service.impl;
 
+import com.lms.common.exception.ApiException;
+import com.lms.common.exception.ErrorCode;
 import com.lms.common.notification.NotificationEvent;
 import com.lms.common.notification.NotificationPublisher;
 import com.lms.common.notification.ResourceType;
 import com.lms.onllearning.dto.request.LeadRegistrationRequest;
 import com.lms.onllearning.dto.response.LeadRegistrationResponse;
 import com.lms.onllearning.entity.LeadRegistration;
+import com.lms.onllearning.entity.enums.RegistrationStatus;
 import com.lms.onllearning.mapper.LeadMapper;
 import com.lms.onllearning.repository.LeadRegistrationRepository;
 import com.lms.onllearning.service.ILeadEmailService;
@@ -14,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -22,7 +26,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,16 +43,46 @@ public class LeadServiceImpl implements ILeadService {
     @Override
     @Transactional
     public LeadRegistrationResponse register(LeadRegistrationRequest request, String userId) {
-        // Idempotency: nếu đã đăng ký cùng course code, trả về lead cũ
         Optional<LeadRegistration> existing = repository.findByUserIdAndCourseCode(userId, request.code());
 
         if (existing.isPresent()) {
+            LeadRegistration lead = existing.get();
+
+            // Nếu đã hoàn thành hoặc bị hủy → cho phép đăng ký lại (reset bản ghi cũ)
+            if (lead.getStatus() == RegistrationStatus.COMPLETED
+                    || lead.getStatus() == RegistrationStatus.CANCELED) {
+                log.info("Re-registration (status={}) for userId={}, courseCode={}",
+                        lead.getStatus(), userId, request.code());
+
+                lead.setFullName(request.fullName());
+                lead.setEmail(request.email());
+                lead.setPhone(request.phone());
+                lead.setNote(request.note());
+                lead.setCourseName(request.name());
+                lead.setCourseType(request.courseType());
+                lead.setStatus(RegistrationStatus.PENDING);
+                lead.setCompletedAt(null);
+
+                LeadRegistration saved = repository.save(lead);
+
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        publishRegistrationConfirmation(saved);
+                        leadEmailService.sendRegistrationConfirmationEmail(saved);
+                    }
+                });
+
+                return mapper.toResponse(saved);
+            }
+
+            // Idempotency: nếu đang PENDING hoặc IN_PROGRESS, trả về lead cũ
             log.info("Duplicate lead registration skipped for userId={}, courseCode={}",
                     userId, request.code());
-            return mapper.toResponse(existing.get());
+            return mapper.toResponse(lead);
         }
 
-        // Tạo lead mới — status mặc định PENDING_SALES (@Builder.Default)
+        // Tạo lead mới — status mặc định PENDING (@Builder.Default)
         LeadRegistration lead = mapper.toEntity(request);
         lead.setId(generateId());
         lead.setUserId(userId); // userId từ JWT, không từ client
@@ -59,13 +92,10 @@ public class LeadServiceImpl implements ILeadService {
                 saved.getId(), userId, request.code(), saved.getStatus());
 
         // Gửi notification + email SAU KHI transaction commit thành công
-        // Tránh block response thread và đảm bảo data đã persist
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                // Kafka publish (fire-and-forget, đã có try-catch bên trong)
                 publishRegistrationConfirmation(saved);
-                // Email gửi async trên emailTaskExecutor thread pool
                 leadEmailService.sendRegistrationConfirmationEmail(saved);
             }
         });
@@ -90,26 +120,32 @@ public class LeadServiceImpl implements ILeadService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<LeadRegistrationResponse> getAllLeads(
-            String courseCode,
-            LocalDate from,
-            LocalDate to) {
-
-        LocalDateTime fromDt = from != null ? from.atStartOfDay() : null;
-        LocalDateTime toDt = to != null ? to.atTime(LocalTime.MAX) : null;
-
-        return repository.findPendingSalesWithFilters(courseCode, fromDt, toDt)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public LeadRegistrationResponse getMyRegistration(String userId, String courseCode) {
         return repository.findByUserIdAndCourseCode(userId, courseCode)
                 .map(mapper::toResponse)
                 .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void markCourseCompleted(String userId, String courseCode) {
+        LeadRegistration lead = repository.findByUserIdAndCourseCode(userId, courseCode)
+                .orElseThrow(() -> new ApiException(
+                        ErrorCode.E227,
+                        "Không tìm thấy đăng ký cho khóa học: " + courseCode,
+                        HttpStatus.NOT_FOUND));
+
+        if (lead.getStatus() == RegistrationStatus.COMPLETED) {
+            log.info("Lead already COMPLETED for userId={}, courseCode={}", userId, courseCode);
+            return;
+        }
+
+        lead.setStatus(RegistrationStatus.COMPLETED);
+        lead.setCompletedAt(LocalDateTime.now());
+        repository.save(lead);
+
+        log.info("Lead marked COMPLETED: id={}, userId={}, courseCode={}",
+                lead.getId(), userId, courseCode);
     }
 
     // ─── Private helpers ─────────────────────────────────────────────────────
@@ -127,7 +163,6 @@ public class LeadServiceImpl implements ILeadService {
                     "lead-reg-" + lead.getId());
             notificationPublisher.publish(event);
         } catch (Exception ex) {
-            // Notification failure không block luồng chính
             log.warn("Failed to publish registration confirmation notification for lead {}: {}",
                     lead.getId(), ex.getMessage());
         }

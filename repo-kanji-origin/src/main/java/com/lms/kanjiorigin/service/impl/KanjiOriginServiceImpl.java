@@ -25,6 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 import com.lms.kanjiorigin.repository.UserKanjiProgressRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.lms.common.security.AuthPrincipal;
 
 @Service
 @RequiredArgsConstructor
@@ -164,8 +167,6 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
             throw new ApiException(ErrorCode.E227, "studySetId is required for search");
         }
         
-        studySetApiDelegate.assertStudySetLearningAllowed(request.getStudySetId());
-        
         List<KanjiOrigin> origins = kanjiOriginRepository.searchList(request.getStudySetId(), request.getKeyword());
         return kanjiOriginMapper.toResponseList(origins);
     }
@@ -179,8 +180,6 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
         if (request.getStudySetId() == null) {
             throw new ApiException(ErrorCode.E227, "studySetId is required for search");
         }
-
-        studySetApiDelegate.assertStudySetLearningAllowed(request.getStudySetId());
 
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         Page<KanjiOrigin> page = kanjiOriginRepository.search(request.getStudySetId(), request.getKeyword(), pageable);
@@ -200,9 +199,14 @@ public class KanjiOriginServiceImpl implements KanjiOriginService {
         if (studySet == null || userId == null) {
             return false;
         }
-        // Admin or Manager can manage anything
-        // Add logic to check roles from SecurityContext if needed, 
-        // but here we primarily check ownership
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
+            if (principal.hasRole("ROLE_ADMIN") || principal.hasRole("ROLE_TEACHER_MANAGER")) {
+                return true;
+            }
+        }
+
         return userId.equals(studySet.getUserId());
     }
 }

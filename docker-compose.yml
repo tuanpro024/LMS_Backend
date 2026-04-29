@@ -565,6 +565,30 @@ services:
     networks:
       - lms-network
 
+  db-backup:
+    build:
+      context: ./db-backup
+      dockerfile: Dockerfile
+    image: lms-db-backup
+    container_name: lms-db-backup
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - BACKUP_DIR=/backups
+      - RETENTION_DAYS=7
+      - DATABASES=lms_identity_db lms_flashcard_db lms_writing_db lms_dictionary_db lms_kanji_origin_db lms_pronunciation_db lms_quiz_db lms_learning_path_db lms_onl_learning_db lms_notification_db lms_media_db lms_listening_db lms_video_course_db lms_ai_practice_db lms_payment_db
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - backups_data:/backups
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - lms-network
+    restart: unless-stopped
+
 networks:
   lms-network:
     driver: bridge
@@ -574,4 +598,5 @@ networks:
 volumes:
   mysql_data:
   minio_data:
+  backups_data:
 

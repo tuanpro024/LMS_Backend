@@ -17,6 +17,7 @@ public class KanjiStudySetProgressResponse {
     private String id;
     private String userId;
     private String studySetId;
+    private String studySetTitle;
     private StudySetProgressStatus status;
     private Integer learnedLessons;
     private Integer totalLessons;

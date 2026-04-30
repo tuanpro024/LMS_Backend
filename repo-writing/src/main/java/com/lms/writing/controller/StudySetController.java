@@ -8,6 +8,7 @@ import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.request.CreateStudySetRequest;
 import com.lms.content.common.dto.request.UpdateStudySetRequest;
 import com.lms.content.common.dto.response.StudySetResponse;
+import com.lms.writing.dto.response.WritingStudySetProgressResponse;
 import com.lms.writing.dto.response.WordResponse;
 import com.lms.writing.service.WordService;
 import jakarta.validation.Valid;
@@ -140,5 +141,22 @@ public class StudySetController {
         AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
         long count = wordService.countNotLearnedWords(principal.userId(), studySetId);
         return ResponseEntity.ok(ApiResponse.ok(count));
+    }
+
+    @GetMapping("/{studySetId}/progress")
+    public ResponseEntity<ApiResponse<WritingStudySetProgressResponse>> getStudySetProgress(
+            @PathVariable String studySetId,
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        WritingStudySetProgressResponse response = wordService.getStudySetProgress(principal.userId(), studySetId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<List<WritingStudySetProgressResponse>>> getUserStudySetHistory(
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        List<WritingStudySetProgressResponse> response = wordService.getUserStudySetHistory(principal.userId());
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

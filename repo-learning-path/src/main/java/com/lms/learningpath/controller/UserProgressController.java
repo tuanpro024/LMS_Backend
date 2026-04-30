@@ -83,6 +83,16 @@ public class UserProgressController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @GetMapping("/study-set/{studySetId}/modules")
+    public ResponseEntity<ApiResponse<List<ModuleProgressDto>>> getStudySetModulesProgress(
+            @PathVariable String studySetId,
+            Authentication authentication) {
+
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        List<ModuleProgressDto> response = progressService.getStudySetModulesProgress(principal.userId(), studySetId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     // ============ Learning Path Progress ============
 
     @GetMapping("/learning-path/{learningPathId}")

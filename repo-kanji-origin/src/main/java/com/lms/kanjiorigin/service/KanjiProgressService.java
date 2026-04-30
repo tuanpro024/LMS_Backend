@@ -13,4 +13,6 @@ public interface KanjiProgressService {
     KanjiStudySetProgressResponse getStudySetProgress(String userId, String studySetId);
 
     List<KanjiStatusResponse> getStudySetKanjiStatuses(String userId, String studySetId);
+
+    List<KanjiStudySetProgressResponse> getUserStudySetHistory(String userId);
 }

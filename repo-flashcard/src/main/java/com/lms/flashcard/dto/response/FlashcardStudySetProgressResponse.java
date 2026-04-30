@@ -16,6 +16,7 @@ public class FlashcardStudySetProgressResponse {
     private String id;
     private String userId;
     private String studySetId;
+    private String studySetTitle;
     private ProgressStatus status;
     private Integer learnedCards;
     private Integer totalCards;

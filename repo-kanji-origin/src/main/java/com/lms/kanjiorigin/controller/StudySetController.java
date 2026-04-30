@@ -146,6 +146,14 @@ public class StudySetController {
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<List<KanjiStudySetProgressResponse>>> getUserStudySetHistory(
+            Authentication authentication) {
+        String userId = extractUserId(authentication);
+        List<KanjiStudySetProgressResponse> response = kanjiProgressService.getUserStudySetHistory(userId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
     @GetMapping("/{studySetId}/kanji-statuses")
     public ResponseEntity<ApiResponse<List<KanjiStatusResponse>>> getStudySetKanjiStatuses(
             @PathVariable String studySetId,

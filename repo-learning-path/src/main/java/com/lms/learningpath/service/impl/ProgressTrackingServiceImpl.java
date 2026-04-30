@@ -260,6 +260,57 @@ public class ProgressTrackingServiceImpl implements IProgressTrackingService {
         }
 
         @Override
+        public List<ModuleProgressDto> getStudySetModulesProgress(String userId, String studySetId) {
+                List<LearningPath> learningPaths = learningPathRepository
+                                .findByStudySetIdAndIsActiveTrueOrderByCreatedAtAsc(studySetId);
+
+                if (learningPaths.isEmpty()) {
+                        return List.of();
+                }
+
+                List<StepModule> allModules = learningPaths.stream()
+                                .flatMap(learningPath -> stepRepository
+                                                .findByLearningPathIdAndIsActiveTrueOrderByStepOrderAsc(learningPath.getId())
+                                                .stream())
+                                .flatMap(step -> stepModuleRepository
+                                                .findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(step.getId())
+                                                .stream())
+                                .collect(Collectors.toList());
+
+                if (allModules.isEmpty()) {
+                        return List.of();
+                }
+
+                Map<String, ModuleProgress> progressByModuleId = moduleProgressRepository
+                                .findByUserIdAndModuleIds(userId,
+                                                allModules.stream().map(StepModule::getId).collect(Collectors.toList()))
+                                .stream()
+                                .collect(Collectors.toMap(ModuleProgress::getStepModuleId, p -> p, (a, b) -> b));
+
+                return allModules.stream()
+                                .map(module -> {
+                                        ModuleProgress progress = progressByModuleId.get(module.getId());
+                                        if (progress != null) {
+                                                return mapToDto(progress);
+                                        }
+
+                                        return ModuleProgressDto.builder()
+                                                        .id(module.getId())
+                                                        .stepModuleId(module.getId())
+                                                        .stepId(module.getStepId())
+                                                        .status(ProgressStatus.NOT_STARTED)
+                                                        .completedItems(0)
+                                                        .totalItems(0)
+                                                        .progressPercentage(0.0)
+                                                        .score(0)
+                                                        .totalAttempts(0)
+                                                        .studyTimeSeconds(0)
+                                                        .build();
+                                })
+                                .collect(Collectors.toList());
+        }
+
+        @Override
         public LearningPathProgressResponse getLearningPathProgress(String userId, String learningPathId) {
                 return learningPathProgressRepository.findByUserIdAndLearningPathId(userId, learningPathId)
                                 .map(learningPathProgressMapper::toResponse)

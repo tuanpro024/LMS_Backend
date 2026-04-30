@@ -3,6 +3,7 @@ package com.lms.kanjiorigin.service.impl;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
+import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.kanjiorigin.dto.request.UpdateKanjiStatusRequest;
 import com.lms.kanjiorigin.dto.response.KanjiStatusResponse;
@@ -100,6 +101,26 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
 
         return origins.stream()
                 .map(origin -> toKanjiStatusResponse(origin, progressByKanjiId.get(origin.getId()), studySetId))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<KanjiStudySetProgressResponse> getUserStudySetHistory(String userId) {
+        return kanjiStudySetProgressRepository.findByUserId(userId).stream()
+                .map(progress -> {
+                    KanjiStudySetProgressResponse response = toStudySetProgressResponse(progress);
+                    response.setStudySetTitle(resolveStudySetTitle(progress.getStudySetId()));
+                    return response;
+                })
+                .sorted((left, right) -> {
+                    Instant leftTime = left.getCompletedAt() != null ? left.getCompletedAt() : left.getFirstStartedAt();
+                    Instant rightTime = right.getCompletedAt() != null ? right.getCompletedAt() : right.getFirstStartedAt();
+                    if (leftTime == null && rightTime == null) return 0;
+                    if (leftTime == null) return 1;
+                    if (rightTime == null) return -1;
+                    return rightTime.compareTo(leftTime);
+                })
                 .toList();
     }
 
@@ -240,5 +261,15 @@ public class KanjiProgressServiceImpl implements KanjiProgressService {
                 .firstStartedAt(progress.getFirstStartedAt())
                 .completedAt(progress.getCompletedAt())
                 .build();
+    }
+
+    private String resolveStudySetTitle(String studySetId) {
+        try {
+            return studySetRepository.findById(studySetId)
+                    .map(StudySet::getTitle)
+                    .orElse(studySetId);
+        } catch (Exception e) {
+            return studySetId;
+        }
     }
 }

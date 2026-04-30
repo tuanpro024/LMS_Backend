@@ -3,12 +3,14 @@ package com.lms.quiz.service.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
+import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.quiz.dto.request.CheckQuestionRequest;
 import com.lms.quiz.dto.request.SubmitQuizRequest;
 import com.lms.quiz.dto.request.UpdateQuestionResultRequest;
 import com.lms.quiz.dto.response.CheckQuestionResponse;
 import com.lms.quiz.dto.response.QuizProgressResponse;
 import com.lms.quiz.dto.response.QuizResultResponse;
+import com.lms.quiz.dto.response.QuizStudySetProgressResponse;
 import com.lms.quiz.entity.QuizAttempt;
 import com.lms.quiz.entity.UserQuizProgress;
 import com.lms.quiz.entity.MatchingPair;
@@ -386,6 +388,42 @@ public class QuizAttemptServiceImpl implements IQuizAttemptService {
                 .lastAttemptAt(progress.getLastAttemptAt())
                 .completedAt(progress.getCompletedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<QuizStudySetProgressResponse> getUserStudySetHistory(String userId) {
+        return studySetProgressRepository.findByUserId(userId).stream()
+                .map(progress -> QuizStudySetProgressResponse.builder()
+                        .id(progress.getId())
+                        .userId(progress.getUserId())
+                        .studySetId(progress.getStudySetId())
+                        .studySetTitle(resolveStudySetTitle(progress.getStudySetId()))
+                        .status(progress.getStatus())
+                        .completedQuizzes(progress.getCompletedQuizzes())
+                        .totalQuizzes(progress.getTotalQuizzes())
+                        .progressPercentage(progress.getProgressPercentage())
+                        .firstStartedAt(progress.getFirstStartedAt())
+                        .completedAt(progress.getCompletedAt())
+                        .build())
+                .sorted((left, right) -> {
+                    Instant leftTime = left.getCompletedAt() != null ? left.getCompletedAt() : left.getFirstStartedAt();
+                    Instant rightTime = right.getCompletedAt() != null ? right.getCompletedAt() : right.getFirstStartedAt();
+                    if (leftTime == null && rightTime == null) return 0;
+                    if (leftTime == null) return 1;
+                    if (rightTime == null) return -1;
+                    return rightTime.compareTo(leftTime);
+                })
+                .toList();
+    }
+
+    private String resolveStudySetTitle(String studySetId) {
+        try {
+            StudySetResponse studySet = studySetApiDelegate.getStudySetById(studySetId);
+            return studySet != null && studySet.getTitle() != null ? studySet.getTitle() : studySetId;
+        } catch (Exception e) {
+            return studySetId;
+        }
     }
 
     // ============ Grading Logic ============

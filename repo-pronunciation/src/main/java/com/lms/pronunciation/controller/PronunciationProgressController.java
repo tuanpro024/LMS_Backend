@@ -26,6 +26,13 @@ public class PronunciationProgressController {
         return ApiResponse.ok(progressService.markItemListened(principal.userId(), itemId));
     }
 
+    @GetMapping("/study-sets/history")
+    public ApiResponse<List<PronunciationStudySetProgressResponse>> getUserStudySetHistory(
+            Authentication authentication) {
+        AuthPrincipal principal = (AuthPrincipal) authentication.getPrincipal();
+        return ApiResponse.ok(progressService.getUserStudySetHistory(principal.userId()));
+    }
+
     @GetMapping("/study-sets/{studySetId}")
     public ApiResponse<PronunciationStudySetProgressResponse> getStudySetProgress(
             @PathVariable String studySetId,

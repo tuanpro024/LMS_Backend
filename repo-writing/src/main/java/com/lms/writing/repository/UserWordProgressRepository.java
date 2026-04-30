@@ -8,8 +8,12 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface UserWordProgressRepository extends JpaRepository<UserWordProgress, String> {
+
+        @Query("SELECT DISTINCT uwp.word.studySet.id FROM UserWordProgress uwp WHERE uwp.userId = :userId")
+        Set<String> findDistinctStudySetIdsByUserId(@Param("userId") String userId);
 
         Optional<UserWordProgress> findByUserIdAndWordId(String userId, String wordId);
 

@@ -1,6 +1,6 @@
-package com.lms.pronunciation.dto.response;
+package com.lms.quiz.dto.response;
 
-import com.lms.pronunciation.entity.enums.ProgressStatus;
+import com.lms.quiz.entity.enums.StudySetProgressStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,14 +12,14 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PronunciationStudySetProgressResponse {
+public class QuizStudySetProgressResponse {
     private String id;
     private String userId;
     private String studySetId;
     private String studySetTitle;
-    private ProgressStatus status;
-    private Integer learnedItems;
-    private Integer totalItems;
+    private StudySetProgressStatus status;
+    private Integer completedQuizzes;
+    private Integer totalQuizzes;
     private Double progressPercentage;
     private Instant firstStartedAt;
     private Instant completedAt;

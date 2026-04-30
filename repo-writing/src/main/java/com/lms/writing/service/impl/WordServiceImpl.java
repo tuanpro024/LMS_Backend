@@ -7,6 +7,7 @@ import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
 import com.lms.writing.dto.request.CreateWordRequest;
 import com.lms.writing.dto.request.UpdateWordRequest;
+import com.lms.writing.dto.response.WritingStudySetProgressResponse;
 import com.lms.writing.dto.response.WordResponse;
 import com.lms.writing.entity.Word;
 import com.lms.writing.entity.UserWordProgress;
@@ -139,6 +140,27 @@ public class WordServiceImpl implements WordService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public WritingStudySetProgressResponse getStudySetProgress(String userId, String studySetId) {
+        studySetApiDelegate.assertStudySetLearningAllowed(studySetId);
+
+        long totalWords = wordRepository.countByStudySetIdAndDeletedFalse(studySetId);
+        long learnedWords = countLearnedWords(userId, studySetId);
+        double progressPercentage = totalWords == 0 ? 0.0 : (learnedWords * 100.0) / totalWords;
+        String status = totalWords > 0 && learnedWords >= totalWords
+                ? "COMPLETED"
+                : learnedWords > 0 ? "IN_PROGRESS" : "NOT_STARTED";
+
+        return WritingStudySetProgressResponse.builder()
+                .studySetId(studySetId)
+                .status(status)
+                .learnedWords((int) learnedWords)
+                .totalWords((int) totalWords)
+                .progressPercentage(progressPercentage)
+                .build();
+    }
+
+    @Override
     public void updateWordStatus(String userId, String wordId,
             com.lms.writing.dto.request.UpdateWordStatusRequest request) {
         Word word = wordRepository.findByIdAndDeletedFalse(wordId)
@@ -223,5 +245,51 @@ public class WordServiceImpl implements WordService {
         log.info("Added {} words to StudySet {} by user {}", savedWords.size(), studySetId, userId);
 
         return wordMapper.toResponseList(savedWords);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WritingStudySetProgressResponse> getUserStudySetHistory(String userId) {
+        Set<String> studySetIds = userWordProgressRepository.findDistinctStudySetIdsByUserId(userId);
+        
+        return studySetIds.stream()
+                .map(studySetId -> {
+                    long totalWords = wordRepository.countByStudySetIdAndDeletedFalse(studySetId);
+                    long learnedWords = userWordProgressRepository.countByUserIdAndStudySetIdAndStatus(
+                            userId, studySetId, ContentStatus.LEARNED);
+                    double progressPercentage = totalWords == 0 ? 0.0 : (learnedWords * 100.0) / totalWords;
+                    String status = totalWords > 0 && learnedWords >= totalWords
+                            ? "COMPLETED"
+                            : learnedWords > 0 ? "IN_PROGRESS" : "NOT_STARTED";
+                    
+                    WritingStudySetProgressResponse response = WritingStudySetProgressResponse.builder()
+                            .studySetId(studySetId)
+                            .status(status)
+                            .learnedWords((int) learnedWords)
+                            .totalWords((int) totalWords)
+                            .progressPercentage(progressPercentage)
+                            .build();
+                    
+                    // Resolve study set title
+                    response.setStudySetTitle(resolveStudySetTitle(studySetId));
+                    return response;
+                })
+                .sorted((left, right) -> {
+                    // Sort by study set title alphabetically (could be updated later to sort by last activity)
+                    String leftTitle = left.getStudySetTitle() != null ? left.getStudySetTitle() : "";
+                    String rightTitle = right.getStudySetTitle() != null ? right.getStudySetTitle() : "";
+                    return rightTitle.compareTo(leftTitle); // Descending order
+                })
+                .collect(Collectors.toList());
+    }
+
+    private String resolveStudySetTitle(String studySetId) {
+        try {
+            return studySetRepository.findById(studySetId)
+                    .map(StudySet::getTitle)
+                    .orElse(studySetId);
+        } catch (Exception e) {
+            return studySetId;
+        }
     }
 }

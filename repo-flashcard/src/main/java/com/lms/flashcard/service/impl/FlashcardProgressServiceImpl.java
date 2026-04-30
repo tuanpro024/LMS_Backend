@@ -16,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.lms.content.common.delegate.api.FolderApiDelegate;
 import com.lms.content.common.delegate.api.PackageApiDelegate;
+import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.dto.response.FolderResponse;
 import com.lms.content.common.dto.response.PackageResponse;
+import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.content.common.entity.TypeName;
 import com.lms.flashcard.event.FlashcardStudySetProgressUpdatedEvent;
 
@@ -35,6 +37,7 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
     private final ApplicationEventPublisher eventPublisher;
     private final FolderApiDelegate folderApiDelegate;
     private final PackageApiDelegate packageApiDelegate;
+    private final StudySetApiDelegate studySetApiDelegate;
 
     @Override
     @Transactional
@@ -107,6 +110,26 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
                 .orElse(null);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<FlashcardStudySetProgressResponse> getUserStudySetHistory(String userId) {
+        return progressRepository.findByUserId(userId).stream()
+                .map(this::toResponse)
+                .map(response -> {
+                    response.setStudySetTitle(resolveStudySetTitle(response.getStudySetId()));
+                    return response;
+                })
+                .sorted((left, right) -> {
+                    Instant leftTime = left.getCompletedAt() != null ? left.getCompletedAt() : left.getFirstStartedAt();
+                    Instant rightTime = right.getCompletedAt() != null ? right.getCompletedAt() : right.getFirstStartedAt();
+                    if (leftTime == null && rightTime == null) return 0;
+                    if (leftTime == null) return 1;
+                    if (rightTime == null) return -1;
+                    return rightTime.compareTo(leftTime);
+                })
+                .toList();
+    }
+
     private FlashcardStudySetProgressResponse toResponse(FlashcardStudySetProgress p) {
         return FlashcardStudySetProgressResponse.builder()
                 .id(p.getId())
@@ -119,6 +142,15 @@ public class FlashcardProgressServiceImpl implements FlashcardProgressService {
                 .firstStartedAt(p.getFirstStartedAt())
                 .completedAt(p.getCompletedAt())
                 .build();
+    }
+
+    private String resolveStudySetTitle(String studySetId) {
+        try {
+            StudySetResponse studySet = studySetApiDelegate.getStudySetById(studySetId);
+            return studySet != null && studySet.getTitle() != null ? studySet.getTitle() : studySetId;
+        } catch (Exception e) {
+            return studySetId;
+        }
     }
 
     private boolean isVideoCourseStudySet(String studySetId) {

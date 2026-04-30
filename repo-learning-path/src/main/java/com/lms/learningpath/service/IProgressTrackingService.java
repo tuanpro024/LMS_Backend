@@ -63,6 +63,15 @@ public interface IProgressTrackingService {
     StepProgressResponse getStepProgress(String userId, String stepId);
 
     /**
+     * Get all module progress records for a user in a study set.
+     *
+     * @param userId the user ID
+     * @param studySetId the study set ID
+     * @return list of module progress records
+     */
+    List<ModuleProgressDto> getStudySetModulesProgress(String userId, String studySetId);
+
+    /**
      * Get learning path progress for a user.
      *
      * @param userId         the user ID

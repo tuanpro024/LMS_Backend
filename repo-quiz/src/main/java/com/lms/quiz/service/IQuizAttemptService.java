@@ -6,6 +6,7 @@ import com.lms.quiz.dto.request.UpdateQuestionResultRequest;
 import com.lms.quiz.dto.response.CheckQuestionResponse;
 import com.lms.quiz.dto.response.QuizProgressResponse;
 import com.lms.quiz.dto.response.QuizResultResponse;
+import com.lms.quiz.dto.response.QuizStudySetProgressResponse;
 
 public interface IQuizAttemptService {
 
@@ -24,4 +25,6 @@ public interface IQuizAttemptService {
     QuizResultResponse updateQuestionResult(UpdateQuestionResultRequest request, String userId);
 
     QuizProgressResponse getQuizProgress(String quizId, String userId);
+
+    java.util.List<QuizStudySetProgressResponse> getUserStudySetHistory(String userId);
 }

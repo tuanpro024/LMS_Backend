@@ -79,6 +79,10 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                         return watchProgressRepository.save(newProgress);
                                 });
 
+                if (isExternalPracticeModule(module.getModuleType())) {
+                        updatePracticeModuleStatus(userId, module, ProgressStatus.IN_PROGRESS);
+                }
+
                 return toWatchProgressResponse(progress);
         }
 
@@ -197,12 +201,45 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                         progress.setLastWatchedAt(Instant.now());
                         progress = watchProgressRepository.save(progress);
 
+                        // If it's a practice module, we also need to update the practice progress table
+                        // because updateStepProgress relies on it for these types.
+                        if (isExternalPracticeModule(module.getModuleType())) {
+                                updatePracticeModuleStatus(userId, module, ProgressStatus.COMPLETED);
+                        }
+
                         // Rollup
                         updateStepProgress(userId, module.getStepId());
                         updateCourseProgress(userId, step.getStudySetId());
                 }
 
                 return toWatchProgressResponse(progress);
+        }
+
+        private void updatePracticeModuleStatus(String userId, VideoModule module, ProgressStatus status) {
+                VideoPracticeModuleProgress practiceProgress = practiceProgressRepository
+                                .findByUserIdAndVideoModuleId(userId, module.getId())
+                                .orElseGet(() -> VideoPracticeModuleProgress.builder()
+                                                .userId(userId)
+                                                .videoModuleId(module.getId())
+                                                .stepId(module.getStepId())
+                                                .studySetId(videoStepRepository.findById(module.getStepId())
+                                                                .map(VideoStep::getStudySetId).orElse(null))
+                                                .moduleType(module.getModuleType())
+                                                .contentSetId(module.getContentSetId())
+                                                .status(ProgressStatus.NOT_STARTED)
+                                                .build());
+
+                if (practiceProgress.getStatus() != status) {
+                        practiceProgress.setStatus(status);
+                        if (status == ProgressStatus.COMPLETED) {
+                                practiceProgress.setProgressPercentage(100.0);
+                                practiceProgress.setCompletedAt(Instant.now());
+                        }
+                        if (practiceProgress.getFirstStartedAt() == null) {
+                                practiceProgress.setFirstStartedAt(Instant.now());
+                        }
+                        practiceProgressRepository.save(practiceProgress);
+                }
         }
 
         @Override
@@ -467,11 +504,6 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         }
 
         private boolean isExternalPracticeModule(com.lms.videocourse.entity.enums.ModuleType moduleType) {
-                return moduleType == com.lms.videocourse.entity.enums.ModuleType.FLASHCARD ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.WRITING ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.QUIZ ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.LISTENING ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
+                return moduleType != null && moduleType != com.lms.videocourse.entity.enums.ModuleType.VIDEO;
         }
 }

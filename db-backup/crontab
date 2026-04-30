@@ -1,0 +1,14 @@
+# =============================================================================
+# LMS Backup Cron Schedule
+# Format: minute hour day month weekday command
+#
+# Lịch mặc định:
+#   - 02:00 hàng ngày  → backup đầy đủ tất cả databases
+#   - Thêm dòng thứ 2 nếu muốn backup thêm vào buổi trưa (12:00)
+# =============================================================================
+
+# Backup lúc 02:00 sáng (giờ Việt Nam) mỗi ngày
+0 2 * * * /usr/local/bin/backup.sh >> /proc/1/fd/1 2>> /proc/1/fd/2
+
+# (Tùy chọn) Backup thêm lúc 14:00 chiều mỗi ngày
+# 0 14 * * * /usr/local/bin/backup.sh >> /proc/1/fd/1 2>> /proc/1/fd/2

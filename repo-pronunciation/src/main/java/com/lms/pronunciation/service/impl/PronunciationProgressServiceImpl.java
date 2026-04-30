@@ -3,6 +3,8 @@ package com.lms.pronunciation.service.impl;
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
+import com.lms.content.common.entity.StudySet;
+import com.lms.content.common.repository.StudySetRepository;
 import com.lms.pronunciation.dto.response.PronunciationItemProgressResponse;
 import com.lms.pronunciation.dto.response.PronunciationStudySetProgressResponse;
 import com.lms.pronunciation.entity.PronunciationItem;
@@ -21,7 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +37,7 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
     private final PronunciationItemStudySetProgressRepository studySetProgressRepo;
     private final PronunciationItemRepository itemRepo;
     private final StudySetApiDelegate studySetApiDelegate;
+    private final StudySetRepository studySetRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -107,6 +112,7 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
     }
 
     @Override
+    @Transactional(readOnly = true)
     public java.util.List<PronunciationItemProgressResponse> getItemProgressByStudySet(String userId,
             String studySetId) {
         return userItemProgressRepo.findByUserIdAndStudySetId(userId, studySetId).stream()
@@ -120,6 +126,36 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
                         .listenCount(p.getListenCount())
                         .build())
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PronunciationStudySetProgressResponse> getUserStudySetHistory(String userId) {
+        return studySetProgressRepo.findByUserId(userId).stream()
+                .map(progress -> {
+                    PronunciationStudySetProgressResponse response = PronunciationStudySetProgressResponse.builder()
+                            .id(progress.getId())
+                            .userId(progress.getUserId())
+                            .studySetId(progress.getStudySetId())
+                            .status(progress.getStatus())
+                            .learnedItems(progress.getLearnedItems())
+                            .totalItems(progress.getTotalItems())
+                            .progressPercentage(progress.getProgressPercentage())
+                            .firstStartedAt(progress.getFirstStartedAt())
+                            .completedAt(progress.getCompletedAt())
+                            .build();
+                    response.setStudySetTitle(resolveStudySetTitle(progress.getStudySetId()));
+                    return response;
+                })
+                .sorted((left, right) -> {
+                    Instant leftTime = left.getCompletedAt() != null ? left.getCompletedAt() : left.getFirstStartedAt();
+                    Instant rightTime = right.getCompletedAt() != null ? right.getCompletedAt() : right.getFirstStartedAt();
+                    if (leftTime == null && rightTime == null) return 0;
+                    if (leftTime == null) return 1;
+                    if (rightTime == null) return -1;
+                    return rightTime.compareTo(leftTime);
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -193,5 +229,15 @@ public class PronunciationProgressServiceImpl implements PronunciationProgressSe
                 .build();
 
         eventPublisher.publishEvent(event);
+    }
+
+    private String resolveStudySetTitle(String studySetId) {
+        try {
+            return studySetRepository.findById(studySetId)
+                    .map(StudySet::getTitle)
+                    .orElse(studySetId);
+        } catch (Exception e) {
+            return studySetId;
+        }
     }
 }

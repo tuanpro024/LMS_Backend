@@ -33,7 +33,7 @@ public class LeadEmailServiceImpl implements ILeadEmailService {
     @Value("${app.email.from-name}")
     private String emailFromName;
 
-    @Async
+    @Async("emailTaskExecutor")
     @Override
     public void sendRegistrationConfirmationEmail(LeadRegistration lead) {
         try {

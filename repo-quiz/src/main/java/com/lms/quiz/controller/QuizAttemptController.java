@@ -8,12 +8,15 @@ import com.lms.quiz.dto.request.UpdateQuestionResultRequest;
 import com.lms.quiz.dto.response.CheckQuestionResponse;
 import com.lms.quiz.dto.response.QuizProgressResponse;
 import com.lms.quiz.dto.response.QuizResultResponse;
+import com.lms.quiz.dto.response.QuizStudySetProgressResponse;
 import com.lms.quiz.service.IQuizAttemptService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/attempts")
@@ -59,5 +62,12 @@ public class QuizAttemptController {
             Authentication authentication) {
         String userId = resolveUserId(authentication);
         return ResponseEntity.ok(ApiResponse.ok(quizAttemptService.getQuizProgress(quizId, userId)));
+    }
+
+    @GetMapping("/study-sets/history")
+    public ResponseEntity<ApiResponse<List<QuizStudySetProgressResponse>>> getStudySetHistory(
+            Authentication authentication) {
+        String userId = resolveUserId(authentication);
+        return ResponseEntity.ok(ApiResponse.ok(quizAttemptService.getUserStudySetHistory(userId)));
     }
 }

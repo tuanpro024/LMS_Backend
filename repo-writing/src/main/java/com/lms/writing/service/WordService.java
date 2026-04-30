@@ -2,6 +2,7 @@ package com.lms.writing.service;
 
 import com.lms.writing.dto.request.CreateWordRequest;
 import com.lms.writing.dto.request.UpdateWordRequest;
+import com.lms.writing.dto.response.WritingStudySetProgressResponse;
 import com.lms.writing.dto.response.WordResponse;
 
 import java.util.List;
@@ -24,9 +25,13 @@ public interface WordService {
 
     long countNotLearnedWords(String userId, String studySetId);
 
+    WritingStudySetProgressResponse getStudySetProgress(String userId, String studySetId);
+
     void updateWordStatus(String userId, String wordId, com.lms.writing.dto.request.UpdateWordStatusRequest request);
 
     long countTotalWords(String studySetId);
 
     List<WordResponse> addWordsToStudySet(String studySetId, List<CreateWordRequest> words, String userId);
+
+    List<WritingStudySetProgressResponse> getUserStudySetHistory(String userId);
 }

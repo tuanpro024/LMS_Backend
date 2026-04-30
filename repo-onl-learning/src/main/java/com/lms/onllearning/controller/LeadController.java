@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @RequestMapping("/leads")
@@ -39,7 +38,8 @@ public class LeadController {
          * Đăng ký tư vấn khóa học.
          * - userId lấy từ JWT (authentication.getName()), không nhận từ client.
          * - Rate-limited: 5 req/phút/user + 10 req/phút/IP.
-         * - Idempotent: cùng user + courseCode → trả về lead cũ, không tạo duplicate.
+         * - Idempotent: cùng user + courseCode (status PENDING hoặc IN_PROGRESS) → trả về lead cũ.
+         * - Nếu status = COMPLETED hoặc CANCELED → cho phép đăng ký lại (reset bản ghi).
          */
         @PostMapping("/register")
         public ResponseEntity<ApiResponse<LeadRegistrationResponse>> register(
@@ -79,21 +79,6 @@ public class LeadController {
         }
 
         /**
-         * Danh sách leads có status = PENDING_SALES (không phân trang) cho tích hợp
-         * CMS.
-         * Filter: courseCode, from (YYYY-MM-DD), to (YYYY-MM-DD).
-         */
-        @GetMapping("/all")
-        public ResponseEntity<ApiResponse<List<LeadRegistrationResponse>>> getAllLeads(
-                        @RequestParam(required = false) String courseCode,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-
-                return ResponseEntity.ok(ApiResponse.ok(
-                                leadService.getAllLeads(courseCode, from, to)));
-        }
-
-        /**
          * Lấy trạng thái đăng ký của chính mình cho một khóa học.
          * Frontend dùng để hiển thị trạng thái và thông báo phù hợp.
          * Trả về 200 với body null nếu chưa đăng ký.
@@ -110,6 +95,24 @@ public class LeadController {
                 }
                 return ResponseEntity.ok(ApiResponse.ok(
                                 leadService.getMyRegistration(userId, courseCode)));
+        }
+
+        /**
+         * Đánh dấu hoàn thành khóa học → cho phép đăng ký lại.
+         * Gọi khi học viên hoàn thành tất cả buổi học trong khóa.
+         */
+        @PostMapping("/me/{courseCode}/complete")
+        public ResponseEntity<ApiResponse<Void>> markCourseCompleted(
+                        @PathVariable String courseCode,
+                        Authentication authentication) {
+
+                String userId = extractUserId(authentication);
+                if (userId == null) {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                        .body(ApiResponse.error("UNAUTHORIZED", "Vui lòng đăng nhập"));
+                }
+                leadService.markCourseCompleted(userId, courseCode);
+                return ResponseEntity.ok(ApiResponse.ok(null));
         }
 
         /**

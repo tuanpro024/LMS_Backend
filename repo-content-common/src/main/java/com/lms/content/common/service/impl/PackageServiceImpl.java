@@ -1,7 +1,6 @@
 package com.lms.content.common.service.impl;
 
-import com.lms.common.event.PackageStatusEvent;
-import com.lms.common.event.PackageStatusPublisher;
+
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.common.http.TicketAccessClient;
@@ -43,7 +42,6 @@ public class PackageServiceImpl implements PackageService {
     private final TypeRepository typeRepository;
     private final com.lms.content.common.service.FolderService folderService;
     private final com.lms.content.common.service.StudySetService studySetService;
-    private final PackageStatusPublisher packageStatusPublisher;
     private final TicketAccessClient ticketAccessClient;
 
     // ── CREATE ────────────────────────────────────────────────────────────────
@@ -336,8 +334,6 @@ public class PackageServiceImpl implements PackageService {
         packageEntity.setPublishStatus(PublishStatus.PUBLISHED);
         Package saved = packageRepository.save(packageEntity);
 
-        publishStatusEvent(saved, userId, "ADMIN_PUBLISH");
-
         log.info("Package {} published by userId={}", packageId, userId);
         return packageMapper.toResponse(saved);
     }
@@ -349,8 +345,6 @@ public class PackageServiceImpl implements PackageService {
 
         packageEntity.setPublishStatus(PublishStatus.DRAFT);
         Package saved = packageRepository.save(packageEntity);
-
-        publishStatusEvent(saved, userId, "ADMIN_UNPUBLISH");
 
         log.info("Package {} unpublished (DRAFT) by userId={}", packageId, userId);
         return packageMapper.toResponse(saved);
@@ -365,8 +359,7 @@ public class PackageServiceImpl implements PackageService {
         packageRepository.findById(packageId).ifPresent(pkg -> {
             if (pkg.getPublishStatus() == PublishStatus.PUBLISHED) {
                 pkg.setPublishStatus(PublishStatus.DRAFT);
-                Package saved = packageRepository.save(pkg);
-                publishStatusEvent(saved, triggeredBy, reason);
+                packageRepository.save(pkg);
                 log.info("Package {} auto-reverted to DRAFT. Reason={}, triggeredBy={}",
                         packageId, reason, triggeredBy);
             }
@@ -388,19 +381,6 @@ public class PackageServiceImpl implements PackageService {
         return ticketAccessClient.checkAccess(userId, ticketModule);
     }
 
-    private void publishStatusEvent(Package pkg, String changedBy, String reason) {
-        try {
-            packageStatusPublisher.publish(new PackageStatusEvent(
-                    pkg.getId(),
-                    pkg.getName(),
-                    pkg.getType() != null ? pkg.getType().getName().name() : null,
-                    pkg.getPublishStatus().name(),
-                    changedBy,
-                    reason));
-        } catch (Exception ex) {
-            log.warn("Failed to publish PackageStatusEvent for package={}: {}", pkg.getId(), ex.getMessage());
-        }
-    }
 
     // ── EXTENSION HOOKS ───────────────────────────────────────────────────────
 

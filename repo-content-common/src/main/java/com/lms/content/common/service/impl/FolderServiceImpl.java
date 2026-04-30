@@ -1,7 +1,6 @@
 package com.lms.content.common.service.impl;
 
-import com.lms.common.event.PackageStatusEvent;
-import com.lms.common.event.PackageStatusPublisher;
+
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.dto.request.CreateFolderRequest;
@@ -33,7 +32,6 @@ public class FolderServiceImpl implements FolderService {
     private final PackageRepository packageRepository;
     private final StudySetRepository studySetRepository;
     private final FolderMapper folderMapper;
-    private final PackageStatusPublisher packageStatusPublisher;
 
     // ── CREATE ────────────────────────────────────────────────────────────────
 
@@ -226,15 +224,6 @@ public class FolderServiceImpl implements FolderService {
         if (pkg.getPublishStatus() == PublishStatus.PUBLISHED) {
             pkg.setPublishStatus(PublishStatus.DRAFT);
             packageRepository.save(pkg);
-
-            packageStatusPublisher.publish(new PackageStatusEvent(
-                    pkg.getId(),
-                    pkg.getName(),
-                    pkg.getType() != null ? pkg.getType().getName().name() : null,
-                    PublishStatus.DRAFT.name(),
-                    triggeredBy,
-                    "CONTENT_UPDATED"
-            ));
 
             log.info("Package {} auto-reverted to DRAFT due to folder CUD by userId={}",
                     pkg.getId(), triggeredBy);

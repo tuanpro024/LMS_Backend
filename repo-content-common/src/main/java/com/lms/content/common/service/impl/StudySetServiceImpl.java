@@ -1,7 +1,6 @@
 package com.lms.content.common.service.impl;
 
-import com.lms.common.event.PackageStatusEvent;
-import com.lms.common.event.PackageStatusPublisher;
+
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.content.common.dto.request.CreateStudySetRequest;
@@ -36,7 +35,6 @@ public class StudySetServiceImpl implements StudySetService {
     private final PackageRepository packageRepository;
     private final StudySetMapper studySetMapper;
     private final ApplicationEventPublisher eventPublisher;
-    private final PackageStatusPublisher packageStatusPublisher;
 
     // ── CREATE ────────────────────────────────────────────────────────────────
 
@@ -103,6 +101,20 @@ public class StudySetServiceImpl implements StudySetService {
     public List<StudySetResponse> searchStudySets(String keyword) {
         List<StudySet> studySets = studySetRepository.searchByKeyword(keyword);
         return studySetMapper.toResponseList(studySets);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StudySetResponse> searchStudySetsByPackageType(String keyword, String packageType) {
+        try {
+            com.lms.content.common.entity.TypeName typeName =
+                    com.lms.content.common.entity.TypeName.valueOf(packageType);
+            List<StudySet> studySets = studySetRepository.searchByKeywordAndPackageType(keyword, typeName);
+            return studySetMapper.toResponseList(studySets);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid packageType provided: {}", packageType);
+            return List.of();
+        }
     }
 
     @Override
@@ -282,14 +294,6 @@ public class StudySetServiceImpl implements StudySetService {
         if (pkg.getPublishStatus() == PublishStatus.PUBLISHED) {
             pkg.setPublishStatus(PublishStatus.DRAFT);
             packageRepository.save(pkg);
-
-            packageStatusPublisher.publish(new PackageStatusEvent(
-                    pkg.getId(),
-                    pkg.getName(),
-                    pkg.getType() != null ? pkg.getType().getName().name() : null,
-                    PublishStatus.DRAFT.name(),
-                    triggeredBy,
-                    "CONTENT_UPDATED"));
 
             log.info("Package {} auto-reverted to DRAFT due to study set CUD by userId={}",
                     pkg.getId(), triggeredBy);

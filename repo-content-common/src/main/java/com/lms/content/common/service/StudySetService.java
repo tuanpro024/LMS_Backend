@@ -18,6 +18,8 @@ public interface StudySetService {
 
     List<StudySetResponse> searchStudySets(String keyword);
 
+    List<StudySetResponse> searchStudySetsByPackageType(String keyword, String packageType);
+
     List<StudySetResponse> getAllStudySets();
 
     List<StudySetResponse> getStudySetsByPackageType(String packageType);

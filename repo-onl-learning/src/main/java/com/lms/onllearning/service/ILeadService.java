@@ -6,13 +6,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
-import java.util.List;
 
 public interface ILeadService {
 
         /**
-         * Tạo mới lead hoặc trả về lead cũ (idempotent). Sau khi tạo mới → status =
-         * PENDING_SALES + gửi notification
+         * Tạo mới lead hoặc trả về lead cũ (idempotent).
+         * Nếu lead cũ có status = COMPLETED hoặc CANCELED → reset về PENDING (cho phép đăng ký lại).
+         * Nếu đang PENDING hoặc IN_PROGRESS → trả về lead cũ (không tạo duplicate).
+         * Sau khi tạo mới → status = PENDING + gửi notification.
          */
         LeadRegistrationResponse register(LeadRegistrationRequest request, String userId);
 
@@ -32,9 +33,12 @@ public interface ILeadService {
          */
         LeadRegistrationResponse getMyRegistration(String userId, String courseCode);
 
-        /** Danh sách leads PENDING_SALES (không phân trang) cho tích hợp CMS */
-        List<LeadRegistrationResponse> getAllLeads(
-                        String courseCode,
-                        LocalDate from,
-                        LocalDate to);
+        /**
+         * Đánh dấu lead đã hoàn thành khóa học → status = COMPLETED.
+         * Cho phép học viên đăng ký lại khóa học này.
+         *
+         * @param userId     userId từ JWT
+         * @param courseCode mã khóa học
+         */
+        void markCourseCompleted(String userId, String courseCode);
 }

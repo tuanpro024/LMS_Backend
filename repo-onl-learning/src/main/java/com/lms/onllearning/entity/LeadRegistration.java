@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 /**
  * Lưu thông tin đăng ký tư vấn khóa học online.
  * userId lấy từ JWT ở backend, không nhận từ client.
- * UNIQUE KEY (user_id, course_code) đảm bảo idempotency.
+ * UNIQUE KEY (user_id, course_code) đảm bảo idempotency — khi status = COMPLETED,
+ * hệ thống cho phép đăng ký lại bằng cách reset bản ghi cũ.
  */
 @Entity
 @Table(name = "lead_registration", uniqueConstraints = @UniqueConstraint(name = "uk_user_course_code", columnNames = {
@@ -60,20 +61,17 @@ public class LeadRegistration {
 
     /**
      * Trạng thái đăng ký:
-     * PENDING_SALES – đang chờ tư vấn xác nhận ngoài hệ thống,
-     * APPROVED      – đã được kích hoạt quyền học,
-     * REJECTED      – đã bị từ chối.
+     * PENDING     – đang chờ tư vấn liên hệ,
+     * IN_PROGRESS – đã có thời khóa biểu, đang học,
+     * COMPLETED   – đã hoàn thành khóa học (cho phép đăng ký lại),
+     * CANCELED    – quá 3 ngày không có thời khóa biểu (cho phép đăng ký lại).
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
     @Builder.Default
-    private RegistrationStatus status = RegistrationStatus.PENDING_SALES;
+    private RegistrationStatus status = RegistrationStatus.PENDING;
 
-    /** Thời điểm kích hoạt quyền học (null nếu chưa APPROVED) */
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
-
-    /** userId của Admin/Manager đã kích hoạt (null nếu chưa APPROVED) */
-    @Column(name = "approved_by", length = 26)
-    private String approvedBy;
+    /** Thời điểm hoàn thành khóa học (null nếu chưa COMPLETED) */
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
 }

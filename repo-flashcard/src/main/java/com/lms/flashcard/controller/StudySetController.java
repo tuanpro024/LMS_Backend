@@ -52,6 +52,11 @@ public class StudySetController {
             List<StudySetResponse> response = delegate.getStudySetsByUserId(userId);
             return ResponseEntity.ok(ApiResponse.ok(response));
         }
+        if (q != null && packageType != null) {
+            // Kết hợp tìm kiếm keyword + lọc packageType
+            List<StudySetResponse> response = delegate.searchStudySetsByPackageType(q, packageType);
+            return ResponseEntity.ok(ApiResponse.ok(response));
+        }
         if (q != null) {
             List<StudySetResponse> response = delegate.searchStudySets(q);
             return ResponseEntity.ok(ApiResponse.ok(response));

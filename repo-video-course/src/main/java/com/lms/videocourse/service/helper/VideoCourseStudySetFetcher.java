@@ -6,6 +6,7 @@ import com.lms.content.common.dto.response.PackageResponse;
 import com.lms.content.common.dto.response.StudySetResponse;
 import com.lms.videocourse.dto.response.AvailableModuleResponse;
 import com.lms.videocourse.entity.enums.ModuleType;
+import com.lms.content.common.entity.enums.PublishStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -48,7 +49,17 @@ public class VideoCourseStudySetFetcher {
                 return new ArrayList<>();
             }
 
-            log.debug("[{}] Found {} VIDEO_COURSE packages", repoName, packages.size());
+            // Filter to only PUBLISHED packages (exclude DRAFT)
+            packages = packages.stream()
+                    .filter(pkg -> pkg.getPublishStatus() == PublishStatus.PUBLISHED)
+                    .collect(Collectors.toList());
+
+            if (packages.isEmpty()) {
+                log.debug("[{}] No PUBLISHED VIDEO_COURSE packages found", repoName);
+                return new ArrayList<>();
+            }
+
+            log.debug("[{}] Found {} PUBLISHED VIDEO_COURSE packages", repoName, packages.size());
 
             // Step 2: Extract folders from packages
             // Map folderId -> folderName for later use

@@ -124,16 +124,21 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                 }
 
                 // Sync totalDurationSeconds from module in case it was updated
-                if (module.getDuration() != null) {
+                if (module.getDuration() != null && module.getDuration() > 0) {
                         progress.setTotalDurationSeconds(module.getDuration());
                 }
 
-                // Fallback: if totalDurationSeconds is still 0, use watchedSeconds as estimate
-                // This handles cases where module.duration was never set
-                if (progress.getTotalDurationSeconds() == 0 && request.getWatchedSeconds() > 0) {
-                        progress.setTotalDurationSeconds(request.getWatchedSeconds());
-                        log.info("Using watchedSeconds ({}) as fallback totalDurationSeconds for module {}",
-                                        request.getWatchedSeconds(), moduleId);
+                // If module doesn't have duration, accept it from the frontend player
+                // (the player knows the real duration from the HLS/video stream metadata)
+                if (progress.getTotalDurationSeconds() == 0
+                                && request.getTotalDurationSeconds() != null
+                                && request.getTotalDurationSeconds() > 0) {
+                        progress.setTotalDurationSeconds(request.getTotalDurationSeconds());
+                        // Also persist it to the module so future requests don't need to re-send
+                        module.setDuration(request.getTotalDurationSeconds());
+                        videoModuleRepository.save(module);
+                        log.info("Synced totalDurationSeconds={} from player for module {}",
+                                        request.getTotalDurationSeconds(), moduleId);
                 }
 
                 // Update watch time (only moves forward, never backward)

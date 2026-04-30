@@ -13,4 +13,7 @@ public class UpdateWatchProgressRequest {
 
     @Min(value = 0, message = "lastPositionSeconds must be >= 0")
     private Integer lastPositionSeconds; // Current playback position for resume
+
+    @Min(value = 1, message = "totalDurationSeconds must be >= 1")
+    private Integer totalDurationSeconds; // Actual video duration from the player (optional)
 }

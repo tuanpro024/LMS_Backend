@@ -89,11 +89,6 @@ system-sync:
     cron: "0 0 1 * * *"
     zone: "Asia/Ho_Chi_Minh"
 
-# Rate limiting
-rate-limit:
-  register:
-    ip-capacity: 10 # requests per minute per IP
-    user-capacity: 5 # requests per minute per userId
 
 # Email sender identity
 app:

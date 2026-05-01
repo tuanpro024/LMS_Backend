@@ -58,6 +58,8 @@ public interface PackageRepository extends JpaRepository<Package, String> {
     @Query("SELECT p FROM Package p WHERE p.publishStatus = :status")
     List<Package> findAllByPublishStatus(@Param("status") PublishStatus status);
 
+        @Query("SELECT COUNT(p) FROM Package p WHERE p.type.name = :typeName AND p.publishStatus = :status AND p.deleted = false")
+        long countByTypeNameAndPublishStatus(@Param("typeName") TypeName typeName, @Param("status") PublishStatus status);
     // ── Ticket-holder: PUBLISHED + DRAFT do chính mình tạo ─────────────────────
 
     @Query("""

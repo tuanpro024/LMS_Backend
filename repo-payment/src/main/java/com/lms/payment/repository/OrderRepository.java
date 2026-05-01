@@ -1,6 +1,7 @@
 package com.lms.payment.repository;
 
 import com.lms.payment.entity.Order;
+import com.lms.payment.entity.enums.ItemType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -32,7 +33,10 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     long countTotalItemsByStatus(@Param("status") OrderStatus status);
 
     @Query("SELECT COUNT(i) FROM Order o JOIN o.items i WHERE o.status = :status AND i.itemType = :itemType")
-    long countTotalItemsByStatusAndItemType(@Param("status") OrderStatus status, @Param("itemType") com.lms.payment.entity.enums.ItemType itemType);
+    long countTotalItemsByStatusAndItemType(@Param("status") OrderStatus status, @Param("itemType") ItemType itemType);
+
+    @Query("SELECT SUM(i.price) FROM Order o JOIN o.items i WHERE o.status = :status AND i.itemType = :itemType")
+    BigDecimal sumItemPriceByStatusAndItemType(@Param("status") OrderStatus status, @Param("itemType") ItemType itemType);
 
     Page<Order> findAll(Pageable pageable);
 }

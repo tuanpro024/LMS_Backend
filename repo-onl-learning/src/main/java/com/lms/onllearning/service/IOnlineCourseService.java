@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface IOnlineCourseService {
     List<OnlineCourseResponse> getAll();
+    long countActiveCourses();
     OnlineCourseResponse getById(String id);
     OnlineCourseFullDetailResponse getFullDetail(String id);
     OnlineCourseResponse create(OnlineCourseRequest request);

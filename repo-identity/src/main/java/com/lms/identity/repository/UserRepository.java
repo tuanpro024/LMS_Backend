@@ -37,6 +37,11 @@ public interface UserRepository extends JpaRepository<User, String>, JpaSpecific
     @Query("SELECT u.id FROM User u WHERE u.deleted = false AND u.status = :status")
     Page<String> findUserIdsByStatus(@Param("status") UserStatus status, Pageable pageable);
 
+    long countByDeletedFalse();
+
+    @Query("SELECT COUNT(u) FROM User u JOIN u.roles r WHERE u.deleted = false AND r.name = :roleName")
+    long countByRoleNameAndDeletedFalse(@Param("roleName") com.lms.identity.entity.RoleName roleName);
+
     List<User> findAllByPremiumTrueAndPremiumExpiryDateBetween(java.time.Instant start, java.time.Instant end);
 
     List<User> findAllByPremiumTrueAndPremiumExpiryDateBefore(java.time.Instant now);

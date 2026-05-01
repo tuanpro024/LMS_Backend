@@ -15,13 +15,12 @@ import com.lms.onllearning.service.ILeadEmailService;
 import com.lms.onllearning.service.ILeadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,6 +28,7 @@ import java.time.LocalTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +39,9 @@ public class LeadServiceImpl implements ILeadService {
     private final LeadMapper mapper;
     private final NotificationPublisher notificationPublisher;
     private final ILeadEmailService leadEmailService;
+
+    @Qualifier("emailTaskExecutor")
+    private final Executor emailTaskExecutor;
 
     @Override
     @Transactional
@@ -65,13 +68,8 @@ public class LeadServiceImpl implements ILeadService {
 
                 LeadRegistration saved = repository.save(lead);
 
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        publishRegistrationConfirmation(saved);
-                        leadEmailService.sendRegistrationConfirmationEmail(saved);
-                    }
-                });
+                // Gửi notification + email ASYNC (không block response)
+                submitPostRegistrationTasks(saved);
 
                 return mapper.toResponse(saved);
             }
@@ -91,14 +89,8 @@ public class LeadServiceImpl implements ILeadService {
         log.info("Lead registered: id={}, userId={}, courseCode={}, status={}",
                 saved.getId(), userId, request.code(), saved.getStatus());
 
-        // Gửi notification + email SAU KHI transaction commit thành công
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                publishRegistrationConfirmation(saved);
-                leadEmailService.sendRegistrationConfirmationEmail(saved);
-            }
-        });
+        // Gửi notification + email ASYNC (không block response)
+        submitPostRegistrationTasks(saved);
 
         return mapper.toResponse(saved);
     }
@@ -149,6 +141,22 @@ public class LeadServiceImpl implements ILeadService {
     }
 
     // ─── Private helpers ─────────────────────────────────────────────────────
+
+    /**
+     * Submit post-registration tasks (notification + email) to async executor.
+     * ✅ API response trả về ngay lập tức (transaction đã commit)
+     * ✅ Tasks chạy background không block HTTP response
+     */
+    private void submitPostRegistrationTasks(LeadRegistration lead) {
+        emailTaskExecutor.execute(() -> {
+            try {
+                publishRegistrationConfirmation(lead);
+                leadEmailService.sendRegistrationConfirmationEmail(lead);
+            } catch (Exception ex) {
+                log.error("Error in post-registration tasks for lead {}: {}", lead.getId(), ex.getMessage(), ex);
+            }
+        });
+    }
 
     private void publishRegistrationConfirmation(LeadRegistration lead) {
         try {

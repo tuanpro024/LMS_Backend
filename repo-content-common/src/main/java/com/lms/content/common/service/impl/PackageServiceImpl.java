@@ -322,6 +322,11 @@ public class PackageServiceImpl implements PackageService {
         return packageMapper.toResponseList(packages);
     }
 
+    @Override
+    public long countPublishedPackagesByType(TypeName type) {
+        return packageRepository.countByTypeNameAndPublishStatus(type, PublishStatus.PUBLISHED);
+    }
+
     // ── PUBLISH WORKFLOW ──────────────────────────────────────────────────────
 
     @Override

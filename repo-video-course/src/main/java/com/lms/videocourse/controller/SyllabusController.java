@@ -52,6 +52,11 @@ public class SyllabusController {
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
 
+    @GetMapping("/courses/count")
+    public ResponseEntity<ApiResponse<Long>> countActiveCourses() {
+        return ResponseEntity.ok(ApiResponse.ok(syllabusService.countActiveCourses()));
+    }
+
     /**
      * Get full syllabus tree for a specific CMS course.
      */

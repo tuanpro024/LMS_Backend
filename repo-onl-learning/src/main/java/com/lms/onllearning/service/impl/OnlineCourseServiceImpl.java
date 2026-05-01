@@ -32,6 +32,11 @@ public class OnlineCourseServiceImpl implements IOnlineCourseService {
     }
 
     @Override
+    public long countActiveCourses() {
+        return courseRepo.countByDeletedFalse();
+    }
+
+    @Override
     public OnlineCourseResponse getById(String id) {
         return toResponse(findOrThrow(id));
     }

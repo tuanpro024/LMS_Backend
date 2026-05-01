@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface OnlineCourseRepository extends JpaRepository<OnlineCourse, String> {
     List<OnlineCourse> findAllByDeletedFalseOrderByCreatedAtDesc();
 
+    long countByDeletedFalse();
+
     Optional<OnlineCourse> findByIdAndDeletedFalse(String id);
 
     Optional<OnlineCourse> findFirstBySyllabusIdAndDeletedFalseOrderByCreatedAtDesc(String syllabusId);

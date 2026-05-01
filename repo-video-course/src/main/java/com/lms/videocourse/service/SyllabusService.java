@@ -133,6 +133,10 @@ public class SyllabusService {
         }).collect(Collectors.toList());
     }
 
+        public long countActiveCourses() {
+                return cmsCourseRepository.countByDeletedFalse();
+        }
+
     /**
      * Get full syllabus tree for a specific CMS course.
      */

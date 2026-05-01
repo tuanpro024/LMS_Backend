@@ -1,11 +1,18 @@
 package com.lms.payment.service.impl;
 
+import com.lms.common.dto.ApiResponse;
+import com.lms.payment.client.IdentityClient;
+import com.lms.payment.client.OnlineLearningClient;
+import com.lms.payment.client.VideoCourseClient;
+import com.lms.payment.dto.response.LmsOverviewStatsResponse;
 import com.lms.payment.dto.response.PaymentSummaryResponse;
 import com.lms.payment.dto.response.TransactionReportItemResponse;
 import com.lms.payment.entity.Order;
+import com.lms.payment.entity.enums.ItemType;
 import com.lms.payment.entity.enums.OrderStatus;
 import com.lms.payment.repository.OrderRepository;
 import com.lms.payment.service.PaymentReportService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,14 +23,22 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
+@Slf4j
 public class PaymentReportServiceImpl implements PaymentReportService {
 
     private final OrderRepository orderRepository;
-    private final com.lms.payment.client.IdentityClient identityClient;
+    private final IdentityClient identityClient;
+    private final OnlineLearningClient onlineLearningClient;
+    private final VideoCourseClient videoCourseClient;
 
-    public PaymentReportServiceImpl(OrderRepository orderRepository, com.lms.payment.client.IdentityClient identityClient) {
+    public PaymentReportServiceImpl(OrderRepository orderRepository,
+                                    IdentityClient identityClient,
+                                    OnlineLearningClient onlineLearningClient,
+                                    VideoCourseClient videoCourseClient) {
         this.orderRepository = orderRepository;
         this.identityClient = identityClient;
+        this.onlineLearningClient = onlineLearningClient;
+        this.videoCourseClient = videoCourseClient;
     }
 
     @Override
@@ -44,6 +59,20 @@ public class PaymentReportServiceImpl implements PaymentReportService {
                 .totalMembershipsSold(totalMembershipsSold)
                 .build();
     }
+
+        @Override
+        public LmsOverviewStatsResponse getLmsOverviewStats() {
+        BigDecimal videoCourseRevenue = orderRepository
+            .sumItemPriceByStatusAndItemType(OrderStatus.COMPLETED, ItemType.COURSE);
+        BigDecimal membershipRevenue = orderRepository
+            .sumItemPriceByStatusAndItemType(OrderStatus.COMPLETED, ItemType.MEMBERSHIP);
+
+        return new LmsOverviewStatsResponse(
+            fetchVideoCourseCount(),
+            fetchOnlineCourseCount(),
+            videoCourseRevenue != null ? videoCourseRevenue : BigDecimal.ZERO,
+            membershipRevenue != null ? membershipRevenue : BigDecimal.ZERO);
+        }
 
     @Override
     public Page<TransactionReportItemResponse> getTransactionReport(Pageable pageable) {
@@ -107,5 +136,29 @@ public class PaymentReportServiceImpl implements PaymentReportService {
         }).collect(Collectors.toList()));
 
         return item;
+    }
+
+    private long fetchOnlineCourseCount() {
+        try {
+            ApiResponse<Long> response = onlineLearningClient.getOnlineCourseCount();
+            if (response != null && response.success() && response.data() != null) {
+                return response.data();
+            }
+        } catch (Exception ex) {
+            log.warn("Cannot fetch online course count: {}", ex.getMessage());
+        }
+        return 0L;
+    }
+
+    private long fetchVideoCourseCount() {
+        try {
+            ApiResponse<Long> response = videoCourseClient.getVideoCourseCount();
+            if (response != null && response.success() && response.data() != null) {
+                return response.data();
+            }
+        } catch (Exception ex) {
+            log.warn("Cannot fetch video course count: {}", ex.getMessage());
+        }
+        return 0L;
     }
 }

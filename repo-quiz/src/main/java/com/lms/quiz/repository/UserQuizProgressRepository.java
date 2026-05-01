@@ -10,4 +10,6 @@ public interface UserQuizProgressRepository extends JpaRepository<UserQuizProgre
     Optional<UserQuizProgress> findByUserIdAndQuizId(String userId, String quizId);
 
     long countByUserIdAndStudySetIdAndCompletedTrue(String userId, String studySetId);
+
+    void deleteByStudySetId(String studySetId);
 }

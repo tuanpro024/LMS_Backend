@@ -21,4 +21,6 @@ public interface UserPronunciationItemProgressRepository extends JpaRepository<U
     @Query("SELECT p FROM UserPronunciationItemProgress p " +
            "WHERE p.userId = :userId AND p.pronunciationItem.studySet.id = :studySetId")
     java.util.List<UserPronunciationItemProgress> findByUserIdAndStudySetId(String userId, String studySetId);
+
+    void deleteByPronunciationItemStudySetId(String studySetId);
 }

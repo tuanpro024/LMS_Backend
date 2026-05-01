@@ -17,4 +17,6 @@ public interface QuizRepository extends JpaRepository<Quiz, String> {
 
     @Query("SELECT COUNT(q) FROM Quiz q WHERE q.studySet.id = :studySetId")
     long countByStudySetId(String studySetId);
+
+    void deleteByStudySetId(String studySetId);
 }

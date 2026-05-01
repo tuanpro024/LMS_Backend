@@ -79,6 +79,10 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                                         return watchProgressRepository.save(newProgress);
                                 });
 
+                if (isExternalPracticeModule(module.getModuleType())) {
+                        updatePracticeModuleStatus(userId, module, ProgressStatus.IN_PROGRESS);
+                }
+
                 return toWatchProgressResponse(progress);
         }
 
@@ -120,16 +124,21 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                 }
 
                 // Sync totalDurationSeconds from module in case it was updated
-                if (module.getDuration() != null) {
+                if (module.getDuration() != null && module.getDuration() > 0) {
                         progress.setTotalDurationSeconds(module.getDuration());
                 }
 
-                // Fallback: if totalDurationSeconds is still 0, use watchedSeconds as estimate
-                // This handles cases where module.duration was never set
-                if (progress.getTotalDurationSeconds() == 0 && request.getWatchedSeconds() > 0) {
-                        progress.setTotalDurationSeconds(request.getWatchedSeconds());
-                        log.info("Using watchedSeconds ({}) as fallback totalDurationSeconds for module {}",
-                                        request.getWatchedSeconds(), moduleId);
+                // If module doesn't have duration, accept it from the frontend player
+                // (the player knows the real duration from the HLS/video stream metadata)
+                if (progress.getTotalDurationSeconds() == 0
+                                && request.getTotalDurationSeconds() != null
+                                && request.getTotalDurationSeconds() > 0) {
+                        progress.setTotalDurationSeconds(request.getTotalDurationSeconds());
+                        // Also persist it to the module so future requests don't need to re-send
+                        module.setDuration(request.getTotalDurationSeconds());
+                        videoModuleRepository.save(module);
+                        log.info("Synced totalDurationSeconds={} from player for module {}",
+                                        request.getTotalDurationSeconds(), moduleId);
                 }
 
                 // Update watch time (only moves forward, never backward)
@@ -197,12 +206,45 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
                         progress.setLastWatchedAt(Instant.now());
                         progress = watchProgressRepository.save(progress);
 
+                        // If it's a practice module, we also need to update the practice progress table
+                        // because updateStepProgress relies on it for these types.
+                        if (isExternalPracticeModule(module.getModuleType())) {
+                                updatePracticeModuleStatus(userId, module, ProgressStatus.COMPLETED);
+                        }
+
                         // Rollup
                         updateStepProgress(userId, module.getStepId());
                         updateCourseProgress(userId, step.getStudySetId());
                 }
 
                 return toWatchProgressResponse(progress);
+        }
+
+        private void updatePracticeModuleStatus(String userId, VideoModule module, ProgressStatus status) {
+                VideoPracticeModuleProgress practiceProgress = practiceProgressRepository
+                                .findByUserIdAndVideoModuleId(userId, module.getId())
+                                .orElseGet(() -> VideoPracticeModuleProgress.builder()
+                                                .userId(userId)
+                                                .videoModuleId(module.getId())
+                                                .stepId(module.getStepId())
+                                                .studySetId(videoStepRepository.findById(module.getStepId())
+                                                                .map(VideoStep::getStudySetId).orElse(null))
+                                                .moduleType(module.getModuleType())
+                                                .contentSetId(module.getContentSetId())
+                                                .status(ProgressStatus.NOT_STARTED)
+                                                .build());
+
+                if (practiceProgress.getStatus() != status) {
+                        practiceProgress.setStatus(status);
+                        if (status == ProgressStatus.COMPLETED) {
+                                practiceProgress.setProgressPercentage(100.0);
+                                practiceProgress.setCompletedAt(Instant.now());
+                        }
+                        if (practiceProgress.getFirstStartedAt() == null) {
+                                practiceProgress.setFirstStartedAt(Instant.now());
+                        }
+                        practiceProgressRepository.save(practiceProgress);
+                }
         }
 
         @Override
@@ -467,11 +509,6 @@ public class VideoProgressServiceImpl implements IVideoProgressService {
         }
 
         private boolean isExternalPracticeModule(com.lms.videocourse.entity.enums.ModuleType moduleType) {
-                return moduleType == com.lms.videocourse.entity.enums.ModuleType.FLASHCARD ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.PRONUNCIATION ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.WRITING ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.QUIZ ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.LISTENING ||
-                                moduleType == com.lms.videocourse.entity.enums.ModuleType.KANJI_ORIGIN;
+                return moduleType != null && moduleType != com.lms.videocourse.entity.enums.ModuleType.VIDEO;
         }
 }

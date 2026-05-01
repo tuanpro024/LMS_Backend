@@ -20,4 +20,6 @@ public interface CardRepository extends JpaRepository<Card, String> {
     List<Card> findByStudySetId(String studySetId);
 
     long countByStudySetId(String studySetId);
+
+    void deleteByStudySetId(String studySetId);
 }

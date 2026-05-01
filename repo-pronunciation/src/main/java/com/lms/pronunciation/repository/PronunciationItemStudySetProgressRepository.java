@@ -13,4 +13,6 @@ public interface PronunciationItemStudySetProgressRepository extends JpaReposito
     Optional<PronunciationItemStudySetProgress> findByUserIdAndStudySetId(String userId, String studySetId);
 
     List<PronunciationItemStudySetProgress> findByUserId(String userId);
+
+    void deleteByStudySetId(String studySetId);
 }

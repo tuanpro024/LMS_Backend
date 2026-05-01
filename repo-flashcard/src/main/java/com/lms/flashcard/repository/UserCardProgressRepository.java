@@ -22,4 +22,6 @@ public interface UserCardProgressRepository extends JpaRepository<UserCardProgre
                         @Param("status") CardStatus status);
 
         void deleteByCardId(String cardId);
+
+        void deleteByCardStudySetId(String studySetId);
 }

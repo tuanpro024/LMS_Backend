@@ -13,4 +13,6 @@ public interface UserQuizStudySetProgressRepository extends JpaRepository<UserQu
     Optional<UserQuizStudySetProgress> findByUserIdAndStudySetId(String userId, String studySetId);
 
     List<UserQuizStudySetProgress> findByUserId(String userId);
+
+    void deleteByStudySetId(String studySetId);
 }

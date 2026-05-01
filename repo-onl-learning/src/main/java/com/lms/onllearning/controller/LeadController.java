@@ -6,8 +6,6 @@ import com.lms.onllearning.dto.request.LeadRegistrationRequest;
 import com.lms.onllearning.dto.response.LeadRegistrationResponse;
 import com.lms.onllearning.service.ExcelExportService;
 import com.lms.onllearning.service.ILeadService;
-import com.lms.onllearning.service.RateLimitService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -32,31 +30,19 @@ public class LeadController {
 
         private final ILeadService leadService;
         private final ExcelExportService excelExportService;
-        private final RateLimitService rateLimitService;
 
         /**
          * Đăng ký tư vấn khóa học.
          * - userId lấy từ JWT (authentication.getName()), không nhận từ client.
-         * - Rate-limited: 5 req/phút/user + 10 req/phút/IP.
          * - Idempotent: cùng user + courseCode (status PENDING hoặc IN_PROGRESS) → trả về lead cũ.
          * - Nếu status = COMPLETED hoặc CANCELED → cho phép đăng ký lại (reset bản ghi).
          */
         @PostMapping("/register")
         public ResponseEntity<ApiResponse<LeadRegistrationResponse>> register(
                         @Valid @RequestBody LeadRegistrationRequest request,
-                        Authentication authentication,
-                        HttpServletRequest httpRequest) {
+                        Authentication authentication) {
 
                 String userId = extractUserId(authentication);
-
-                // Rate-limit check: cả IP và userId
-                if (!rateLimitService.tryConsume(httpRequest, userId)) {
-                        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                                        .header("Retry-After", "60")
-                                        .body(ApiResponse.error("RATE_LIMIT_EXCEEDED",
-                                                        "Quá nhiều yêu cầu, vui lòng thử lại sau 1 phút"));
-                }
-
                 LeadRegistrationResponse response = leadService.register(request, userId);
                 return ResponseEntity.status(HttpStatus.CREATED)
                                 .body(ApiResponse.ok(response));

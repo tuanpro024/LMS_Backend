@@ -2,6 +2,7 @@ package com.lms.writing.service.impl;
 
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
+import com.lms.common.security.AuthPrincipal;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.content.common.entity.StudySet;
 import com.lms.content.common.repository.StudySetRepository;
@@ -20,6 +21,8 @@ import com.lms.writing.service.WordService;
 import org.springframework.context.ApplicationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,8 +66,8 @@ public class WordServiceImpl implements WordService {
         Word word = wordRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
-        // Check ownership — only the study set owner or an admin can update
-        if (!word.getStudySet().getUserId().equals(userId)) {
+        // Check ownership or privileged role
+        if (!canManageStudySet(word.getStudySet(), userId)) {
             throw new ApiException(ErrorCode.E240, "No permission to update this word");
         }
 
@@ -81,8 +84,8 @@ public class WordServiceImpl implements WordService {
         Word word = wordRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new ApiException(ErrorCode.E227, "Word not found"));
 
-        // Check ownership — only the study set owner or an admin can delete
-        if (!word.getStudySet().getUserId().equals(userId)) {
+        // Check ownership or privileged role
+        if (!canManageStudySet(word.getStudySet(), userId)) {
             throw new ApiException(ErrorCode.E240, "No permission to delete this word");
         }
 
@@ -221,8 +224,8 @@ public class WordServiceImpl implements WordService {
         log.debug("Adding words to StudySet: studySetId={}, studySetOwnerId={}, requestUserId={}",
                 studySetId, studySet.getUserId(), userId);
 
-        // Check ownership — only the study set owner can add words
-        if (!studySet.getUserId().equals(userId)) {
+        // Check ownership or privileged role
+        if (!canManageStudySet(studySet, userId)) {
             throw new ApiException(ErrorCode.E240, "No permission to add words to this study set");
         }
 
@@ -251,7 +254,7 @@ public class WordServiceImpl implements WordService {
     @Transactional(readOnly = true)
     public List<WritingStudySetProgressResponse> getUserStudySetHistory(String userId) {
         Set<String> studySetIds = userWordProgressRepository.findDistinctStudySetIdsByUserId(userId);
-        
+
         return studySetIds.stream()
                 .map(studySetId -> {
                     long totalWords = wordRepository.countByStudySetIdAndDeletedFalse(studySetId);
@@ -261,7 +264,7 @@ public class WordServiceImpl implements WordService {
                     String status = totalWords > 0 && learnedWords >= totalWords
                             ? "COMPLETED"
                             : learnedWords > 0 ? "IN_PROGRESS" : "NOT_STARTED";
-                    
+
                     WritingStudySetProgressResponse response = WritingStudySetProgressResponse.builder()
                             .studySetId(studySetId)
                             .status(status)
@@ -269,13 +272,14 @@ public class WordServiceImpl implements WordService {
                             .totalWords((int) totalWords)
                             .progressPercentage(progressPercentage)
                             .build();
-                    
+
                     // Resolve study set title
                     response.setStudySetTitle(resolveStudySetTitle(studySetId));
                     return response;
                 })
                 .sorted((left, right) -> {
-                    // Sort by study set title alphabetically (could be updated later to sort by last activity)
+                    // Sort by study set title alphabetically (could be updated later to sort by
+                    // last activity)
                     String leftTitle = left.getStudySetTitle() != null ? left.getStudySetTitle() : "";
                     String rightTitle = right.getStudySetTitle() != null ? right.getStudySetTitle() : "";
                     return rightTitle.compareTo(leftTitle); // Descending order
@@ -291,5 +295,20 @@ public class WordServiceImpl implements WordService {
         } catch (Exception e) {
             return studySetId;
         }
+    }
+
+    private boolean canManageStudySet(StudySet studySet, String userId) {
+        if (studySet == null || userId == null) {
+            return false;
+        }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) {
+            if (principal.hasRole("ROLE_ADMIN") || principal.hasRole("ROLE_TEACHER_MANAGER")) {
+                return true;
+            }
+        }
+
+        return userId.equals(studySet.getUserId());
     }
 }

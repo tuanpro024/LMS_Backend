@@ -49,4 +49,6 @@ public interface PronunciationItemRepository extends JpaRepository<Pronunciation
     Integer findMaxContentIndexByStudySetId(@Param("studySetId") String studySetId);
 
     long countByStudySetIdAndDeletedFalse(String studySetId);
+
+    void deleteByStudySetId(String studySetId);
 }

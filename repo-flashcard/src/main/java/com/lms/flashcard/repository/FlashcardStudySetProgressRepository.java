@@ -12,4 +12,6 @@ public interface FlashcardStudySetProgressRepository extends JpaRepository<Flash
     Optional<FlashcardStudySetProgress> findByUserIdAndStudySetId(String userId, String studySetId);
 
     List<FlashcardStudySetProgress> findByUserId(String userId);
+
+    void deleteByStudySetId(String studySetId);
 }

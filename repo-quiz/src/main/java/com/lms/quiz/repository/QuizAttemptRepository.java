@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, String> {
 
     long countByUserIdAndQuizId(String userId, String quizId);
+
+    void deleteByStudySetId(String studySetId);
 }

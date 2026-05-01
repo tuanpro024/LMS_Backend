@@ -1,6 +1,5 @@
 package com.lms.content.common.service.impl;
 
-
 import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.common.http.TicketAccessClient;
@@ -41,7 +40,7 @@ public class PackageServiceImpl implements PackageService {
     private final PackageMapper packageMapper;
     private final TypeRepository typeRepository;
     private final com.lms.content.common.service.FolderService folderService;
-    private final com.lms.content.common.service.StudySetService studySetService;
+    private final StudySetDeletionService studySetDeletionService;
     private final TicketAccessClient ticketAccessClient;
 
     // ── CREATE ────────────────────────────────────────────────────────────────
@@ -243,10 +242,9 @@ public class PackageServiceImpl implements PackageService {
                 List<com.lms.content.common.entity.StudySet> setsToDelete = List.copyOf(studySets);
                 for (com.lms.content.common.entity.StudySet set : setsToDelete) {
                     try {
-                        studySetService.deleteStudySet(set.getId(), userId);
+                        studySetDeletionService.deleteStudySetInNewTransaction(set.getId(), userId);
                     } catch (Exception e) {
-                        log.warn("Failed to delete study set {} during package deletion: {}", set.getId(),
-                                e.getMessage());
+                        log.warn("Failed to delete study set {} during package deletion", set.getId(), e);
                     }
                 }
             }
@@ -380,7 +378,6 @@ public class PackageServiceImpl implements PackageService {
         }
         return ticketAccessClient.checkAccess(userId, ticketModule);
     }
-
 
     // ── EXTENSION HOOKS ───────────────────────────────────────────────────────
 

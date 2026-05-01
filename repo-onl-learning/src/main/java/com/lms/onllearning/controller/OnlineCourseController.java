@@ -30,6 +30,11 @@ public class OnlineCourseController {
         return ResponseEntity.ok(ApiResponse.ok(courseService.getAll()));
     }
 
+    @GetMapping("/count")
+    public ResponseEntity<ApiResponse<Long>> countActiveCourses() {
+        return ResponseEntity.ok(ApiResponse.ok(courseService.countActiveCourses()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<OnlineCourseResponse>> getById(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.ok(courseService.getById(id)));

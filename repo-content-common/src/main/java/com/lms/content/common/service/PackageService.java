@@ -65,6 +65,8 @@ public interface PackageService {
 
     List<PackageResponse> getFreePackages(TypeName type, int limit);
 
+    long countPublishedPackagesByType(TypeName type);
+
     // ── Publish workflow ───────────────────────────────────────────────────────
 
     /**

@@ -12,4 +12,5 @@ public interface CmsVideoCourseRepository extends JpaRepository<CmsVideoCourse, 
     Optional<CmsVideoCourse> findByCmsCourseId(String cmsCourseId);
     List<CmsVideoCourse> findAllByDeletedFalse();
     List<CmsVideoCourse> findAllBySyllabusIdIsNotNullAndDeletedFalse();
+    long countByDeletedFalse();
 }

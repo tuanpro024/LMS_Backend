@@ -142,6 +142,10 @@ public class PackageApiDelegate {
         return packageService.getFreePackages(type, limit);
     }
 
+    public long countPublishedPackagesByType(TypeName type) {
+        return packageService.countPublishedPackagesByType(type);
+    }
+
     // ── PUBLISH WORKFLOW ──────────────────────────────────────────────────────
 
     /**

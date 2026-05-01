@@ -1,7 +1,10 @@
 package com.lms.identity.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.identity.dto.response.IdentityUserOverviewResponse;
 import com.lms.identity.repository.UserInteractionLogRepository;
+import com.lms.identity.repository.UserRepository;
+import com.lms.identity.entity.RoleName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 public class AnalyticsAdminController {
 
     private final UserInteractionLogRepository repository;
+    private final UserRepository userRepository;
 
     /**
      * Returns an overview of interaction statistics for a given period.
@@ -79,5 +83,19 @@ public class AnalyticsAdminController {
         result.put("dailyTrend", dailyTrend);
 
         return ApiResponse.ok(result);
+    }
+
+    @GetMapping("/users-overview")
+    public ApiResponse<IdentityUserOverviewResponse> getUsersOverview() {
+        long totalUsers = userRepository.countByDeletedFalse();
+        long totalTeachers = userRepository.countByRoleNameAndDeletedFalse(RoleName.ROLE_TEACHER);
+        long totalManagers = userRepository.countByRoleNameAndDeletedFalse(RoleName.ROLE_TEACHER_MANAGER);
+        long totalStudents = userRepository.countByRoleNameAndDeletedFalse(RoleName.ROLE_USER);
+
+        return ApiResponse.ok(new IdentityUserOverviewResponse(
+                totalUsers,
+                totalTeachers,
+                totalManagers,
+                totalStudents));
     }
 }

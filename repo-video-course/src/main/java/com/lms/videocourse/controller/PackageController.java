@@ -74,6 +74,12 @@ public class PackageController {
         return ResponseEntity.ok(ApiResponse.ok(enrichWithRatings(packages)));
     }
 
+    @GetMapping("/published/count")
+    public ResponseEntity<ApiResponse<Long>> countPublishedPackages() {
+        long count = packageDelegate.countPublishedPackagesByType(TypeName.VIDEO_COURSE);
+        return ResponseEntity.ok(ApiResponse.ok(count));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<VideoCoursePackageResponse>> getPackage(
             @PathVariable String id,

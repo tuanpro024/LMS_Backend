@@ -1,6 +1,7 @@
 package com.lms.payment.controller;
 
 import com.lms.common.dto.ApiResponse;
+import com.lms.payment.dto.response.LmsOverviewStatsResponse;
 import com.lms.payment.dto.response.PaymentSummaryResponse;
 import com.lms.payment.dto.response.TransactionReportItemResponse;
 import com.lms.payment.service.PaymentReportService;
@@ -25,6 +26,12 @@ public class PaymentReportController {
     @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
     public ApiResponse<PaymentSummaryResponse> getSummary() {
         return ApiResponse.ok(paymentReportService.getSummary());
+    }
+
+    @GetMapping("/lms-overview")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ApiResponse<LmsOverviewStatsResponse> getLmsOverviewStats() {
+        return ApiResponse.ok(paymentReportService.getLmsOverviewStats());
     }
 
     @GetMapping("/transactions")

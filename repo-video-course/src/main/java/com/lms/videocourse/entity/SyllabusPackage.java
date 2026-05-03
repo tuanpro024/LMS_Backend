@@ -54,4 +54,7 @@ public class SyllabusPackage extends BaseEntity {
 
     @Column(name = "last_synced_at")
     private Instant lastSyncedAt;
+
+    @Column(name = "internal_package_id", length = 26)
+    private String internalPackageId;
 }

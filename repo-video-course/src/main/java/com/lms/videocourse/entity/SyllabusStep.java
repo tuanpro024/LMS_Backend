@@ -29,6 +29,7 @@ public class SyllabusStep extends BaseEntity {
     private String description;
 
     /** @deprecated Kept for backward compatibility. Use SyllabusActivity instead. */
+    @Deprecated
     @Column(name = "module_name", length = 255)
     private String moduleName;
 

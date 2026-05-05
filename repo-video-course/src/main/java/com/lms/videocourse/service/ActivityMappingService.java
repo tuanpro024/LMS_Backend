@@ -41,7 +41,7 @@ public class ActivityMappingService {
      * Get mapping for a specific activity.
      */
     public ActivityMappingDTO getMappingByActivityId(String activityId) {
-        return mappingRepository.findBySyllabusActivityIdAndDeletedFalse(activityId)
+                return mappingRepository.findBySyllabusActivityIdAndDeletedFalse(activityId)
                 .map(this::toDTO)
                 .orElse(null);
     }
@@ -96,7 +96,7 @@ public class ActivityMappingService {
      * Delete mapping for a specific activity.
      */
     public void deleteMapping(String activityId) {
-        mappingRepository.findBySyllabusActivityIdAndDeletedFalse(activityId)
+                mappingRepository.findBySyllabusActivityIdAndDeletedFalse(activityId)
                 .ifPresent(mapping -> {
                     mapping.setDeleted(true);
                     mappingRepository.save(mapping);
@@ -224,6 +224,10 @@ public class ActivityMappingService {
         PackageResponse pkgResp = packageDelegate.createPackage(pkgReq, userId);
         String packageId = pkgResp.getId();
         log.info("Internal Package created with ID: {}", packageId);
+
+        // Update syllabus package with internal ID for access control mapping
+        syllabusPkg.setInternalPackageId(packageId);
+        packageRepository.save(syllabusPkg);
 
         // 2. Iterate Folders
         List<SyllabusFolder> syllabusFolders = folderRepository.findAllBySyllabusPackageIdAndDeletedFalse(syllabusPkg.getId());

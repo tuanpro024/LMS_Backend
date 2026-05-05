@@ -1,18 +1,26 @@
 package com.lms.videocourse.service;
 
+import com.lms.common.dto.ApiResponse;
+import com.lms.videocourse.client.PaymentClient;
+import com.lms.videocourse.client.dto.PaymentAccessCheckResponse;
 import com.lms.videocourse.dto.SyllabusTreeDTO;
 import com.lms.videocourse.dto.response.SyllabusCourseListDTO;
 import com.lms.videocourse.entity.*;
 import com.lms.videocourse.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SyllabusService {
 
     private final SyllabusPackageRepository packageRepository;
@@ -21,6 +29,9 @@ public class SyllabusService {
     private final SyllabusStepRepository stepRepository;
     private final SyllabusActivityRepository activityRepository;
     private final CmsVideoCourseRepository cmsCourseRepository;
+    private final PaymentClient paymentClient;
+
+    private static final List<String> PRIVILEGED_AUTHORITIES = List.of("ROLE_ADMIN", "ROLE_TEACHER");
 
     /**
      * Fetches the entire Syllabus hierarchy: Packages -> Folders -> StudySets -> Steps -> Activities.
@@ -51,7 +62,9 @@ public class SyllabusService {
                 .collect(Collectors.groupingBy(SyllabusActivity::getSyllabusStepId));
 
         // Assemble the tree
-        return packages.stream().map(pkg -> SyllabusTreeDTO.builder()
+        return packages.stream().map(pkg -> {
+            boolean hasAccess = checkAccessForPackage(pkg);
+            return SyllabusTreeDTO.builder()
                 .id(pkg.getId())
                 .name(pkg.getName())
                 .description(pkg.getDescription())
@@ -85,8 +98,8 @@ public class SyllabusService {
                                                                                 .id(act.getId())
                                                                                 .cmsModuleId(act.getCmsModuleId())
                                                                                 .name(act.getName())
-                                                                                .videoContent(act.getVideoContent())
-                                                                                .documentContent(act.getDocumentContent())
+                                                                                .videoContent(hasAccess ? act.getVideoContent() : null)
+                                                                                .documentContent(hasAccess ? act.getDocumentContent() : null)
                                                                                 .displayOrder(act.getDisplayOrder())
                                                                                 .build())
                                                                         .collect(Collectors.toList()))
@@ -96,8 +109,41 @@ public class SyllabusService {
                                         .collect(Collectors.toList()))
                                 .build())
                         .collect(Collectors.toList()))
-                .build())
+                .build();
+        })
                 .collect(Collectors.toList());
+    }
+
+    private boolean checkAccessForPackage(SyllabusPackage pkg) {
+        if (hasPrivilegedAuthority()) {
+            return true;
+        }
+
+        if (pkg.getCoursePrice() != null && pkg.getCoursePrice().compareTo(BigDecimal.ZERO) <= 0) {
+            return true;
+        }
+
+        // If no internalPackageId is mapped yet, allow seeing the metadata but not the content
+        // unless it's a free course (price = 0). For now, we assume all video courses are paid.
+        if (pkg.getInternalPackageId() == null) {
+            log.warn("Syllabus package {} not yet generated/mapped. Content hidden for student.", pkg.getId());
+            return false;
+        }
+
+        try {
+            ApiResponse<PaymentAccessCheckResponse> response = paymentClient.checkAccess(pkg.getInternalPackageId());
+            return response != null && response.data() != null && response.data().isHasAccess();
+        } catch (Exception e) {
+            log.error("Error checking access for package {}: {}", pkg.getInternalPackageId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean hasPrivilegedAuthority() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) return false;
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> PRIVILEGED_AUTHORITIES.contains(a.getAuthority()));
     }
 
     /**
@@ -161,6 +207,7 @@ public class SyllabusService {
         }
 
         // Build tree for this package only
+        boolean hasAccess = checkAccessForPackage(pkg);
         List<SyllabusFolder> folders = folderRepository.findAllBySyllabusPackageIdAndDeletedFalse(pkg.getId());
 
         List<String> folderIds = folders.stream().map(SyllabusFolder::getId).collect(Collectors.toList());
@@ -221,8 +268,8 @@ public class SyllabusService {
                                                                                 .id(act.getId())
                                                                                 .cmsModuleId(act.getCmsModuleId())
                                                                                 .name(act.getName())
-                                                                                .videoContent(act.getVideoContent())
-                                                                                .documentContent(act.getDocumentContent())
+                                                                                .videoContent(hasAccess ? act.getVideoContent() : null)
+                                                                                .documentContent(hasAccess ? act.getDocumentContent() : null)
                                                                                 .displayOrder(act.getDisplayOrder())
                                                                                 .build())
                                                                         .collect(Collectors.toList()))

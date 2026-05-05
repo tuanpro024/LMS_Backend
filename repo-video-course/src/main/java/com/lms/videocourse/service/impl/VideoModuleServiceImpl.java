@@ -3,6 +3,16 @@ package com.lms.videocourse.service.impl;
 import com.lms.content.common.delegate.api.StudySetApiDelegate;
 import com.lms.videocourse.client.MultimediaClient;
 import com.lms.videocourse.client.dto.MultimediaVideoResponse;
+import com.lms.videocourse.client.PaymentClient;
+import com.lms.videocourse.client.dto.PaymentAccessCheckResponse;
+import com.lms.common.dto.ApiResponse;
+import com.lms.content.common.delegate.api.FolderApiDelegate;
+import com.lms.content.common.delegate.api.PackageApiDelegate;
+import com.lms.content.common.dto.response.FolderResponse;
+import com.lms.content.common.dto.response.PackageResponse;
+import org.springframework.web.server.ResponseStatusException;
+import java.math.BigDecimal;
+import org.springframework.http.HttpStatus;
 import com.lms.videocourse.dto.request.CreateVideoModuleRequest;
 import com.lms.videocourse.dto.request.UpdateVideoModuleRequest;
 import com.lms.videocourse.dto.response.VideoModuleResponse;
@@ -19,10 +29,16 @@ import com.lms.videocourse.service.IVideoModuleService;
 import com.lms.common.util.SanitizationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.lms.common.security.AuthPrincipal;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +47,12 @@ import java.util.stream.Collectors;
 public class VideoModuleServiceImpl implements IVideoModuleService {
 
     private static final String SYSTEM_TRIGGER = "system";
+    private static final Set<String> PRIVILEGED_AUTHORITIES = Set.of(
+            "ROLE_ADMIN",
+            "ROLE_TEACHER_MANAGER",
+            "ROLE_TEACHER",
+            "ROLE_COLLABORATOR");
+
 
     private final VideoModuleRepository videoModuleRepository;
     private final VideoStepRepository videoStepRepository;
@@ -38,6 +60,9 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
     private final VideoPracticeModuleProgressRepository practiceProgressRepository;
     private final MultimediaClient multimediaClient;
     private final StudySetApiDelegate studySetApiDelegate;
+    private final PaymentClient paymentClient;
+    private final FolderApiDelegate folderApiDelegate;
+    private final PackageApiDelegate packageApiDelegate;
 
     @Override
     @Transactional
@@ -111,6 +136,11 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
     public VideoModuleResponse getVideoModuleById(String id, String userId) {
         VideoModule module = videoModuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Video module not found: " + id));
+                
+        var step = videoStepRepository.findById(module.getStepId())
+                .orElseThrow(() -> new ResourceNotFoundException("Video step not found"));
+        validateAccess(step.getStudySetId());
+
         VideoWatchProgressResponse watchProgress = getWatchProgressForUser(userId, id);
         VideoPracticeModuleProgressResponse practiceProgress = getPracticeProgressForUser(userId, id);
         return toResponse(module, watchProgress, practiceProgress);
@@ -118,6 +148,10 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
 
     @Override
     public List<VideoModuleResponse> getVideoModulesByStepId(String stepId, String userId) {
+        var step = videoStepRepository.findById(stepId)
+                .orElseThrow(() -> new ResourceNotFoundException("Video step not found: " + stepId));
+        validateAccess(step.getStudySetId());
+
         return videoModuleRepository.findByStepIdAndIsActiveTrueOrderByModuleOrderAsc(stepId)
                 .stream()
                 .map(module -> {
@@ -276,5 +310,102 @@ public class VideoModuleServiceImpl implements IVideoModuleService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid practice module type: " + typeStr);
         }
+    }
+
+    private void validateAccess(String studySetId) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserId = (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal principal) 
+                ? principal.userId() : "anonymous";
+
+        log.info("[ACCESS_CHECK] Validating access for user: {} to studySet: {}", currentUserId, studySetId);
+
+        if (hasPrivilegedAuthority()) {
+            log.info("[ACCESS_CHECK] User {} has privileged authority, bypassing check", currentUserId);
+            return;
+        }
+
+        PackageResponse pkg;
+        try {
+            pkg = resolvePackageForStudySet(studySetId);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[ACCESS_CHECK] Failed to resolve package for study set {}: {}", studySetId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn cần mua khóa học để truy cập nội dung này.");
+        }
+        if (isFreePackage(pkg)) {
+            log.info("[ACCESS_CHECK] Course is FREE, granting access to user: {}", currentUserId);
+            return;
+        }
+
+        String checkId = pkg.getId();
+
+        if ("anonymous".equals(currentUserId)) {
+            log.warn("[ACCESS_CHECK] Anonymous user denied access to PAID course: {}", checkId);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Bạn cần đăng nhập để truy cập nội dung này.");
+        }
+
+        log.info("[ACCESS_CHECK] PackageId (CheckId): {}", checkId);
+
+        try {
+            ApiResponse<PaymentAccessCheckResponse> response = paymentClient.checkAccess(checkId);
+            boolean hasAccess = (response != null && response.data() != null && response.data().isHasAccess());
+            log.info("[ACCESS_CHECK] Payment service response: hasAccess={}", hasAccess);
+
+            if (!hasAccess) {
+                log.warn("[ACCESS_CHECK] User {} DENIED access to package {}", currentUserId, checkId);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn cần mua khóa học để truy cập nội dung này.");
+            }
+            log.info("[ACCESS_CHECK] User {} GRANTED access to package {}", currentUserId, checkId);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("[ACCESS_CHECK] Error calling payment service for package {}: {}", checkId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Không thể xác minh quyền truy cập khóa học. Vui lòng thử lại sau.");
+        }
+    }
+
+    private PackageResponse resolvePackageForStudySet(String studySetId) {
+        List<FolderResponse> folders = folderApiDelegate.getFoldersByStudySetId(studySetId);
+        if (folders == null || folders.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Bạn cần mua khóa học để truy cập nội dung này.");
+        }
+
+        String packageId = folders.stream()
+                .map(FolderResponse::getPackageId)
+                .filter(StringUtils::hasText)
+                .findFirst()
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Bạn cần mua khóa học để truy cập nội dung này."));
+
+        PackageResponse pkg = packageApiDelegate.getPackageById(packageId);
+        if (pkg == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Bạn cần mua khóa học để truy cập nội dung này.");
+        }
+        return pkg;
+    }
+
+    private boolean isFreePackage(PackageResponse pkg) {
+        if (pkg == null) {
+            return false;
+        }
+        if (StringUtils.hasText(pkg.getPricingType()) && "FREE".equalsIgnoreCase(pkg.getPricingType())) {
+            return true;
+        }
+        return pkg.getPrice() != null && pkg.getPrice().compareTo(BigDecimal.ZERO) <= 0;
+    }
+
+    private boolean hasPrivilegedAuthority() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getAuthorities() == null) {
+            return false;
+        }
+
+        return authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(Objects::nonNull)
+                .anyMatch(PRIVILEGED_AUTHORITIES::contains);
     }
 }

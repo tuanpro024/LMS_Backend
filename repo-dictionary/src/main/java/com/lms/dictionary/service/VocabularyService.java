@@ -6,7 +6,7 @@ import com.lms.common.dto.PageResponse;
 import com.lms.common.dto.PaginationRequest;
 
 import com.lms.dictionary.dto.request.CreateVocabularyRequest;
-
+import com.lms.dictionary.dto.request.SyncEtymologyRequest;
 import com.lms.dictionary.dto.request.UpdateVocabularyRequest;
 import com.lms.dictionary.dto.request.VocabularySearchRequest;
 import com.lms.dictionary.dto.response.ImportResult;
@@ -26,4 +26,6 @@ public interface VocabularyService {
     PageResponse<VocabularyBasicResponse> getSuggestions(PaginationRequest request);
     
     ImportResult importVocabularies(MultipartFile file);
+
+    void syncEtymologyImage(Long id, SyncEtymologyRequest request);
 }

@@ -6,6 +6,7 @@ import com.lms.common.exception.ApiException;
 import com.lms.common.exception.ErrorCode;
 import com.lms.dictionary.dto.request.CreateVocabularyRequest;
 import com.lms.dictionary.dto.request.UpdateVocabComponentRequest;
+import com.lms.dictionary.dto.request.SyncEtymologyRequest;
 import com.lms.dictionary.dto.request.UpdateVocabularyRequest;
 import com.lms.dictionary.dto.request.VocabularySearchRequest;
 import com.lms.dictionary.dto.request.VocabComponentRequest;
@@ -391,6 +392,22 @@ public class VocabularyServiceImpl implements VocabularyService {
 
         } catch (java.io.IOException e) {
             throw new ApiException(ErrorCode.E227, "Fail to parse Excel file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void syncEtymologyImage(Long id, SyncEtymologyRequest request) {
+        Vocabulary vocabulary = vocabularyRepository.findById(id)
+                .orElseThrow(() -> new ApiException(ErrorCode.E227, "Vocabulary not found"));
+
+        // Chỉ cập nhật nếu chưa có ảnh chiết tự, tránh bị ghi đè trái phép
+        if (vocabulary.getEtymologyImage() == null || vocabulary.getEtymologyImage().isBlank()) {
+            vocabulary.setEtymologyImage(request.getImageUrl());
+            vocabularyRepository.save(vocabulary);
+            log.info("Synced etymology image for vocabulary id={}, hanzi={}", id, vocabulary.getHanzi());
+        } else {
+            log.debug("Etymology image already exists for vocabulary id={}, skipping sync", id);
         }
     }
 

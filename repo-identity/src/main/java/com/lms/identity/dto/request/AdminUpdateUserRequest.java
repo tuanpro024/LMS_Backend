@@ -35,4 +35,21 @@ public class AdminUpdateUserRequest {
     @Past
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dob;
+
+    // ===== Optional teacher profile enrichment fields =====
+
+    @Size(max = 500, message = "Mô tả ngắn không được vượt quá 500 ký tự")
+    private String shortDescription;
+
+    @Size(max = 5000, message = "Mô tả chi tiết không được vượt quá 5000 ký tự")
+    private String fullDescription;
+
+    @Size(max = 300, message = "Phong cách giảng dạy không được vượt quá 300 ký tự")
+    private String teachingStyle;
+
+    @Size(max = 500, message = "Bằng cấp không được vượt quá 500 ký tự")
+    private String qualification;
+
+    @Size(max = 500, message = "Link video giới thiệu không được vượt quá 500 ký tự")
+    private String videoIntroLink;
 }

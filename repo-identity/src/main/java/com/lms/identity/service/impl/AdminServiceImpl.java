@@ -92,6 +92,11 @@ public class AdminServiceImpl implements AdminService {
                 .status(status)
                 .emailVerified(true)
                 .roles(roles)
+                .shortDescription(request.getShortDescription())
+                .fullDescription(request.getFullDescription())
+                .teachingStyle(request.getTeachingStyle())
+                .qualification(request.getQualification())
+                .videoIntroLink(request.getVideoIntroLink())
                 .build();
         User saved = userRepository.save(user);
         return userMapper.toAdmin(saved);
@@ -128,6 +133,22 @@ public class AdminServiceImpl implements AdminService {
         }
         if (request.getDob() != null) {
             user.setDob(request.getDob());
+        }
+
+        if (request.getShortDescription() != null) {
+            user.setShortDescription(request.getShortDescription());
+        }
+        if (request.getFullDescription() != null) {
+            user.setFullDescription(request.getFullDescription());
+        }
+        if (request.getTeachingStyle() != null) {
+            user.setTeachingStyle(request.getTeachingStyle());
+        }
+        if (request.getQualification() != null) {
+            user.setQualification(request.getQualification());
+        }
+        if (request.getVideoIntroLink() != null) {
+            user.setVideoIntroLink(request.getVideoIntroLink());
         }
 
         User saved = userRepository.save(user);

@@ -25,4 +25,11 @@ public class ProfileResponse {
     private final boolean isPremium;
     @JsonProperty("premiumExpiryDate")
     private final java.time.Instant premiumExpiryDate;
+
+    // Teacher profile enrichment fields
+    private final String shortDescription;
+    private final String fullDescription;
+    private final String teachingStyle;
+    private final String qualification;
+    private final String videoIntroLink;
 }

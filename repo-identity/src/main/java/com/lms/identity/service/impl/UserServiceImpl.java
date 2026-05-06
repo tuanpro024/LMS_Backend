@@ -48,6 +48,17 @@ public class UserServiceImpl implements UserService {
         user.setAddress(request.getAddress());
         user.setGender(request.getGender());
         user.setDob(request.getDob());
+        // Optional teacher profile enrichment fields
+        if (request.getShortDescription() != null)
+            user.setShortDescription(request.getShortDescription());
+        if (request.getFullDescription() != null)
+            user.setFullDescription(request.getFullDescription());
+        if (request.getTeachingStyle() != null)
+            user.setTeachingStyle(request.getTeachingStyle());
+        if (request.getQualification() != null)
+            user.setQualification(request.getQualification());
+        if (request.getVideoIntroLink() != null)
+            user.setVideoIntroLink(request.getVideoIntroLink());
         User saved = userRepository.save(user);
 
         // Phát sự kiện Kafka Commit nếu avatar là URL từ file service của chúng ta

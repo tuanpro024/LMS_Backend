@@ -21,4 +21,11 @@ public class AdminUserResponse {
     private final LocalDate dob;
     private final Set<String> roles;
     private final UserStatus status;
+
+    // Teacher profile enrichment fields
+    private final String shortDescription;
+    private final String fullDescription;
+    private final String teachingStyle;
+    private final String qualification;
+    private final String videoIntroLink;
 }

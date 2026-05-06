@@ -60,6 +60,12 @@ public class TeacherServiceImpl implements TeacherService {
                 .status(UserStatus.ACTIVE)
                 .emailVerified(true)
                 .roles(Set.of(teacherRole))
+                // Optional teacher profile fields
+                .shortDescription(request.getShortDescription())
+                .fullDescription(request.getFullDescription())
+                .teachingStyle(request.getTeachingStyle())
+                .qualification(request.getQualification())
+                .videoIntroLink(request.getVideoIntroLink())
                 .build();
 
         User saved = userRepository.save(user);
@@ -93,6 +99,17 @@ public class TeacherServiceImpl implements TeacherService {
             user.setDob(request.getDob());
         if (request.getStatus() != null)
             user.setStatus(request.getStatus());
+        // Optional teacher profile fields (null means "not supplied" – leave unchanged)
+        if (request.getShortDescription() != null)
+            user.setShortDescription(request.getShortDescription());
+        if (request.getFullDescription() != null)
+            user.setFullDescription(request.getFullDescription());
+        if (request.getTeachingStyle() != null)
+            user.setTeachingStyle(request.getTeachingStyle());
+        if (request.getQualification() != null)
+            user.setQualification(request.getQualification());
+        if (request.getVideoIntroLink() != null)
+            user.setVideoIntroLink(request.getVideoIntroLink());
 
         User saved = userRepository.save(user);
         return userMapper.toAdmin(saved);

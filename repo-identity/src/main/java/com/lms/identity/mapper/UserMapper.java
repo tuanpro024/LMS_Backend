@@ -15,9 +15,19 @@ public interface UserMapper {
 
     @Mapping(target = "roles", expression = "java(toRoleNames(user.getRoles()))")
     @Mapping(target = "isPremium", expression = "java(user.isPremium())")
+    @Mapping(target = "shortDescription", source = "shortDescription")
+    @Mapping(target = "fullDescription", source = "fullDescription")
+    @Mapping(target = "teachingStyle", source = "teachingStyle")
+    @Mapping(target = "qualification", source = "qualification")
+    @Mapping(target = "videoIntroLink", source = "videoIntroLink")
     ProfileResponse toProfile(User user);
 
     @Mapping(target = "roles", expression = "java(toRoleNames(user.getRoles()))")
+    @Mapping(target = "shortDescription", source = "shortDescription")
+    @Mapping(target = "fullDescription", source = "fullDescription")
+    @Mapping(target = "teachingStyle", source = "teachingStyle")
+    @Mapping(target = "qualification", source = "qualification")
+    @Mapping(target = "videoIntroLink", source = "videoIntroLink")
     AdminUserResponse toAdmin(User user);
 
     default Set<String> toRoleNames(Set<Role> roles) {

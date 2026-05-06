@@ -76,4 +76,21 @@ public class User extends BaseEntity {
 
     @Column(name = "premium_expiry_date")
     private java.time.Instant premiumExpiryDate;
+
+    // ===== Teacher profile enrichment fields =====
+
+    @Column(name = "short_description", length = 500)
+    private String shortDescription;
+
+    @Column(name = "full_description", columnDefinition = "TEXT")
+    private String fullDescription;
+
+    @Column(name = "teaching_style", length = 300)
+    private String teachingStyle;
+
+    @Column(name = "qualification", length = 500)
+    private String qualification;
+
+    @Column(name = "video_intro_link", length = 500)
+    private String videoIntroLink;
 }

@@ -6,6 +6,7 @@ import com.lms.common.dto.PageResponse;
 import com.lms.common.dto.PaginationRequest;
 import com.lms.common.dto.ApiResponse;
 import com.lms.dictionary.dto.request.CreateVocabularyRequest;
+import com.lms.dictionary.dto.request.SyncEtymologyRequest;
 import com.lms.dictionary.dto.request.UpdateVocabularyRequest;
 import com.lms.dictionary.dto.request.VocabularySearchRequest;
 import com.lms.dictionary.dto.response.ImportResult;
@@ -67,5 +68,10 @@ public class VocabularyController {
         return ApiResponse.ok(vocabularyService.importVocabularies(file));
     }
 
+    @PatchMapping("/{id}/sync-etymology")
+    public ApiResponse<Void> syncEtymologyImage(@PathVariable Long id, @Valid @RequestBody SyncEtymologyRequest request) {
+        vocabularyService.syncEtymologyImage(id, request);
+        return ApiResponse.ok(null);
+    }
 
 }

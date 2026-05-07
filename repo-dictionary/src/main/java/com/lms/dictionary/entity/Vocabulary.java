@@ -41,6 +41,15 @@ public class Vocabulary extends BaseEntityLongId {
     @Column(name = "stroke_animation_url", length = 500)
     private String strokeAnimationUrl;
 
+    @Column(name = "radical", length = 50)
+    private String radical;
+
+    @Column(name = "stroke_count")
+    private Integer strokeCount;
+
+    @Column(name = "strokes", length = 50)
+    private String strokes;
+
     @Column(name = "etymology_story", columnDefinition = "TEXT")
 
     private String etymologyStory;

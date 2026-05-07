@@ -1,6 +1,7 @@
 package com.lms.dictionary.dto.request;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -31,6 +32,13 @@ public class CreateVocabularyRequest {
     private String strokeAnimationUrl;
     private String etymologyStory;
     private String etymologyImage;
+
+    private String radical;
+    
+    @Min(value = 1, message = "Số nét phải lớn hơn 0")
+    private Integer strokeCount;
+    
+    private String strokes;
 
     @NotNull(message = "isSingleVocab must be specified")
     private Boolean isSingleVocab;

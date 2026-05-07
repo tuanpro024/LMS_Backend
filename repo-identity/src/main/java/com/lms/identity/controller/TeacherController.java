@@ -53,4 +53,10 @@ public class TeacherController {
         teacherSyncService.syncTeachers();
         return ResponseEntity.ok("Sync process triggered successfully");
     }
+
+    @PostMapping("/import")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER_MANAGER')")
+    public ResponseEntity<Integer> importTeachers(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(teacherService.importTeachers(file));
+    }
 }

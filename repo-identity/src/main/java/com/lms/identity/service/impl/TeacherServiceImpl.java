@@ -18,6 +18,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.web.multipart.MultipartFile;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -122,5 +128,90 @@ public class TeacherServiceImpl implements TeacherService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Teacher not found"));
         user.setStatus(UserStatus.BLOCKED);
         userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int importTeachers(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "File không được để trống");
+        }
+
+        try (InputStream is = file.getInputStream(); Workbook workbook = new XSSFWorkbook(is)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            List<User> teachersToSave = new ArrayList<>();
+            Role teacherRole = roleRepository.findByName(RoleName.ROLE_TEACHER)
+                    .orElseThrow(() -> new ApiException(ErrorCode.E221, "Role ROLE_TEACHER not found"));
+
+            // Assume row 0 is header
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                String email = getCellValueAsString(row.getCell(0));
+                String password = getCellValueAsString(row.getCell(1));
+                String fullName = getCellValueAsString(row.getCell(2));
+                String phoneNumber = getCellValueAsString(row.getCell(3));
+                String shortDescription = getCellValueAsString(row.getCell(4));
+                String fullDescription = getCellValueAsString(row.getCell(5));
+                String teachingStyle = getCellValueAsString(row.getCell(6));
+                String qualification = getCellValueAsString(row.getCell(7));
+                String videoIntroLink = getCellValueAsString(row.getCell(8));
+                String avatarUrl = getCellValueAsString(row.getCell(9));
+
+                if (email.isEmpty() && password.isEmpty() && fullName.isEmpty()) {
+                    continue; // skip empty rows
+                }
+
+                if (email.isEmpty() || password.isEmpty() || fullName.isEmpty()) {
+                    throw new ApiException(ErrorCode.BAD_REQUEST, "Dòng " + (i + 1) + ": Thiếu thông tin bắt buộc (Email, Mật khẩu, Họ và tên)");
+                }
+
+                if (userRepository.existsByEmail(email)) {
+                    throw new ApiException(ErrorCode.CONFLICT, "Dòng " + (i + 1) + ": Email " + email + " đã được sử dụng");
+                }
+
+                User user = User.builder()
+                        .email(email)
+                        .password(passwordEncoder.encode(password))
+                        .fullName(fullName)
+                        .phoneNumber(phoneNumber)
+                        .shortDescription(shortDescription.isEmpty() ? null : shortDescription)
+                        .fullDescription(fullDescription.isEmpty() ? null : fullDescription)
+                        .teachingStyle(teachingStyle.isEmpty() ? null : teachingStyle)
+                        .qualification(qualification.isEmpty() ? null : qualification)
+                        .videoIntroLink(videoIntroLink.isEmpty() ? null : videoIntroLink)
+                        .avatarUrl(avatarUrl.isEmpty() ? null : avatarUrl)
+                        .status(UserStatus.ACTIVE)
+                        .emailVerified(true)
+                        .roles(Set.of(teacherRole))
+                        .build();
+
+                teachersToSave.add(user);
+            }
+
+            userRepository.saveAll(teachersToSave);
+            return teachersToSave.size();
+
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException(ErrorCode.BAD_REQUEST, "Lỗi khi xử lý file Excel: " + e.getMessage());
+        }
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                long num = (long) cell.getNumericCellValue();
+                return String.valueOf(num);
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            default:
+                return "";
+        }
     }
 }

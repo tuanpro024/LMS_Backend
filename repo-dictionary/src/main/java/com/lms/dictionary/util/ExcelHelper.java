@@ -106,9 +106,20 @@ public class ExcelHelper {
                 vocabulary.setEtymologyImage(getCellValueAsString(currentRow.getCell(11)));
                 vocabulary.setImageUrl(getCellValueAsString(currentRow.getCell(12)));
 
-                String wordTypeStr = getCellValueAsString(currentRow.getCell(13));
-                String examplePinyinStr = getCellValueAsString(currentRow.getCell(14));
-                String exampleEnStr = getCellValueAsString(currentRow.getCell(15));
+                String examplePinyinStr = getCellValueAsString(currentRow.getCell(13)); // N
+                String exampleEnStr = getCellValueAsString(currentRow.getCell(14)); // O
+
+                vocabulary.setRadical(getCellValueAsString(currentRow.getCell(15))); // P
+                String strokeCountStr = getCellValueAsString(currentRow.getCell(16)); // Q
+                if (!strokeCountStr.isEmpty()) {
+                    try {
+                        vocabulary.setStrokeCount((int) Double.parseDouble(strokeCountStr));
+                    } catch (NumberFormatException e) {
+                    }
+                }
+                vocabulary.setStrokes(getCellValueAsString(currentRow.getCell(17))); // R
+                
+                String wordTypeStr = getCellValueAsString(currentRow.getCell(18)); // S
 
                 if (meaningViStr != null && !meaningViStr.isEmpty()) {
                     String[] meaningParts = meaningViStr.split(SPLIT_CHAR);

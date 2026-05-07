@@ -19,6 +19,9 @@ public class VocabularyResponse {
     private String strokeAnimationUrl;
     private String etymologyStory;
     private String etymologyImage;
+    private String radical;
+    private Integer strokeCount;
+    private String strokes;
     private Boolean isSingleVocab;
     private List<VocabularyMeaningResponse> meanings;
     private List<VocabularyResponse> componentVocabs;

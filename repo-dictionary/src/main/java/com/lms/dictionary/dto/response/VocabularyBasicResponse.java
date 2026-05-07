@@ -24,4 +24,7 @@ public class VocabularyBasicResponse {
     private String strokeAnimationUrl;
     private String etymologyStory;
     private String etymologyImage;
+    private String radical;
+    private Integer strokeCount;
+    private String strokes;
 }

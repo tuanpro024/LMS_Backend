@@ -11,4 +11,5 @@ public interface TeacherService {
     AdminUserResponse createTeacher(AdminCreateUserRequest request);
     AdminUserResponse updateTeacher(String id, AdminUpdateUserRequest request);
     void blockTeacher(String id);
+    int importTeachers(org.springframework.web.multipart.MultipartFile file);
 }

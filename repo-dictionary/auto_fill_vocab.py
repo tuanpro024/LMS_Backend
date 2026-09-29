@@ -18,13 +18,8 @@ import random
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
 # Fix: chuyen TEMP sang o E de tranh loi "No space left on device" tren o C
-TEMP_DIR = r"e:\ProjectLMSGradution\LMS_Backend\repo-dictionary\temp"
-os.makedirs(TEMP_DIR, exist_ok=True)
-os.environ["TEMP"] = TEMP_DIR
-os.environ["TMP"] = TEMP_DIR
-
 LOG_FILE = os.path.join(
-    r"e:\ProjectLMSGradution\LMS_Backend\repo-dictionary", "auto_fill_log.txt"
+    os.path.dirname(os.path.abspath(__file__)), "auto_fill_log.txt"
 )
 _log_fh = open(LOG_FILE, "a", encoding="utf-8")
 
@@ -55,16 +50,32 @@ except ImportError:
 # CẤU HÌNH API & FILE
 # ══════════════════════════════════════════════════════════════════
 
+# Đọc API Keys từ biến môi trường hoặc file .gemini-keys (gitignored)
+# Tạo file .gemini-keys trong cùng thư mục với nội dung: AIzaSy...
+# Hoặc set biến môi trường: GEMINI_API_KEY_1, GEMINI_API_KEY_2, GEMINI_API_KEY_3
 GEMINI_API_KEYS = [
-    "REDACTED_GEMINI_KEY_1",
-    "REDACTED_GEMINI_KEY_2",
-    "REDACTED_GEMINI_KEY_3",
+    k for k in [
+        os.environ.get("GEMINI_API_KEY_1"),
+        os.environ.get("GEMINI_API_KEY_2"),
+        os.environ.get("GEMINI_API_KEY_3"),
+    ] if k
 ]
 
-BASE_DIR = r"e:\ProjectLMSGradution\LMS_Backend\repo-dictionary"
-# File gốc của anh (Lưu ý: script cũ tạo ra Vocabulary_Completed, file này mình gộp lại thành Vocabulary)
+if not GEMINI_API_KEYS:
+    keys_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".gemini-keys")
+    if os.path.exists(keys_file):
+        with open(keys_file, "r") as f:
+            GEMINI_API_KEYS = [line.strip() for line in f if line.strip()]
+
+if not GEMINI_API_KEYS:
+    print("Loi: Chua cau hinh Gemini API Keys!")
+    print("Option 1: Set env vars GEMINI_API_KEY_1, GEMINI_API_KEY_2, ...")
+    print("Option 2: Tao file .gemini-keys trong thu muc nay, moi dong 1 key")
+    sys.exit(1)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_FILE = os.path.join(BASE_DIR, "Vocabulary_Dictionary.xlsx")
-OUTPUT_FILE = os.path.join(BASE_DIR, "Vocabulary.xlsx")  # Em đổi tên cho chuẩn luôn
+OUTPUT_FILE = os.path.join(BASE_DIR, "Vocabulary.xlsx")
 
 # Gemini Flash xử lý bối cảnh cực khoẻ, để batch=10 cho nhanh x2
 BATCH_SIZE = 10

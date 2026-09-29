@@ -16,8 +16,8 @@ spring:
 
   datasource:
     url: jdbc:mysql://localhost:3306/lms_kanji_origin_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${DB_username:sa}
-    password: ${DB_password:123}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:

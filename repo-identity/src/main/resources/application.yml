@@ -3,8 +3,8 @@ spring:
     name: repo-identity-api
   datasource:
     url: jdbc:mysql://localhost:3306/lms_identity_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: sa
-    password: 123
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -27,8 +27,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${EMAIL_USERNAME:REDACTED_EMAIL_ADDRESS}
-    password: ${EMAIL_PASSWORD:REDACTED_EMAIL_PASSWORD}
+    username: ${EMAIL_USERNAME}
+    password: ${EMAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -81,8 +81,8 @@ eureka:
 
 google:
   oauth:
-    client-id: ${GOOGLE_CLIENT_ID:REDACTED_GOOGLE_CLIENT_ID}
-    client-secret: ${GOOGLE_CLIENT_SECRET:REDACTED_GOOGLE_SECRET}
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
 
 # Application Configuration
 app:
@@ -91,10 +91,10 @@ app:
     from-name: ${EMAIL_FROM_NAME:Hệ Thống Học Bá}
   frontend:
 #    url: ${FRONTEND_URL:http://localhost:3000}
-     url: ${FRONTEND_URL:https://lms.dangch.tech}
+     url: ${FRONTEND_URL:http://localhost:3000}
 
 cms:
-  base-url: ${CMS_BASE_URL:https://cms.dangch.tech}
+  base-url: ${CMS_BASE_URL:http://localhost:1337}
   webclient:
     max-in-memory-mb: 16
 

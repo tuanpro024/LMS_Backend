@@ -83,13 +83,21 @@ services:
     container_name: lms-identity
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_identity_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
       - SECURITY_JWT_PRIVATE_KEY_PATH=file:/app/secrets/jwt-private.pem
+      - EMAIL_USERNAME=${EMAIL_USERNAME}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - CMS_BASE_URL=${CMS_BASE_URL}
     volumes:
       - ./secrets:/app/secrets
     depends_on:
@@ -151,7 +159,7 @@ services:
     ports:
       - "58006:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_DATABASE=lms_flashcard_db
     volumes:
       - mysql_data:/var/lib/mysql
@@ -159,7 +167,7 @@ services:
     networks:
       - lms-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -168,8 +176,8 @@ services:
     image: quay.io/minio/minio
     container_name: lms-video-minio
     environment:
-      - MINIO_ROOT_USER=lms_minio
-      - MINIO_ROOT_PASSWORD=lms_minio
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
     networks:
@@ -193,7 +201,7 @@ services:
       - lms-network
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio http://lms-video-minio:9000 lms_minio lms_minio;
+      /usr/bin/mc alias set myminio http://lms-video-minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
       /usr/bin/mc mb myminio/videos || true;
       /usr/bin/mc mb myminio/images || true;
       /usr/bin/mc mb myminio/audios || true;
@@ -211,8 +219,8 @@ services:
     container_name: lms-flashcard
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_flashcard_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -235,8 +243,8 @@ services:
     container_name: lms-writing
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_writing_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -259,8 +267,8 @@ services:
     container_name: lms-dictionary
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_dictionary_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -283,8 +291,8 @@ services:
     container_name: lms-kanji-origin
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_kanji_origin_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -307,8 +315,8 @@ services:
     container_name: lms-pronunciation
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_pronunciation_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -331,8 +339,8 @@ services:
     container_name: lms-quiz
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_quiz_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -355,8 +363,8 @@ services:
     container_name: lms-learning-path
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_learning_path_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -379,8 +387,8 @@ services:
     container_name: lms-onl-learning
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_onl_learning_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
@@ -406,12 +414,16 @@ services:
     container_name: lms-notification
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_notification_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+      - EMAIL_USERNAME=${EMAIL_USERNAME}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME}
     volumes:
       - ./secrets:/app/secrets
     depends_on:
@@ -436,14 +448,14 @@ services:
     container_name: lms-multimedia
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_media_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - STORAGE_MINIO_ENDPOINT=http://lms-video-minio:9000
-      - STORAGE_MINIO_ACCESS_KEY=lms_minio
-      - STORAGE_MINIO_SECRET_KEY=lms_minio
+      - STORAGE_MINIO_ACCESS_KEY=${MINIO_ROOT_USER}
+      - STORAGE_MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
     volumes:
       - ./secrets:/app/secrets
     depends_on:
@@ -469,8 +481,8 @@ services:
     container_name: lms-listening-practice
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_listening_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
       - LISTENING_MULTIMEDIA_SERVICE_URL=http://multimedia-api:8091
@@ -497,8 +509,8 @@ services:
     container_name: lms-video-course
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_video_course_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -515,6 +527,7 @@ services:
     networks:
       - shared-network
       - lms-network
+
   repo-ai-api:
     build:
       context: .
@@ -523,8 +536,8 @@ services:
     container_name: repo-ai-practice
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_ai_practice_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
     volumes:
@@ -541,6 +554,7 @@ services:
     networks:
       - shared-network
       - lms-network
+
   payment-api:
     build:
       context: .
@@ -549,10 +563,15 @@ services:
     container_name: lms-payment
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lms_payment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://eureka-server:8761/eureka
       - SECURITY_JWT_PUBLIC_KEY_PATH=file:/app/secrets/jwt-public.pem
+      - PAYOS_CLIENT_ID=${PAYOS_CLIENT_ID}
+      - PAYOS_API_KEY=${PAYOS_API_KEY}
+      - PAYOS_CHECKSUM_KEY=${PAYOS_CHECKSUM_KEY}
+      - PAYOS_RETURN_URL=${PAYOS_RETURN_URL}
+      - PAYOS_CANCEL_URL=${PAYOS_CANCEL_URL}
     volumes:
       - ./secrets:/app/secrets
     depends_on:
@@ -574,8 +593,8 @@ services:
     environment:
       - MYSQL_HOST=mysql
       - MYSQL_PORT=3306
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
+      - MYSQL_USER=${SPRING_DATASOURCE_USERNAME}
+      - MYSQL_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
       - BACKUP_DIR=/backups
       - RETENTION_DAYS=7
       - DATABASES=lms_identity_db lms_flashcard_db lms_writing_db lms_dictionary_db lms_kanji_origin_db lms_pronunciation_db lms_quiz_db lms_learning_path_db lms_onl_learning_db lms_notification_db lms_media_db lms_listening_db lms_video_course_db lms_ai_practice_db lms_payment_db
@@ -599,4 +618,3 @@ volumes:
   mysql_data:
   minio_data:
   backups_data:
-

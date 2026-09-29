@@ -28,7 +28,7 @@ public class MembershipEmailService {
     @Value("${app.email.from-name}")
     private String emailFromName;
 
-    @Value("${app.frontend.url:https://lms.dangch.tech}")
+    @Value("${app.frontend.url:http://localhost:3000}")
     private String appUrl;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");

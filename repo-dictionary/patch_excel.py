@@ -1,7 +1,7 @@
 import openpyxl
 import os
 
-BASE_DIR = r"e:\ProjectLMSGradution\LMS_Backend\repo-dictionary"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 files_to_update = [
     "Vocabulary_Dictionary.xlsx",
     "Vocabulary_Full_Dictionary_NEW.xlsx",
